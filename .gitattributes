@@ -1,0 +1,12 @@
+# Handle line endings automatically for files detected as text
+# and perform LF normalization.
+* text=auto
+
+# Force specific files to use LF (Unix) line endings for cross-platform compatibility.
+/mvnw text eol=lf
+*.cmd text eol=crlf
+
+# Ensure binary files (images, icons) are not modified during check-in.
+*.png binary
+*.jpg binary
+*.ico binary

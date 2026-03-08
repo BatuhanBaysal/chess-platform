@@ -1,0 +1,27 @@
+# --- System Files ---
+.DS_Store
+Thumbs.db
+
+# --- IDE Settings ---
+# Since you might open the entire folder in an IDE,
+# we ignore the root-level metadata.
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+
+# --- Environment & Secrets ---
+# Important: Protect your sensitive data and logs
+.env
+.env.local
+.env.development
+.env.production
+*.log
+
+# --- Build & Temporary Files ---
+# To prevent any global temporary files from being tracked
+tmp/
+temp/
+dist/
+node_modules/

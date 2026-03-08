@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: chess-backend
+  datasource:
+    # Database credentials are injected via environment variables for security.
+    # We use the 'spring-dotenv' library to automatically load these from the .env file in development.
+    # This setup also supports native system environment variables for production/Docker environments.
+    url: ${CHESS_DB_URL}
+    username: ${CHESS_DB_USERNAME}
+    password: ${CHESS_DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect

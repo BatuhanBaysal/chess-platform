@@ -40,5 +40,5 @@ public abstract sealed class Piece
      * Logic to determine if a move is valid for this specific piece.
      * To be implemented by each subclass according to chess rules.
      */
-    public abstract boolean isValidMove(Position targetPosition, Piece[][] board);
+    public abstract boolean isValidMove(Position targetPosition, Board board);
 }

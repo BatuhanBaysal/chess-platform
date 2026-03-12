@@ -20,6 +20,8 @@ public class PositionTest {
     })
     @DisplayName("Invalid coordinates should throw an IllegalArgumentException.")
     void shouldThrowExceptionForInvalidCoordinates(int file, int rank) {
+        // Act & Assert
+        // We verify both the exception type and the fact that it occurred during instantiation.
         assertThrows(IllegalArgumentException.class, () -> new Position(file, rank));
     }
 
@@ -33,7 +35,10 @@ public class PositionTest {
     })
     @DisplayName("Valid boundary coordinates should be accepted.")
     void shouldAcceptValidCoordinates(int file, int rank) {
+        // Act
         Position position = new Position(file, rank);
+
+        // Assert
         assertThat(position.file()).isEqualTo(file);
         assertThat(position.rank()).isEqualTo(rank);
     }
@@ -41,9 +46,11 @@ public class PositionTest {
     @Test
     @DisplayName("Position objects with different coordinates should not be equal.")
     void positionsWithDifferentCoordinatesShouldNotBeEqual() {
+        // Arrange
         Position pos1 = new Position(3, 3);
-        Position pos2 = new Position(4,4);
+        Position pos2 = new Position(4, 4);
 
+        // Act & Assert
         assertThat(pos1).isNotEqualTo(pos2);
     }
 
@@ -57,6 +64,10 @@ public class PositionTest {
     })
     @DisplayName("isValidPosition static method should return correct boolean results.")
     void isValidPositionShouldReturnCorrectResults(int file, int rank, boolean expected) {
-        assertThat(Position.isValidPosition(file, rank)).isEqualTo(expected);
+        // Act
+        boolean result = Position.isValidPosition(file, rank);
+
+        // Assert
+        assertThat(result).isEqualTo(expected);
     }
 }

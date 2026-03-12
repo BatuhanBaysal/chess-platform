@@ -1,11 +1,15 @@
 package com.batuhan.chess.domain.model;
 
-public final class Knight extends Piece{
+public final class Knight extends Piece {
 
     public Knight(Color color, Position position) {
         super(color, PieceType.KNIGHT, position);
     }
 
+    /**
+     * Validates Knight movement: must be an L-shape (2 squares in one direction, 1 in the other).
+     * Knights can jump over other pieces, so only the target square is checked.
+     */
     @Override
     public boolean isValidMove(Position target, Board board) {
         int fileDiff = Math.abs(target.file() - position.file());

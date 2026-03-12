@@ -10,11 +10,23 @@ public class Board {
     private final Piece[][] squares;
 
     /**
-     * Constructs a new board and initializes it with the standard starting position.
+     * Constructs a board with the option to initialize pieces.
+     * * @param fillBoard If true, populates the board with the standard chess starting position.
+     * If false, creates an empty board, useful for unit testing.
+     */
+    public Board(boolean fillBoard) {
+        this.squares = new Piece[8][8];
+        if (fillBoard) {
+            initializeBoard();
+        }
+    }
+
+    /**
+     * Default constructor.
+     * Creates a standard board and initializes it with all pieces in their starting positions.
      */
     public Board() {
-        this.squares = new Piece[8][8];
-        initializeBoard();
+        this(true);
     }
 
     /**

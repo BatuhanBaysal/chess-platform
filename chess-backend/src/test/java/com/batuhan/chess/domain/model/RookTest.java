@@ -11,6 +11,7 @@ public class RookTest {
 
     @BeforeEach
     void setUp() {
+        // Professional Approach: Isolated empty board for unit testing
         board = new Board(false);
     }
 

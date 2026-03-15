@@ -110,32 +110,38 @@ To keep the project history clean and readable, we follow the **Conventional Com
 * **Atomic Commits:** Focus on one logical change per commit. Avoid "mega-commits" that combine unrelated changes.
 * **Verify Status:** Always run `git status` before `git add .` to ensure you are not accidentally staging sensitive files like `.env`.
 * **Pull Regularly:** Always run `git pull` before you start working to ensure your local environment is up-to-date with the remote server.
-* **Line Endings:** Our project uses `LF` (Unix-style) line endings as defined in [`.gitattributes`](./.gitattributes).
+* **Line Endings:** Our project uses `LF` (Unix-style) line endings as defined in [`.gitattributes`](../.gitattributes).
 
 ---
 
 ## 8. Advanced Branching & Clean History
-To maintain a professional repository structure, we follow the **Feature Branch Workflow**:
+We follow a strict **Feature Branch Workflow** to ensure the stability of the `main` branch.
 
 ### Branching Strategy
-* **Never** push directly to `main` for complex features.
-* Create a new branch for every task:
-  ```bash
-  git checkout -b feature/your-feature-name
-  ```
-* Once the task is complete and tested, merge it back to `main` via a Pull Request or a local merge.
+* **Naming Convention:** Use descriptive prefixes for all new branches:
+    - `feature/` (new logic), `bugfix/` (fixing issues), `refactor/` (code cleanup), `docs/` (documentation).
+* **Isolation:** 
+```bash
+  git checkout -b feature/pawn-en-passant
+```
+
+* **Isolation:** Never push directly to `main` for complex features. Each task should live in its own branch until it passes all local tests and validation.
+* **The Goal:** The `main` branch must always remain "deployable" and stable. Never merge broken or untested code into the primary history.
 
 ### Commits & Squashing
-* **Maintain a Clean History:** If you have multiple "fix typo" or "WIP" (Work In Progress) commits in your feature branch, **squash** them into a single, meaningful commit before merging into `main`.
-* **The Goal:** Ensure the `main` branch history remains a clean, high-level log of completed features and milestones, rather than a messy list of every single save point.
+* **Maintain a Clean History:** If you have multiple "fix typo" or "WIP" (Work In Progress) commits in your feature branch, it is highly recommended to **squash** them into a single, meaningful commit before merging.
+* **Traceability:** Ensure your branch name and commit messages align with the evolution steps documented in the [**CHANGELOG.md**](../docs/CHANGELOG.md).
 
 ---
 
 ## 9. Final Checklist Before Pushing
-* [ ] Run `git status` to check for unintended files.
-* [ ] Verify that sensitive data in `.env` is ignored.
-* [ ] Ensure all files end with a single newline (POSIX standard).
-* [ ] Run local tests (`./mvnw test` or `npm test`) to ensure a "green" build.
+Before sending your code to the remote repository, perform this "Flight Check" to ensure high-quality standards:
+
+* [ ] **Status Audit:** Run `git status` to check for unintended or untracked files.
+* [ ] **Secret Management:** Double-check that sensitive data in `.env` is ignored and not accidentally staged.
+* [ ] **Code Formatting:** Ensure your code follows the project's [`.editorconfig`](../.editorconfig) rules.
+* [ ] **Green Build:** Run local tests (`./mvnw test` or `npm test`) to ensure a regression-free build.
+* [ ] **Convention Check:** Does your commit message strictly follow the `type: description` format?
 
 ---
-*This document serves as a supplementary guide to [**CONTRIBUTING.md**](./CONTRIBUTING.md).*
+*This document serves as a supplementary guide to [**CONTRIBUTING.md**](../docs/CONTRIBUTING.md) and [**DEVELOPMENT.md**](../docs/DEVELOPMENT.md).*

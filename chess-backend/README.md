@@ -1,99 +1,71 @@
 # ⚙️ Chess Backend (Spring Boot 3)
 
-![Java 17](https://img.shields.io/badge/Java-17-orange?style=for-the-badge&logo=openjdk&logoColor=white) ![Spring Boot 3.4.6](https://img.shields.io/badge/Spring_Boot-3.4.6-green?style=for-the-badge&logo=springboot&logoColor=white) ![Maven](https://img.shields.io/badge/Maven-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white)
+![Java 17](https://img.shields.io/badge/Java-17-orange?style=flat-square&logo=openjdk&logoColor=white)
+![Spring Boot 3.4.6](https://img.shields.io/badge/Spring_Boot-3.4.6-green?style=flat-square&logo=springboot&logoColor=white)
+![JUnit 5](https://img.shields.io/badge/JUnit_5-C2185B?style=flat-square&logo=junit5&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
 
-The core engine of the Chess Platform, designed with **Domain-Driven Design (DDD)** and **Clean Architecture** (Hexagonal) principles.
+The core engine of the Chess Platform, designed with **Domain-Driven Design (DDD)** and **Clean Architecture (Hexagonal)** principles.
 
 ---
 
 ## 🏛️ Internal Architecture & Layers
-This module follows a strict separation of concerns to keep the **Chess Logic** isolated from technical frameworks.
+This module follows a strict separation of concerns to keep the **Chess Logic** isolated from technical frameworks:
 
-- **Domain Layer (The Core):** 🧠 The "Brain" of the project. Contains `Piece` hierarchies, `Move` validation, and `Board` state. **Pure Java, zero dependencies**, making it 100% testable and future-proof.
-- **Application Layer (Services):** 🔄 Orchestrates use cases (e.g., "Start Game", "Make Move"). Handles transaction management and interfaces with the domain.
-- **Api Layer (Drivers):** 🔌 REST Controllers for session management and **WebSocket (STOMP)** handlers for real-time game synchronization.
-- **Infrastructure Layer (Adapters):** 💾 External concerns like **PostgreSQL** persistence (JPA), Security configurations, and Repository implementations.
+- **Domain Layer (The Core):** 🧠 The "Brain" of the project. Contains `Piece` hierarchies (standardized via **Java 17 Sealed Classes**), movement validation, and `Board` state. **Pure Java, zero dependencies**.
+- **Application Layer (Services):** 🔄 Orchestrates use cases like starting games and making moves. Handles transaction management and cross-cutting concerns.
+- **API Layer (Drivers):** 🔌 REST Controllers and **WebSocket (STOMP)** handlers for real-time synchronization.
+- **Infrastructure Layer (Adapters):** 💾 External concerns like **PostgreSQL** persistence (JPA) and Security configurations.
+
+---
+
+## 🚀 Getting Started & Setup
+To maintain a single source of truth, all installation and environment setup instructions are located in the main development guide:
+
+👉 [**Go to DEVELOPMENT.md for Setup Instructions**](../docs/DEVELOPMENT.md)
 
 ---
 
 ## 🛠️ Key Technical Features
-- **Modern Java 17 Features:** Utilizing **Sealed Classes** for piece types and **Records** for immutable position data.
+- **Modern Java 17 Features:** Utilizing **Sealed Classes** for piece types (ensuring exhaustive pattern matching) and **Records** for immutable state data.
 - **Real-time Synchronization:** Low-latency, bidirectional communication via **STOMP over WebSockets**.
-- **Data Integrity:** Strict validation via **JSR 380** and audit logging for every move.
-- **API Documentation:** Fully documented interactive API using **Swagger UI (OpenAPI 3)**.
-- **Testing Strategy:** 🛡️ TDD approach with **JUnit 5** and **Mockito**, focusing on 100% coverage of the Domain Rules.
+- **API Documentation:** Fully documented interactive API using **Swagger UI**.
+    - URL (local): `http://localhost:8080/swagger-ui.html`
 
 ---
 
-## 📂 Package Structure (Planned)
+## 📂 Package Structure (DDD Oriented)
 ```text
 com.batuhan.chess
 ├── api             # Controllers, WebSocket Handlers & DTOs
 ├── application     # Use Cases & Application Services
-├── domain          # Entities, Value Objects, Rules (Pure Java)
-│   ├── model       # Board, Piece, Move
-│   └── service     # Pure Domain Logic (Rule Engine)
-├── infrastructure  # DB Config, Security & Repository Adapters
-├── common          # Shared Constants & Thread-safe Utilities
-└── exception       # Centralized @ControllerAdvice
+├── domain          # Pure Java Entities & Rule Engine
+│   ├── model       # Board, Piece (Sealed), Move, Square
+│   └── service     # Pure Domain Logic (Movement Rules)
+├── infrastructure  # DB Persistence, Security & Repository Adapters
+└── common          # Shared Constants, Utilities & Exception Handling
+└── exception       # Centralized Error Handling
 ```
 
-## 🚦 Local Development
-This project is built using **Amazon Corretto 17** and **Maven 3.x**. Follow these steps to set up the backend environment.
+## 🧪 Testing Strategy
+Our testing methodology focuses on **Domain Integrity**. Since the core logic is decoupled from the framework, we achieve high-speed execution and reliable validation.
 
-### 1. Prerequisites
-- **JDK 17:** [Amazon Corretto 17](https://aws.amazon.com/corretto/) is recommended.
-- **Database:** PostgreSQL for production-ready persistence.
-- **Environment:** Create a `.env` file in the `chess-backend/` root directory.
+* **Logic Validation:** All move rules, piece behaviors, and board invariants are verified using **JUnit 5** and **Mockito**.
+* **Zero-Side-Effect Testing:** We utilize an **H2 In-memory database** for integration tests to ensure clean, isolated test environments without affecting the local PostgreSQL instance.
+* **Scenario Testing:** The engine supports flexible board initialization, allowing us to test complex end-game states (Checkmate, Stalemate, Castling) in complete isolation.
+* **Continuous Integration:** Tests are automatically executed via **GitHub Actions** on every push to ensure no regressions are introduced.
 
-### 2. Environment Setup
-Create a `.env` file (see `.env.example`) with the following variables:
-```text
-CHESS_DB_URL=jdbc:postgresql://localhost:5432/chess_db
-CHESS_DB_USERNAME=your_username
-CHESS_DB_PASSWORD=your_password
-```
-
-### 3. Build & Run
-Ensure you are in the `chess-backend/` directory before executing these commands:
-
-```bash
-# Clean previous builds and install dependencies
-./mvnw clean install
-
-# Run the Spring Boot application
-./mvnw spring-boot:run
-```
-
-### 4. API Documentation & Interactive UI
-Once the application is running, you can explore and test the endpoints via the integrated **OpenAPI 3.0** documentation:
-- **Interactive Swagger UI:** [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
-- **Raw API Definition (JSON):** [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
+> 💡 For detailed instructions on how to run the test suite, please refer to the [**Setup & Development Guide**](../docs/DEVELOPMENT.md).
 
 ---
-
-### 5. Running the Test Suite
-This project follows a **TDD-ready** approach. To verify the integrity of the **Domain Rules** and **Service Layers** using the H2 in-memory database, execute:
-```bash
-./mvnw test
-```
 
 ## 📂 Engineering Focus Areas
-This backend is not just a game server; it is a technical showcase of high-standard software development practices.
+This backend serves as a technical showcase for modern software engineering standards:
 
-* **Domain Purity:** The core chess engine is written in **Pure Java**, keeping the complex business rules (moves, checkmates, etc.) completely decoupled from the Spring Boot framework for maximum portability and testability.
-* **Clean Code & SOLID:** Every class is designed with a **Single Responsibility**, ensuring the system remains maintainable as complex rules (like En Passant or Castling) are added.
-* **High-Performance Logic:** Optimized board state representations and move-validation algorithms to ensure sub-millisecond response times for real-time play.
-* **Thread Safety:** Carefully engineered to handle concurrent game sessions and asynchronous **WebSocket** synchronization without data races.
-* **Hexagonal Architecture:** Adapters (Database, API) are kept at the periphery, protecting the "Inner Circle" (Domain) from external changes.
-
----
-
-## ⭐ Support the Backend Development
-If you're interested in the architectural decisions or the chess logic:
-1.  **Check the Tests:** Explore `src/test/java` to see the TDD approach in action.
-2.  **Read the Changelog:** Follow the daily commits to see how the Domain Layer evolves.
-3.  **Star the Repo:** Stay updated as we move into Phase 3 (Rule Engine).
+* **Domain Purity:** Framework-agnostic "Pure Java" core for maximum testability and long-term maintainability.
+* **Sealed Piece Hierarchy:** Leveraging Java 17 `sealed` types to provide compile-time safety and prevent illegal piece extensions.
+* **Hexagonal Alignment:** Clear boundaries between business rules (Domain) and technical implementations (Infrastructure).
+* **Record-Based Data Flow:** Using Java **Records** for DTOs to guarantee immutability across system layers.
 
 ---
-*Built with professional intent and a focus on Scalable Software Design.*
+*Maintained with professional intent and a focus on Scalable Software Design.*

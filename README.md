@@ -1,98 +1,72 @@
 # ♟️ Chess Platform (Full-Stack Monorepo) ♔
 
-![Social Preview](docs/assets/social-preview.png)
-
-### ⚙️ Backend Stack
-![Java 17](https://img.shields.io/badge/Java-17-orange?style=for-the-badge&logo=openjdk&logoColor=white) ![Spring Boot 3.4.6](https://img.shields.io/badge/Spring_Boot-3.4.6-green?style=for-the-badge&logo=springboot&logoColor=white) ![Maven](https://img.shields.io/badge/Maven-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white) ![H2](https://img.shields.io/badge/H2_Database-4479A1?style=for-the-badge)
-
-### 🎨 Frontend & Tools
-![React 19](https://img.shields.io/badge/React-19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white) ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white) ![WebSocket](https://img.shields.io/badge/WebSocket-STOMP-blue?style=for-the-badge) ![Swagger/OpenAPI](https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)
+**A high-performance, real-time chess ecosystem engineered with a focus on Domain-Driven Design (DDD), Clean Architecture, and Modern Java 17 standards.**
 
 ---
 
-**A professional, real-time chess ecosystem built with a focus on Domain-Driven Design (DDD), Clean Architecture, and Modern Java 17 standards.**
+![Social Preview](docs/assets/social-preview.png)
+
+### 🛠️ Technology Stack
+
+**Backend:**
+![Java 17](https://img.shields.io/badge/Java-17-orange?style=flat-square&logo=openjdk&logoColor=white)
+![Spring Boot 3.4.6](https://img.shields.io/badge/Spring_Boot-3.4.6-green?style=flat-square&logo=springboot&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![JUnit 5](https://img.shields.io/badge/JUnit_5-C2185B?style=flat-square&logo=junit5&logoColor=white)
+![Mockito](https://img.shields.io/badge/Mockito-Testing-yellowgreen?style=flat-square)
+
+**Frontend:**
+![React 19](https://img.shields.io/badge/React-19-20232A?style=flat-square&logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)
+![WebSocket](https://img.shields.io/badge/WebSocket-STOMP-blue?style=flat-square)
 
 ---
 
 ## 🏛️ Project Ecosystem & Governance
-This is a high-cohesion monorepo. I have established a professional workflow to ensure code quality and transparency.
+This project is architected as a **high-cohesion monorepo**. Operational processes and architectural decisions are managed through the following modules:
 
-| Module / Document | Purpose | Key Technologies |
-| :--- | :--- | :--- |
-| [**⚙️ Backend**](./chess-backend/README.md) | Core Engine | Java 17, Spring Boot 3.4.6, JUnit 5 |
-| [**🎨 Frontend**](./chess-frontend/README.md) | User Interface | React 19, TypeScript, Tailwind CSS |
-| [**🚀 Git Guide**](./GIT_GUIDE.md) | Deployment & Workflow | **Standardized Git Flow & Commits** |
-| [**📂 Documentation**](./docs/) | Schemas & Diagrams | **Refer to this for database & architecture.** |
-| [**📜 Changelog**](./CHANGELOG.md) | Progress Tracking | **Check this to see my daily evolution.** |
-| [**🛡️ Security**](./SECURITY.md) | Safety Protocols | Responsible Disclosure & Practices |
-| [**🤝 Contributing**](./CONTRIBUTING.md) | Collaboration | Coding Standards & Git Flow |
-
----
-
-## 🎯 Engineering Philosophy
-While the rules of chess are centuries old, the objective of this project is to model this complexity using **High-Level Software Engineering** standards. This platform serves as a practical implementation of:
-
-* **Advanced OOP & Design Patterns:** Beyond basic inheritance; utilizing **Strategy** for move validation, **Factory** for piece creation, and **Observer** for real-time state updates.
-* **Concurrency & Thread Safety:** Handling real-time game states and WebSocket sessions with safe multi-threading practices to ensure data integrity during simultaneous moves.
-* **Modern Java 17 Standards:** Deep dive into **Sealed Classes** to strictly define piece hierarchies and **Records** for immutable value objects.
-* **Clean Architecture & DDD:** A "Pure Java" domain layer, completely decoupled from Spring Boot or any external framework, ensuring the core logic is 100% testable and reusable.
-* **Reliability:** A TDD-ready approach supported by a dual-database strategy (PostgreSQL for persistence / H2 for lightning-fast unit testing).
+| Module / Document | Purpose & Brief | Location |
+|:--- | :--- | :--- |
+| **⚙️ Backend** | Core Chess Engine, API endpoints & Move validation logic | [`./chess-backend`](./chess-backend/README.md) |
+| **🎨 Frontend** | Reactive UI components & Real-time board state management | [`./chess-frontend`](./chess-frontend/README.md) |
+| **🏗️ Architecture** | High-level design choices (Hexagonal, DDD) & Tech patterns | [`./docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) |
+| **🚀 Setup Guide** | Comprehensive local environment & Dependency installation | [`./docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md) |
+| **📝 Git Flow** | Contribution workflow, Branching strategy & Commit standards | [`./.github/GIT_GUIDE.md`](./.github/GIT_GUIDE.md) |
+| **📜 Changelog** | Daily Evolution, version tracking & project milestones | [`./docs/CHANGELOG.md`](./docs/CHANGELOG.md) |
+| **🛡️ Security** | Security policies, safety disclosure & best practices | [`./docs/SECURITY.md`](./docs/SECURITY.md) |
+| **🤝 Contributing** | Coding standards, PR guidelines & collaboration rules | [`./docs/CONTRIBUTING.md`](./docs/CONTRIBUTING.md) |
 
 ---
 
-## 🚀 Development Roadmap
+## 🎯 Engineering Highlights
+
+### 🧩 Domain-Driven Design (DDD)
+The core chess logic is encapsulated in a **Pure Java** domain layer, entirely decoupled from Spring Boot or any infrastructure. This ensures 100% testability of the move validation engine.
+
+### ⚡ Modern Java 17 Standards
+* **Sealed Classes:** Used for the `Piece` hierarchy to enforce exhaustive pattern matching.
+* **Records:** Utilized for immutable Game State snapshots and DTOs.
+
+### 🔄 Real-Time System
+* **WebSockets (STOMP):** Low-latency, bi-directional move transmission.
+* **Dual-Database Strategy:** **PostgreSQL** for persistence, **H2** for isolated unit testing.
+
+---
+
+## 🚀 Roadmap
 *Current Status: **Phase 2: Domain Modeling***
 
-- ✅ **Phase 1: Foundation** - Monorepo scaffolding, environment management, and database initialization.
-- ⏳ **Phase 2: Domain Modeling** - Piece-specific logic, movement rules, and board representation.
-- ⏳ **Phase 3: Rule Engine** - Complex validation (Checkmate, Stalemate, Castling, En Passant).
-- ⏳ **Phase 4: Multi-player** - WebSocket integration and session management.
-- ⏳ **Phase 5: UI Integration** - Responsive board UI and real-time state management.
+- ✅ **Phase 1: Foundation** - Monorepo scaffolding, CI/CD pipelines, and database initialization.
+- 🏗️ **Phase 2: Domain Modeling** - Implementing Sealed Piece hierarchy and Board state management.
+- ⏳ **Phase 3: Rule Engine** - Complex move validation (Checkmate, Stalemate, Castling, En Passant).
+- ⏳ **Phase 4: Real-time Sync** - WebSocket (STOMP) integration for live move transmission.
+- ⏳ **Phase 5: UI & UX** - Responsive board interface with React 19 and real-time state synchronization.
 
 ---
 
-## 🚦 Getting Started & Local Setup
-**Prerequisites:** Amazon Corretto 17, Node.js (LTS), and a `.env` file in the root.
-
-### 1. Installation
-```bash
-# Clone the repository
-git clone https://github.com/BatuhanBaysal/chess-platform.git
-
-# Setup Backend
-cd chess-backend && ./mvnw install
-
-# Setup Frontend
-cd chess-frontend && npm install
-```
-
----
-
-### 2. Running the App
-* **Backend:** Run `ChessApplication.java` via IntelliJ IDEA or use the command:
-    ```bash
-    cd chess-backend && ./mvnw spring-boot:run
-    ```
-* **Frontend:** Run the development server in the frontend directory:
-    ```bash
-    cd chess-frontend && npm run dev
-    ```
-
----
-
-## ⭐ Support the Journey
-If you find this project's architecture or implementation helpful, feel free to engage:
-1.  **Fork** the project to experiment with the chess logic or add your own rules.
-2.  Give it a **Star** to show your support and stay updated.
-3.  Check the [**CHANGELOG.md**](./CHANGELOG.md) to follow my daily progress, architectural decisions, and Phase 2 updates.
-
----
 ## 👨‍💻 Developed By
-**Batuhan Baysal** - *Software Developer* *Always building, always learning, and always open to feedback.*
+**Batuhan Baysal** - *Software Engineer* *Specializing in Scalable Software Design and Modern Backend Architectures.*
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/in/batuhan-baysal) [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/BatuhanBaysal) [![Gmail](https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:batuhanbaysal3@gmail.com)
-
-> 📧 **Direct Contact:** batuhanbaysal3@gmail.com
-
----
-*Built with professional intent and a focus on Scalable Software Design.*

@@ -11,7 +11,7 @@ public class GameTest {
 
     @BeforeEach
     void setUp() {
-        game = new Game();
+        game = new Game(new Board(true));
     }
 
     @Test
@@ -81,5 +81,65 @@ public class GameTest {
         assertThat(moved).isFalse();
         assertThat(game.getStatus()).isEqualTo(GameStatus.RESIGNED);
         assertThat(game.getCurrentTurn()).isEqualTo(Color.WHITE);
+    }
+
+    @Test
+    @DisplayName("Should detect when a King is in check.")
+    void shouldDetectCheck() {
+        game.getBoard().clearBoard();
+
+        Position kingPos = new Position(4, 0); // e1
+        Position rookPos = new Position(4, 7); // e8
+
+        game.getBoard().setPieceAt(kingPos, new King(Color.WHITE, kingPos));
+        game.getBoard().setPieceAt(rookPos, new Rook(Color.BLACK, rookPos));
+
+        assertThat(game.isInCheck(Color.WHITE)).isTrue();
+    }
+
+    @Test
+    @DisplayName("Should detect checkmate (Fool's Mate scenario).")
+    void shouldDetectCheckmate() {
+        game.makeMove(new Position(5, 1), new Position(5, 2)); // f3
+        game.makeMove(new Position(4, 6), new Position(4, 4)); // e5
+        game.makeMove(new Position(6, 1), new Position(6, 3)); // g4
+        game.makeMove(new Position(3, 7), new Position(7, 3)); // h4
+
+        assertThat(game.getStatus()).isEqualTo(GameStatus.CHECKMATE);
+    }
+
+    @Test
+    @DisplayName("Should not allow a move that leaves the King in check (Self-Check).")
+    void shouldPreventSelfCheck() {
+        // Arrange
+        game.getBoard().clearBoard();
+        Position kingPos = new Position(4, 0); // e1
+        Position bishopPos = new Position(4, 1); // e2
+        Position enemyRookPos = new Position(4, 7); // e8
+
+        game.getBoard().setPieceAt(kingPos, new King(Color.WHITE, kingPos));
+        game.getBoard().setPieceAt(bishopPos, new Bishop(Color.WHITE, bishopPos));
+        game.getBoard().setPieceAt(enemyRookPos, new Rook(Color.BLACK, enemyRookPos));
+
+        // Act
+        boolean moved = game.makeMove(bishopPos, new Position(3, 2));
+
+        // Assert
+        assertThat(moved).isFalse();
+        assertThat(game.getBoard().getPiece(bishopPos)).isPresent();
+    }
+
+    @Test
+    @DisplayName("Should not allow moving to a square occupied by a friendly piece.")
+    void shouldNotCaptureFriendlyPiece() {
+        // Arrange
+        Position pawnStart = new Position(4, 1); // e2
+        Position targetPos = new Position(3, 0); // d1
+
+        // Act
+        boolean moved = game.makeMove(pawnStart, targetPos);
+
+        // Assert
+        assertThat(moved).isFalse();
     }
 }

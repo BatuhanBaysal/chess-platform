@@ -1,5 +1,7 @@
 package com.batuhan.chess.domain.model;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -48,6 +50,35 @@ public class Board {
         squares[position.file()][position.rank()] = piece;
         if (piece != null) {
             piece.setPosition(position);
+        }
+    }
+
+    /**
+     * Scans the entire board and returns a list of all active pieces.
+     * @return A list containing all pieces currently on the board.
+     */
+    public List<Piece> findAllPieces() {
+        List<Piece> allPieces = new ArrayList<>();
+        for (int file = 0; file < 8; file++) {
+            for (int rank = 0; rank < 8; rank++) {
+                Piece piece = squares[file][rank];
+                if (piece != null) {
+                    allPieces.add(piece);
+                }
+            }
+        }
+        return allPieces;
+    }
+
+    /**
+     * Removes all pieces from the board.
+     * Primarily used for setting up custom scenarios in unit tests.
+     */
+    public void clearBoard() {
+        for (int f = 0; f < 8; f++) {
+            for (int r = 0; r < 8; r++) {
+                squares[f][r] = null;
+            }
         }
     }
 

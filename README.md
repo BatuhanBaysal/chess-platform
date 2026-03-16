@@ -55,14 +55,17 @@ The core chess logic is encapsulated in a **Pure Java** domain layer, entirely d
 
 ---
 
-## 🚀 Roadmap
-*Current Status: **Phase 2: Domain Modeling***
+## 🚀 Development Roadmap
+*Current Status: **Phase 3: Rule Engine (Upcoming)***
 
-- ✅ **Phase 1: Foundation** - Monorepo scaffolding, CI/CD pipelines, and database initialization.
-- 🏗️ **Phase 2: Domain Modeling** - Implementing Sealed Piece hierarchy and Board state management.
-- ⏳ **Phase 3: Rule Engine** - Complex move validation (Checkmate, Stalemate, Castling, En Passant).
-- ⏳ **Phase 4: Real-time Sync** - WebSocket (STOMP) integration for live move transmission.
-- ⏳ **Phase 5: UI & UX** - Responsive board interface with React 19 and real-time state synchronization.
+- ✅ **Phase 1: Foundation** - Monorepo scaffolding and environment setup.
+- ✅ **Phase 2: Domain Modeling** - Piece-specific logic, board initialization, and turn management.
+- 🏗️ **Phase 3: Rule Engine** -
+    - ⏳ Check/Checkmate detection.
+    - ⏳ Special moves (Castling, En Passant).
+    - ⏳ Draw conditions (Stalemate, Threefold repetition).
+- ⏳ **Phase 4: Multi-player** - WebSocket integration.
+- ⏳ **Phase 5: UI Integration** - React board development.
 
 ---
 

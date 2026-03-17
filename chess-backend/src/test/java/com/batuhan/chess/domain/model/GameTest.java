@@ -142,4 +142,32 @@ public class GameTest {
         // Assert
         assertThat(moved).isFalse();
     }
+
+    @Test
+    @DisplayName("Pawn should automatically promote to Queen when reaching the last rank.")
+    void shouldPromotePawnToQueen() {
+        // Arrange
+        game.getBoard().clearBoard();
+
+        Position whiteKingPos = new Position(0, 0);
+        Position blackKingPos = new Position(7, 7);
+        game.getBoard().setPieceAt(whiteKingPos, new King(Color.WHITE, whiteKingPos));
+        game.getBoard().setPieceAt(blackKingPos, new King(Color.BLACK, blackKingPos));
+
+        Position start = new Position(4, 6); // e7
+        Position end = new Position(4, 7);   // e8
+        game.getBoard().setPieceAt(start, new Pawn(Color.WHITE, start));
+
+        // Act
+        boolean moved = game.makeMove(start, end);
+
+        // Assert
+        assertThat(moved).isTrue();
+        Piece promotedPiece = game.getBoard().getPiece(end)
+            .orElseThrow(() -> new AssertionError("Piece should exist at promotion square"));
+
+        assertThat(promotedPiece.getType()).isEqualTo(PieceType.QUEEN);
+        assertThat(promotedPiece.getColor()).isEqualTo(Color.WHITE);
+        assertThat(game.getBoard().getPiece(start)).isEmpty();
+    }
 }

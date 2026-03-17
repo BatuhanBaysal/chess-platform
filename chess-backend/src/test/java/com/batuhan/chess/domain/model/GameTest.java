@@ -149,8 +149,8 @@ public class GameTest {
         // Arrange
         game.getBoard().clearBoard();
 
-        Position whiteKingPos = new Position(0, 0);
-        Position blackKingPos = new Position(7, 7);
+        Position whiteKingPos = new Position(0, 0); // a1
+        Position blackKingPos = new Position(7, 7); // h8
         game.getBoard().setPieceAt(whiteKingPos, new King(Color.WHITE, whiteKingPos));
         game.getBoard().setPieceAt(blackKingPos, new King(Color.BLACK, blackKingPos));
 
@@ -169,5 +169,103 @@ public class GameTest {
         assertThat(promotedPiece.getType()).isEqualTo(PieceType.QUEEN);
         assertThat(promotedPiece.getColor()).isEqualTo(Color.WHITE);
         assertThat(game.getBoard().getPiece(start)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Should execute Kingside castling correctly.")
+    void shouldExecuteKingsideCastling() {
+        // Arrange
+        game.getBoard().clearBoard();
+        Position kingStart = new Position(4, 0); // e1
+        Position rookStart = new Position(7, 0); // h1
+        Position kingEnd = new Position(6, 0);   // g1
+        Position rookEnd = new Position(5, 0);   // f1
+
+        game.getBoard().setPieceAt(kingStart, new King(Color.WHITE, kingStart));
+        game.getBoard().setPieceAt(rookStart, new Rook(Color.WHITE, rookStart));
+
+        Position blackKingPos = new Position(4, 7); // e8
+        game.getBoard().setPieceAt(blackKingPos, new King(Color.BLACK, blackKingPos));
+
+        // Act
+        boolean moved = game.makeMove(kingStart, kingEnd);
+
+        // Assert
+        assertThat(moved).isTrue();
+        assertThat(game.getBoard().getPiece(kingEnd).get().getType()).isEqualTo(PieceType.KING);
+        assertThat(game.getBoard().getPiece(rookEnd).get().getType()).isEqualTo(PieceType.ROOK);
+        assertThat(game.getBoard().getPiece(kingStart)).isEmpty();
+        assertThat(game.getBoard().getPiece(rookStart)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Should not allow castling if the path is obstructed.")
+    void shouldNotCastleIfPathIsObstructed() {
+        // Arrange
+        game.getBoard().clearBoard();
+        Position kingStart = new Position(4, 0); // e1
+        Position rookStart = new Position(7, 0); // g1
+        Position bishopObstructing = new Position(5, 0); // f1
+
+        game.getBoard().setPieceAt(kingStart, new King(Color.WHITE, kingStart));
+        game.getBoard().setPieceAt(rookStart, new Rook(Color.WHITE, rookStart));
+        game.getBoard().setPieceAt(bishopObstructing, new Bishop(Color.WHITE, bishopObstructing));
+
+        Position blackKingPos = new Position(4, 7); // e8
+        game.getBoard().setPieceAt(blackKingPos, new King(Color.BLACK, blackKingPos));
+
+        // Act
+        boolean moved = game.makeMove(kingStart, new Position(6, 0)); // g1
+
+        // Assert
+        assertThat(moved).isFalse();
+    }
+
+    @Test
+    @DisplayName("Should not allow castling if the King has already moved.")
+    void shouldNotCastleIfKingHasMoved() {
+        // Arrange
+        game.getBoard().clearBoard();
+        Position kingStart = new Position(4, 0); // e1
+        Position rookStart = new Position(7, 0); // h1
+
+        King king = new King(Color.WHITE, kingStart);
+        king.setHasMoved(true);
+
+        game.getBoard().setPieceAt(kingStart, king);
+        game.getBoard().setPieceAt(rookStart, new Rook(Color.WHITE, rookStart));
+
+        Position blackKingPos = new Position(4, 7); // e8
+        game.getBoard().setPieceAt(blackKingPos, new King(Color.BLACK, blackKingPos));
+
+        // Act
+        boolean moved = game.makeMove(kingStart, new Position(6, 0)); // g1
+
+        // Assert
+        assertThat(moved).isFalse();
+    }
+
+    @Test
+    @DisplayName("Should not allow castling if the King would pass through a square under attack.")
+    void shouldNotCastleThroughAttack() {
+        // Arrange
+        game.getBoard().clearBoard();
+        Position kingStart = new Position(4, 0); // e1
+        Position rookStart = new Position(7, 0); // h1
+
+        game.getBoard().setPieceAt(kingStart, new King(Color.WHITE, kingStart));
+        game.getBoard().setPieceAt(rookStart, new Rook(Color.WHITE, rookStart));
+
+        Position enemyRookPos = new Position(5, 7); // f8
+        game.getBoard().setPieceAt(enemyRookPos, new Rook(Color.BLACK, enemyRookPos));
+
+        Position blackKingPos = new Position(4, 7); // e8
+        game.getBoard().setPieceAt(blackKingPos, new King(Color.BLACK, blackKingPos));
+
+        // Act
+        boolean moved = game.makeMove(kingStart, new Position(6, 0)); // g1
+
+        // Assert
+        assertThat(moved).isFalse();
     }
 }

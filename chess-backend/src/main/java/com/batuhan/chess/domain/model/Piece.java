@@ -10,6 +10,7 @@ public abstract sealed class Piece
     protected final Color color;
     protected final PieceType type;
     protected Position position;
+    protected boolean hasMoved = false;
 
     protected Piece(Color color, PieceType type, Position position) {
         this.color = color;
@@ -29,11 +30,16 @@ public abstract sealed class Piece
         return position;
     }
 
-    /**
-     * Updates the position of the piece after a move.
-     */
     public void setPosition(Position position) {
         this.position = position;
+    }
+
+    public boolean hasMoved() {
+        return hasMoved;
+    }
+
+    public void setHasMoved(boolean hasMoved) {
+        this.hasMoved = hasMoved;
     }
 
     /**

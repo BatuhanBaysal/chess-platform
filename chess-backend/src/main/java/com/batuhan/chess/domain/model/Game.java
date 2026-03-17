@@ -103,7 +103,19 @@ public class Game {
 
     private void executeMove(Position start, Position end, Piece piece) {
         board.setPieceAt(start, null);
-        board.setPieceAt(end, piece);
+        if (isPromotionSituation(piece, end)) {
+            board.setPieceAt(end, new Queen(piece.getColor(), end));
+        } else {
+            board.setPieceAt(end, piece);
+        }
+    }
+
+    private boolean isPromotionSituation(Piece piece, Position end) {
+        if (piece.getType() != PieceType.PAWN) {
+            return false;
+        }
+        int promotionRank = (piece.getColor() == Color.WHITE) ? 7 : 0;
+        return end.rank() == promotionRank;
     }
 
     private void switchTurn() {

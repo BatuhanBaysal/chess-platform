@@ -268,4 +268,87 @@ public class GameTest {
         // Assert
         assertThat(moved).isFalse();
     }
+
+    @Test
+    @DisplayName("Should execute En Passant capture correctly.")
+    void shouldExecuteEnPassant() {
+        // Arrange
+        game.getBoard().clearBoard();
+        Position whitePawnStart = new Position(4, 4); // e5
+        Position blackPawnStart = new Position(3, 6); // d7
+        Position blackPawnDoubleJump = new Position(3, 4); // d5
+        Position whitePawnEnd = new Position(3, 5); // d6
+
+        game.getBoard().setPieceAt(whitePawnStart, new Pawn(Color.WHITE, whitePawnStart));
+        game.getBoard().setPieceAt(blackPawnStart, new Pawn(Color.BLACK, blackPawnStart));
+
+        game.getBoard().setPieceAt(new Position(0,0), new King(Color.WHITE, new Position(0,0)));
+        game.getBoard().setPieceAt(new Position(7,7), new King(Color.BLACK, new Position(7,7)));
+
+        // Act
+        game.makeMove(new Position(0,0), new Position(0,0));
+        game = new Game(new Board(false));
+        game.getBoard().setPieceAt(new Position(0,0), new King(Color.WHITE, new Position(0,0)));
+        game.getBoard().setPieceAt(new Position(7,7), new King(Color.BLACK, new Position(7,7)));
+        game.getBoard().setPieceAt(whitePawnStart, new Pawn(Color.WHITE, whitePawnStart));
+        game.getBoard().setPieceAt(blackPawnStart, new Pawn(Color.BLACK, blackPawnStart));
+
+        game.resign(Color.BLACK);
+    }
+
+    @Test
+    @DisplayName("Should execute En Passant sequence correctly.")
+    void shouldExecuteEnPassantSequence() {
+        game.makeMove(new Position(4, 1), new Position(4, 3));
+        game.makeMove(new Position(0, 6), new Position(0, 5));
+        game.makeMove(new Position(4, 3), new Position(4, 4));
+        game.makeMove(new Position(3, 6), new Position(3, 4));
+
+        // Act
+        boolean moved = game.makeMove(new Position(4, 4), new Position(3, 5));
+
+        // Assert
+        assertThat(moved).isTrue();
+        assertThat(game.getBoard().getPiece(new Position(3, 4))).isEmpty();
+        assertThat(game.getBoard().getPiece(new Position(3, 5)).get().getType()).isEqualTo(PieceType.PAWN);
+    }
+
+    @Test
+    @DisplayName("Should update status and prevent moves after a player resigns.")
+    void shouldHandleResignation() {
+        game.resign(Color.WHITE);
+        assertThat(game.getStatus()).isEqualTo(GameStatus.RESIGNED);
+        boolean moved = game.makeMove(new Position(4, 1), new Position(4, 3));
+        assertThat(moved).isFalse();
+    }
+
+    @Test
+    @DisplayName("Should detect Stalemate correctly.")
+    void shouldDetectStalemate() {
+        // Arrange
+        game.getBoard().clearBoard();
+
+        Position whiteKingPos = new Position(0, 0);
+        Position blackQueenPos = new Position(1, 2);
+
+        game.getBoard().setPieceAt(whiteKingPos, new King(Color.WHITE, whiteKingPos));
+        game.getBoard().setPieceAt(blackQueenPos, new Queen(Color.BLACK, blackQueenPos));
+
+        // Act
+        boolean isInCheck = game.isInCheck(Color.WHITE);
+        boolean hasLegalMove = false;
+        for (int f = 0; f < 2; f++) {
+            for (int r = 0; r < 2; r++) {
+                Position target = new Position(f, r);
+                if (!target.equals(whiteKingPos) && game.makeMove(whiteKingPos, target)) {
+                    hasLegalMove = true;
+                    break;
+                }
+            }
+        }
+
+        // Assert
+        assertThat(isInCheck).as("White King should NOT be in check").isFalse();
+        assertThat(hasLegalMove).as("White should have NO legal moves").isFalse();
+    }
 }

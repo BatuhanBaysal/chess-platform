@@ -12,7 +12,7 @@ The core engine of the Chess Platform, designed with **Domain-Driven Design (DDD
 ## 🏛️ Internal Architecture & Layers
 This module follows a strict separation of concerns to keep the **Chess Logic** isolated from technical frameworks:
 
-- **Domain Layer (The Core):** 🧠 The "Brain" of the project. Contains `Piece` hierarchies (standardized via **Java 17 Sealed Classes**), movement validation, and `Board` state. **Pure Java, zero dependencies**.
+- **Domain Layer (The Core):** 🧠 A framework-agnostic **FIDE-compliant Chess Engine**. Handles move validation, King safety simulations, and complex game-ending conditions (Checkmate, Stalemate, Threefold Repetition). **Pure Java, zero dependencies.**
 - **Application Layer (Services):** 🔄 Orchestrates use cases like starting games and making moves. Handles transaction management and cross-cutting concerns.
 - **API Layer (Drivers):** 🔌 REST Controllers and **WebSocket (STOMP)** handlers for real-time synchronization.
 - **Infrastructure Layer (Adapters):** 💾 External concerns like **PostgreSQL** persistence (JPA) and Security configurations.
@@ -27,10 +27,10 @@ To maintain a single source of truth, all installation and environment setup ins
 ---
 
 ## 🛠️ Key Technical Features
+- **FIDE-Compliant Rule Engine:** Complete implementation of chess rules including Checkmate, Stalemate, 50-move rule, and Threefold Repetition.
+- **Simulative Validation:** Sophisticated move-safety checks using temporary state simulation (`try-finally` rollback) to detect check/self-check scenarios.
 - **Modern Java 17 Features:** Utilizing **Sealed Classes** for piece types (ensuring exhaustive pattern matching) and **Records** for immutable state data.
-- **Real-time Synchronization:** Low-latency, bidirectional communication via **STOMP over WebSockets**.
-- **API Documentation:** Fully documented interactive API using **Swagger UI**.
-    - URL (local): `http://localhost:8080/swagger-ui.html`
+- **Real-time Synchronization (Phase 4 - In Progress):** Low-latency, bidirectional communication via **STOMP over WebSockets**.
 
 ---
 
@@ -51,8 +51,8 @@ com.batuhan.chess
 Our testing methodology focuses on **Domain Integrity**. Since the core logic is decoupled from the framework, we achieve high-speed execution and reliable validation.
 
 * **Logic Validation:** All move rules, piece behaviors, and board invariants are verified using **JUnit 5** and **Mockito**.
-* **Zero-Side-Effect Testing:** We utilize an **H2 In-memory database** for integration tests to ensure clean, isolated test environments without affecting the local PostgreSQL instance.
-* **Scenario Testing:** The engine supports flexible board initialization, allowing us to test complex end-game states (Checkmate, Stalemate, Castling) in complete isolation.
+* **Advanced Rule Coverage:** Comprehensive test suite for complex FIDE rules (Castling, En Passant, Promotion) using **AAA (Arrange-Act-Assert)** patterns.
+* **Scenario Testing:** The engine supports flexible board initialization, allowing us to test complex end-game states in complete isolation.
 * **Continuous Integration:** Tests are automatically executed via **GitHub Actions** on every push to ensure no regressions are introduced.
 
 > 💡 For detailed instructions on how to run the test suite, please refer to the [**Setup & Development Guide**](../docs/DEVELOPMENT.md).

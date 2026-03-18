@@ -90,6 +90,19 @@ public class Board {
         return squares;
     }
 
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (int r = 0; r < 8; r++) {
+            for (int f = 0; f < 8; f++) {
+                sb.append(getPiece(new Position(f, r))
+                    .map(p -> p.getColor().name().substring(0,1) + p.getType().name().substring(0,1))
+                    .orElse("--"));
+            }
+        }
+        return sb.toString();
+    }
+
     // --- Private Helper Methods for Initialization ---
     private void initializeBoard() {
         setupMajorPieces(Color.BLACK, 7);

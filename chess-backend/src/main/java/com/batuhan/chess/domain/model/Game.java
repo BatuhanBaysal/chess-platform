@@ -1,5 +1,8 @@
 package com.batuhan.chess.domain.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Domain entity representing a chess game session.
  * Orchestrates movement validation, turn management, and game status updates.
@@ -11,6 +14,9 @@ public class Game {
     private GameStatus status;
     private Move lastMove;
 
+    private final List<String> boardHistory = new ArrayList<>();
+    private int halfMoveClock = 0;
+
     private static final int WHITE_PROMOTION_RANK = 7;
     private static final int BLACK_PROMOTION_RANK = 0;
 
@@ -18,6 +24,7 @@ public class Game {
         this.board = board;
         this.currentTurn = Color.WHITE;
         this.status = GameStatus.ACTIVE;
+        this.boardHistory.add(board.toString() + "|WHITE");
     }
 
     /**
@@ -99,6 +106,7 @@ public class Game {
      * Handles King/Rook relocation for Castling and Pawn removal for En Passant.
      */
     private void executeMove(Position start, Position end, Piece piece) {
+        updateDrawConditions(piece, end);
         board.setPieceAt(start, null);
 
         // Handle side effects of special moves
@@ -117,6 +125,29 @@ public class Game {
 
         this.lastMove = new Move(start, end, piece);
         piece.setHasMoved(true);
+    }
+
+    private void updateDrawConditions(Piece piece, Position end) {
+        if (piece.getType() == PieceType.PAWN || board.getPiece(end).isPresent()) {
+            halfMoveClock = 0;
+            boardHistory.clear();
+        } else {
+            halfMoveClock++;
+        }
+
+        String currentBoardState = board.toString() + "|" + currentTurn.name();
+        boardHistory.add(currentBoardState);
+    }
+
+    private boolean isDraw() {
+        if (halfMoveClock >= 100) return true;
+
+        String currentPosition = board.toString() + "|" + currentTurn.name();
+        long occurrences = boardHistory.stream()
+            .filter(state -> state.equals(currentPosition))
+            .count();
+
+        return occurrences >= 3;
     }
 
     // --- Special Rule Helpers ---
@@ -184,8 +215,12 @@ public class Game {
     private void updateGameStatus() {
         if (isInCheck(currentTurn)) {
             status = isCheckmate(currentTurn) ? GameStatus.CHECKMATE : GameStatus.CHECK;
+        } else if (isStalemate(currentTurn)) {
+            status = GameStatus.STALEMATE;
+        } else if (isDraw()) {
+            status = GameStatus.DRAW;
         } else {
-            status = isStalemate(currentTurn) ? GameStatus.STALEMATE : GameStatus.ACTIVE;
+            status = GameStatus.ACTIVE;
         }
     }
 

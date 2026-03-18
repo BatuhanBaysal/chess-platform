@@ -351,4 +351,53 @@ public class GameTest {
         assertThat(isInCheck).as("White King should NOT be in check").isFalse();
         assertThat(hasLegalMove).as("White should have NO legal moves").isFalse();
     }
+
+    @Test
+    @DisplayName("Should detect Draw by 50-Move Rule (100 half-moves without capture or pawn move).")
+    void shouldDetectDrawBy50MoveRule() {
+        // Arrange
+        game.getBoard().clearBoard();
+        Position whiteKingPos = new Position(0, 0); // a1
+        Position blackKingPos = new Position(7, 7); // h8
+        Position whiteKnightPos = new Position(1, 0); // b1
+        Position blackKnightPos = new Position(6, 7); // g8
+
+        game.getBoard().setPieceAt(whiteKingPos, new King(Color.WHITE, whiteKingPos));
+        game.getBoard().setPieceAt(blackKingPos, new King(Color.BLACK, blackKingPos));
+        game.getBoard().setPieceAt(whiteKnightPos, new Knight(Color.WHITE, whiteKnightPos));
+        game.getBoard().setPieceAt(blackKnightPos, new Knight(Color.BLACK, blackKnightPos));
+
+        for (int i = 0; i < 49; i++) {
+            game.makeMove(new Position(1, 0), new Position(2, 2));
+            game.makeMove(new Position(6, 7), new Position(5, 5));
+            game.makeMove(new Position(2, 2), new Position(1, 0));
+            game.makeMove(new Position(5, 5), new Position(6, 7));
+        }
+
+        game.makeMove(new Position(1, 0), new Position(2, 2));
+        game.makeMove(new Position(6, 7), new Position(5, 5));
+
+        // Assert
+        assertThat(game.getStatus()).isEqualTo(GameStatus.DRAW);
+        boolean movedAfterDraw = game.makeMove(new Position(2, 2), new Position(1, 0));
+        assertThat(movedAfterDraw).isFalse();
+    }
+
+    @Test
+    @DisplayName("Should detect Draw by Threefold Repetition.")
+    void shouldDetectDrawByThreefoldRepetition() {
+        game.makeMove(new Position(1, 0), new Position(2, 2));
+        game.makeMove(new Position(1, 7), new Position(2, 5));
+        game.makeMove(new Position(2, 2), new Position(1, 0));
+        game.makeMove(new Position(2, 5), new Position(1, 7));
+
+        assertThat(game.getStatus()).isEqualTo(GameStatus.ACTIVE);
+
+        game.makeMove(new Position(1, 0), new Position(2, 2));
+        game.makeMove(new Position(1, 7), new Position(2, 5));
+        game.makeMove(new Position(2, 2), new Position(1, 0));
+        game.makeMove(new Position(2, 5), new Position(1, 7));
+
+        assertThat(game.getStatus()).isEqualTo(GameStatus.DRAW);
+    }
 }

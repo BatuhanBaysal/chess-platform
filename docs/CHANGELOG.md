@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-03-18
+
+### ⚖️ Phase 3: Advanced Game Rules & Rule Engine Implementation
+> **Note:** This phase marks the transition from a simple movement engine to a fully compliant chess adjudicator. It covers FIDE special moves, King safety simulations, and all game-ending conditions.
+
+- **2026-03-18:**
+    - **Draw Rule Implementation (PR #14):**
+        - **Threefold Repetition:** Implemented `boardHistory` tracking to detect identical board states (Position + Turn).
+        - **50-Move Rule:** Integrated a `halfMoveClock` to trigger a draw after 100 consecutive half-moves without a capture or pawn advance.
+    - **Final Adjudication:** Refactored `updateGameStatus` to include automated `DRAW` detection alongside win/loss states.
+- **2026-03-18:**
+    - **En Passant Logic (PR #13):**
+        - **Temporal Capture:** Implemented the "En Passant" rule, allowing pawns to capture opponents that have just performed a double-step move.
+        - **Validation:** Added checks to ensure the capture is performed immediately following the double-step.
+- **2026-03-17:**
+    - **Castling & Path Safety (PR #12):**
+        - **King/Rook Coordination:** Developed King-side and Queen-side castling.
+        - **Safety Constraints:** Implemented path validation to prevent castling through or into check.
+    - **Pawn Promotion (PR #11):**
+        - **Transformation:** Added automatic Queen promotion when a pawn reaches the opposite end of the board.
+- **2026-03-16:**
+    - **Checkmate & Move Safety (PR #10):**
+        - **Simulation Engine:** Developed `simulateAndCheckSafety` using a `try-finally` rollback to verify that no move leaves the King in check.
+        - **End-Game Detection:** Implemented `isCheckmate` and `isStalemate` by scanning all possible legal moves under pressure.
+
+---
+
 ## [0.2.0] - 2026-03-16
 
 ### ♟️ Phase 2: Core Domain Modeling & Piece Logic

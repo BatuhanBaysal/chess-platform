@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-03-19
+
+### 🌐 Phase 4: Multiplayer Infrastructure & Real-Time Communication
+> **Note:** This phase establishes the bridge between the core domain and the outside world. It introduces a hybrid communication model using REST for orchestration and WebSockets (STOMP) for low-latency gameplay.
+
+- **2026-03-19:**
+    - **Full Infrastructure Implementation (PR #15):**
+        - **WebSocket & STOMP Engine:** Configured `WebSocketConfig` with STOMP protocol and established a `/topic/game/{gameId}` broadcast system.
+        - **API Layer:** Developed `GameRestController` for session creation and `GameWebSocketController` for real-time move processing.
+        - **Security:** Implemented `SecurityConfig` to facilitate development-phase testing by permitting `/api/**` and `/ws-chess/**` endpoints.
+        - **Session Management:** Built `GameService` to handle multi-game concurrency using `ConcurrentHashMap`.
+        - **Validation:** Successfully verified end-to-end flow via Postman (REST + WS Handshake) and documented technical assets in `docs/assets`.
+
+---
+
 ## [0.3.0] - 2026-03-18
 
 ### ⚖️ Phase 3: Advanced Game Rules & Rule Engine Implementation
@@ -12,7 +27,6 @@ All notable changes to this project will be documented in this file. This projec
         - **Threefold Repetition:** Implemented `boardHistory` tracking to detect identical board states (Position + Turn).
         - **50-Move Rule:** Integrated a `halfMoveClock` to trigger a draw after 100 consecutive half-moves without a capture or pawn advance.
     - **Final Adjudication:** Refactored `updateGameStatus` to include automated `DRAW` detection alongside win/loss states.
-- **2026-03-18:**
     - **En Passant Logic (PR #13):**
         - **Temporal Capture:** Implemented the "En Passant" rule, allowing pawns to capture opponents that have just performed a double-step move.
         - **Validation:** Added checks to ensure the capture is performed immediately following the double-step.

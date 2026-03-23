@@ -12,7 +12,7 @@ The core engine of the Chess Platform, designed with **Domain-Driven Design (DDD
 ## 🏛️ Internal Architecture & Layers
 This module follows a strict separation of concerns to keep the **Chess Logic** isolated from technical frameworks:
 
-- **Domain Layer (The Core):** 🧠 A framework-agnostic **FIDE-compliant Chess Engine**. Handles move validation, King safety simulations, and complex game-ending conditions (Checkmate, Stalemate, Threefold Repetition). **Pure Java, zero dependencies.**
+- **Domain Layer (The Core):** 🧠 A framework-agnostic **FIDE-compliant Chess Engine**. Handles move validation, King safety simulations, and complex game-ending conditions. **Pure Java, zero dependencies.**
 - **Application Layer (Services):** 🔄 Orchestrates use cases like starting games and making moves. Handles transaction management and cross-cutting concerns.
 - **API Layer (Drivers):** 🔌 REST Controllers and **WebSocket (STOMP)** handlers for real-time synchronization.
 - **Infrastructure Layer (Adapters):** 💾 External concerns like **PostgreSQL** persistence (JPA) and Security configurations.
@@ -27,45 +27,51 @@ To maintain a single source of truth, all installation and environment setup ins
 ---
 
 ## 🛠️ Key Technical Features
-- **FIDE-Compliant Rule Engine:** Complete implementation of chess rules including Checkmate, Stalemate, 50-move rule, and Threefold Repetition.
-- **Simulative Validation:** Sophisticated move-safety checks using temporary state simulation (`try-finally` rollback) to detect check/self-check scenarios.
-- **Modern Java 17 Features:** Utilizing **Sealed Classes** for piece types (ensuring exhaustive pattern matching) and **Records** for immutable state data.
-- **Real-time Synchronization (Phase 4 - In Progress):** Low-latency, bidirectional communication via **STOMP over WebSockets**.
+- **Polymorphic Move Validation:** Leveraging OOP principles where each `Piece` subclass encapsulates its own movement rules, eliminating complex conditional logic in the core engine.
+- **Simulative Move Safety:** Sophisticated check-detection mechanism using temporary state simulation with **atomic rollback** (`try-finally`) to ensure moves never leave the King vulnerable.
+- **FIDE-Compliant Rule Engine:** Full implementation of **En Passant**, **Castling**, **Pawn Promotion**, and draw conditions (**50-move rule**, **Threefold Repetition**).
+- **Modern Java 17 Features:** Extensive use of **Sealed Classes** for the piece hierarchy and **Records** for immutable DTOs and state snapshots.
 
 ---
 
 ## 📂 Package Structure (DDD Oriented)
 ```text
 com.batuhan.chess
-├── api             # Controllers, WebSocket Handlers & DTOs
-├── application     # Use Cases & Application Services
-├── domain          # Pure Java Entities & Rule Engine
-│   ├── model       # Board, Piece (Sealed), Move, Square
-│   └── service     # Pure Domain Logic (Movement Rules)
-├── infrastructure  # DB Persistence, Security & Repository Adapters
-└── common          # Shared Constants, Utilities & Exception Handling
-└── exception       # Centralized Error Handling
+├── api                   # Entry points for the application
+│   ├── config            # Security & WebSocket protocol configurations
+│   ├── controller        # REST & WebSocket STOMP message handlers
+│   └── dto               # Immutable Data Transfer Objects (Records)
+├── application.service   # Orchestration logic (GameService)
+├── domain.model          # Pure Java Core (The Chess Engine)
+│   ├── Bishop, Rook...   # Polymorphic piece implementations
+│   ├── Board, Game       # Aggregate roots and board state
+│   └── Color, Position   # Domain Value Objects & Enums
+└── ChessBackendApplication # Spring Boot Bootstrapper
 ```
 
 ## 🧪 Testing Strategy
-Our testing methodology focuses on **Domain Integrity**. Since the core logic is decoupled from the framework, we achieve high-speed execution and reliable validation.
+Our testing methodology focuses on **Domain Integrity**. Since the core logic is decoupled from the Spring framework, we achieve high-speed execution, reliable validation, and 100% predictable outcomes.
 
 * **Logic Validation:** All move rules, piece behaviors, and board invariants are verified using **JUnit 5** and **Mockito**.
-* **Advanced Rule Coverage:** Comprehensive test suite for complex FIDE rules (Castling, En Passant, Promotion) using **AAA (Arrange-Act-Assert)** patterns.
-* **Scenario Testing:** The engine supports flexible board initialization, allowing us to test complex end-game states in complete isolation.
-* **Continuous Integration:** Tests are automatically executed via **GitHub Actions** on every push to ensure no regressions are introduced.
+* **Atomic Simulation Testing:** Specialized tests for the `simulateAndCheckSafety` method, ensuring that the `try-finally` rollback mechanism correctly restores the board state even after complex move attempts.
+* **Advanced Rule Coverage:** Comprehensive test suite for complex FIDE rules:
+    * **Castling:** Validation of path safety and "not-in-check" requirements.
+    * **En Passant:** Verification of the strict one-turn window for capturing.
+    * **Promotion:** Ensuring pawns correctly transform into the chosen piece (defaulting to Queen) upon reaching the 8th rank.
+* **Scenario-Based Testing:** The engine supports flexible board initialization via a `setPieceAt` API, allowing us to test complex end-game states (like "Philidor Position" or "Lucena Position") in complete isolation.
 
 > 💡 For detailed instructions on how to run the test suite, please refer to the [**Setup & Development Guide**](../docs/DEVELOPMENT.md).
 
 ---
 
 ## 📂 Engineering Focus Areas
-This backend serves as a technical showcase for modern software engineering standards:
+This backend serves as a technical showcase for modern software engineering standards and clean coding practices:
 
-* **Domain Purity:** Framework-agnostic "Pure Java" core for maximum testability and long-term maintainability.
-* **Sealed Piece Hierarchy:** Leveraging Java 17 `sealed` types to provide compile-time safety and prevent illegal piece extensions.
-* **Hexagonal Alignment:** Clear boundaries between business rules (Domain) and technical implementations (Infrastructure).
-* **Record-Based Data Flow:** Using Java **Records** for DTOs to guarantee immutability across system layers.
+* **Domain Purity:** Framework-agnostic "Pure Java" core for maximum testability. This architecture allows the chess engine to be ported or reused without any Spring Boot dependency.
+* **Polymorphic Move Engine:** By moving validation logic into the `Piece` hierarchy, we've achieved a highly extensible design. Adding a new "Fairy Chess" piece is as simple as creating a new class, without touching the core `Game` logic.
+* **Sealed Piece Hierarchy:** Leveraging Java 17 `sealed` types to provide compile-time safety. This ensures that only valid chess pieces exist in the system and allows for exhaustive pattern matching.
+* **Hexagonal Alignment:** Clear boundaries between business rules (Domain) and technical implementations (Infrastructure). The `api` layer "drives" the domain, while the domain remains blissfully unaware of WebSockets or REST.
+* **Record-Based Data Flow:** Using Java **Records** for DTOs and internal state snapshots to guarantee immutability and thread-safety across different system layers.
 
 ---
 *Maintained with professional intent and a focus on Scalable Software Design.*

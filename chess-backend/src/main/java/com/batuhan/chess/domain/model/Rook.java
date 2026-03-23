@@ -1,5 +1,9 @@
 package com.batuhan.chess.domain.model;
 
+/**
+ * Represents a Rook piece.
+ * Moves any number of squares horizontally or vertically.
+ */
 public final class Rook extends Piece {
 
     public Rook(Color color, Position position) {
@@ -7,15 +11,15 @@ public final class Rook extends Piece {
     }
 
     /**
-     * Validates Rook movement: must be horizontal or vertical.
-     * Ensures no pieces block the path and the target square is not occupied by a friendly piece.
+     * Validates movement along ranks and files, ensuring a clear path
+     * and a non-friendly target square.
      */
     @Override
     public boolean isValidMove(Position target, Board board) {
-        int fileDiff = target.file() - position.file();
-        int rankDiff = target.rank() - position.rank();
+        int fileDiff = Math.abs(target.file() - position.file());
+        int rankDiff = Math.abs(target.rank() - position.rank());
 
-        // 1. Geometry Check: Must move either horizontally or vertically, but not both or stay still
+        // 1. Geometry: Must move horizontally or vertically, but not both
         boolean isHorizontal = (fileDiff != 0 && rankDiff == 0);
         boolean isVertical = (fileDiff == 0 && rankDiff != 0);
 
@@ -23,25 +27,14 @@ public final class Rook extends Piece {
             return false;
         }
 
-        // Determine direction of movement (1, -1 or 0)
-        int fileStep = Integer.compare(fileDiff, 0);
-        int rankStep = Integer.compare(rankDiff, 0);
-
-        int currentFile = position.file() + fileStep;
-        int currentRank = position.rank() + rankStep;
-
-        // 2. Path Blocking Check: Ensure all squares between start and target are empty
-        while (currentFile != target.file() || currentRank != target.rank()) {
-            if (board.getPiece(new Position(currentFile, currentRank)).isPresent()) {
-                return false;
-            }
-            currentFile += fileStep;
-            currentRank += rankStep;
+        // 2. Path: Utilize common logic to scan for obstacles
+        if (!isPathClear(target, board)) {
+            return false;
         }
 
-        // 3. Target Check: Square must be empty or contain an enemy piece
+        // 3. Target: Cannot capture own color
         return board.getPiece(target)
-            .map(targetPiece -> targetPiece.getColor() != this.color)
+            .map(p -> p.getColor() != this.color)
             .orElse(true);
     }
 }

@@ -1,8 +1,5 @@
 package com.batuhan.chess.domain.model;
 
-/**
- * Represents the type and initial character notation of a chess piece.
- */
 public enum PieceType {
     PAWN('P'),
     KNIGHT('N'),
@@ -17,9 +14,6 @@ public enum PieceType {
         this.symbol = symbol;
     }
 
-    /**
-     * @return The standard algebraic notation character for the piece.
-     */
     public char getSymbol() {
         return symbol;
     }

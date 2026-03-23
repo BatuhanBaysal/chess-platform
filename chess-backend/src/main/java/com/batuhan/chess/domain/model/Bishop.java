@@ -1,5 +1,9 @@
 package com.batuhan.chess.domain.model;
 
+/**
+ * Represents a Bishop piece.
+ * Moves diagonally across any number of vacant squares.
+ */
 public final class Bishop extends Piece {
 
     public Bishop(Color color, Position position) {
@@ -7,38 +11,22 @@ public final class Bishop extends Piece {
     }
 
     /**
-     * Validates Bishop movement: must be diagonal.
-     * Ensures no pieces block the diagonal path and target square is not friendly.
+     * Validates movement based on diagonal geometry, path clearance, and target square occupancy.
      */
     @Override
     public boolean isValidMove(Position target, Board board) {
-        int fileDiff = target.file() - position.file();
-        int rankDiff = target.rank() - position.rank();
+        int fileDiff = Math.abs(target.file() - position.file());
+        int rankDiff = Math.abs(target.rank() - position.rank());
 
-        // 1. Geometry Check: Must move diagonally (absolute difference must be equal)
-        if (Math.abs(fileDiff) != Math.abs(rankDiff) || fileDiff == 0) {
-            return false;
-        }
+        // 1. Geometry: Must be diagonal
+        if (fileDiff != rankDiff || fileDiff == 0) return false;
 
-        // Determine direction of movement (+1 or -1)
-        int fileStep = fileDiff > 0 ? 1 : -1;
-        int rankStep = rankDiff > 0 ? 1 : -1;
+        // 2. Path: Ensure no obstacles between current and target
+        if (!isPathClear(target, board)) return false;
 
-        int currentFile = position.file() + fileStep;
-        int currentRank = position.rank() + rankStep;
-
-        // 2. Path Blocking Check: Ensure all squares between start and target are empty
-        while (currentFile != target.file()) {
-            if (board.getPiece(new Position(currentFile, currentRank)).isPresent()) {
-                return false;
-            }
-            currentFile += fileStep;
-            currentRank += rankStep;
-        }
-
-        // 3. Target Check: Square must be empty or contain an enemy piece
+        // 3. Target: Can only capture opponent's pieces
         return board.getPiece(target)
-            .map(targetPiece -> targetPiece.getColor() != this.color)
+            .map(p -> p.getColor() != this.color)
             .orElse(true);
     }
 }

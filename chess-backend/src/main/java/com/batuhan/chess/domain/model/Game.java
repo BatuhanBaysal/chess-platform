@@ -28,25 +28,37 @@ public class Game {
     }
 
     /**
-     * Processes a move from a start position to an end position.
-     * Validates turn order, piece movement rules, and move safety (king protection).
+     * Primary entry point for making a move.
+     * Validates game status, turn order, piece geometry, and king safety.
      *
-     * @param start The starting position of the piece.
-     * @param end   The target position for the piece.
-     * @return true if the move was successful and the turn is finalized, false otherwise.
+     * @param start Initial position of the piece.
+     * @param end Target position.
+     * @return true if the move is legal and executed, false otherwise.
      */
     public boolean makeMove(Position start, Position end) {
-        if (status != GameStatus.ACTIVE) return false;
+        System.out.println("LOG: Move attempt from " + start + " to " + end);
+
+        if (isGameOver()) {
+            System.out.println("DEBUG: Move rejected. Game is over.");
+            return false;
+        }
 
         return board.getPiece(start)
-            .filter(piece -> piece.getColor() == currentTurn)
             .filter(piece -> {
-                if (isEnPassantAttempt(piece, end)) {
-                    return canEnPassant(start, end);
-                }
-                return piece.isValidMove(end, board);
+                boolean isTurn = piece.getColor() == currentTurn;
+                if (!isTurn) System.out.println("DEBUG: Turn mismatch. Current: " + currentTurn);
+                return isTurn;
             })
-            .filter(piece -> isMoveSafe(start, end, piece))
+            .filter(piece -> {
+                boolean valid = isEnPassantAttempt(piece, end) ? canEnPassant(start, end) : piece.isValidMove(end, board);
+                if (!valid) System.out.println("DEBUG: Geometric validation failed for " + piece.getType());
+                return valid;
+            })
+            .filter(piece -> {
+                boolean safe = isMoveSafe(start, end, piece);
+                if (!safe) System.out.println("DEBUG: King is in check after move.");
+                return safe;
+            })
             .map(piece -> {
                 executeMove(start, end, piece);
                 finalizeTurn();
@@ -55,72 +67,70 @@ public class Game {
             .orElse(false);
     }
 
-    /**
-     * Validates if a move is legal beyond basic piece geometry.
-     * Includes simulation to prevent moves that leave the King in check,
-     * and specific checks for Castling and En Passant.
-     */
+    private boolean isGameOver() {
+        return status == GameStatus.CHECKMATE || status == GameStatus.STALEMATE ||
+            status == GameStatus.DRAW || status == GameStatus.RESIGNED;
+    }
+
     private boolean isMoveSafe(Position start, Position end, Piece piece) {
-        // 1. Validate special move requirements (Castling & En Passant)
         if (isCastlingAttempt(piece, start, end) && !canCastle(start, end)) return false;
         if (isEnPassantAttempt(piece, end) && !canEnPassant(start, end)) return false;
 
-        // 2. Simulate the move and verify King's safety
         return simulateAndCheckSafety(start, end, piece);
     }
 
     /**
-     * Temporarily modifies the board to check for self-check scenarios.
-     * Uses a try-finally block to ensure the board is rolled back even if an error occurs.
+     * Temporarily modifies the board to verify if the move leaves the King under attack.
+     * Ensures board rollback in the finally block.
      */
     private boolean simulateAndCheckSafety(Position start, Position end, Piece piece) {
         boolean isEnPassant = isEnPassantAttempt(piece, end);
         Piece capturedEnPassant = isEnPassant ? board.getPiece(lastMove.end()).orElse(null) : null;
         Piece targetOriginalPiece = board.getPiece(end).orElse(null);
+        Position originalPosition = piece.getPosition();
 
         try {
-            // Apply temporary move
             if (isEnPassant) board.setPieceAt(lastMove.end(), null);
             board.setPieceAt(start, null);
             board.setPieceAt(end, piece);
+            piece.setPosition(end);
+            return !isInCheck(piece.getColor());
 
-            return !isInCheck(currentTurn);
+        } catch (Exception e) {
+            System.err.println("FATAL: Simulation error: " + e.getMessage());
+            return false;
         } finally {
-            // Rollback the board state
             board.setPieceAt(start, piece);
             board.setPieceAt(end, targetOriginalPiece);
             if (isEnPassant) board.setPieceAt(lastMove.end(), capturedEnPassant);
+            piece.setPosition(originalPosition);
         }
     }
 
-    /**
-     * Finalizes the turn by switching players and updating the game state (Check, Mate, Stalemate).
-     */
     private void finalizeTurn() {
         switchTurn();
         updateGameStatus();
     }
 
     /**
-     * Physically updates the board state for normal and special moves.
-     * Handles King/Rook relocation for Castling and Pawn removal for En Passant.
+     * Performs the actual state changes on the board, handling special moves
+     * like promotion, castling, and en passant.
      */
     private void executeMove(Position start, Position end, Piece piece) {
         updateDrawConditions(piece, end);
         board.setPieceAt(start, null);
 
-        // Handle side effects of special moves
         if (isCastlingAttempt(piece, start, end)) {
             handleCastlingRookMove(start, end);
         } else if (isEnPassantAttempt(piece, end)) {
             board.setPieceAt(lastMove.end(), null);
         }
 
-        // Handle Pawn Promotion or regular movement
         if (isPromotionSituation(piece, end)) {
             board.setPieceAt(end, new Queen(piece.getColor(), end));
         } else {
             board.setPieceAt(end, piece);
+            piece.setPosition(end);
         }
 
         this.lastMove = new Move(start, end, piece);
@@ -150,7 +160,8 @@ public class Game {
         return occurrences >= 3;
     }
 
-    // --- Special Rule Helpers ---
+    // --- Special Rule Logic ---
+
     private boolean isCastlingAttempt(Piece piece, Position start, Position end) {
         return piece.getType() == PieceType.KING && Math.abs(end.file() - start.file()) == 2;
     }
@@ -197,7 +208,8 @@ public class Game {
             Math.abs(lastMove.end().rank() - lastMove.start().rank()) == 2;
     }
 
-    // --- Status Check Helpers ---
+    // --- State Assessment ---
+
     public void resign(Color color) {
         this.status = GameStatus.RESIGNED;
     }
@@ -230,16 +242,26 @@ public class Game {
             .noneMatch(this::hasAnyLegalMove);
     }
 
+    /**
+     * Checks if a piece has at least one legal destination.
+     * Essential for stalemate and checkmate detection.
+     */
     private boolean hasAnyLegalMove(Piece piece) {
+        Position currentPos = piece.getPosition();
         for (int file = 0; file < 8; file++) {
             for (int rank = 0; rank < 8; rank++) {
                 Position target = new Position(file, rank);
 
-                boolean canMoveBase = isEnPassantAttempt(piece, target)
-                    ? canEnPassant(piece.getPosition(), target)
-                    : piece.isValidMove(target, board);
+                boolean isFriendlyFire = board.getPiece(target)
+                    .map(p -> p.getColor() == piece.getColor())
+                    .orElse(false);
+                if (isFriendlyFire) continue;
 
-                if (canMoveBase && isMoveSafe(piece.getPosition(), target, piece)) {
+                boolean canMoveBase = (piece.getType() == PieceType.PAWN)
+                    ? piece.isValidMove(target, board)
+                    : isGeometricMoveValid(piece, target);
+
+                if (canMoveBase && simulateAndCheckSafety(currentPos, target, piece)) {
                     return true;
                 }
             }
@@ -247,7 +269,28 @@ public class Game {
         return false;
     }
 
-    // --- Core Low-level Logic ---
+    private boolean isGeometricMoveValid(Piece p, Position end) {
+        Position start = p.getPosition();
+        int fileDiff = Math.abs(end.file() - start.file());
+        int rankDiff = Math.abs(end.rank() - start.rank());
+
+        switch (p.getType()) {
+            case QUEEN:
+                return (fileDiff == rankDiff || start.file() == end.file() || start.rank() == end.rank()) && isPathClear(start, end);
+            case ROOK:
+                return (start.file() == end.file() || start.rank() == end.rank()) && isPathClear(start, end);
+            case BISHOP:
+                return (fileDiff == rankDiff) && isPathClear(start, end);
+            case KNIGHT:
+                return (fileDiff == 1 && rankDiff == 2) || (fileDiff == 2 && rankDiff == 1);
+            case KING:
+                return fileDiff <= 1 && rankDiff <= 1;
+            default: return false;
+        }
+    }
+
+    // --- Validation Utilities ---
+
     private boolean isPromotionSituation(Piece piece, Position end) {
         if (piece.getType() != PieceType.PAWN) return false;
         int promotionRank = (piece.getColor() == Color.WHITE) ? WHITE_PROMOTION_RANK : BLACK_PROMOTION_RANK;
@@ -255,11 +298,16 @@ public class Game {
     }
 
     private boolean isPathClear(Position start, Position end) {
-        int fileStep = Integer.compare(end.file(), start.file());
+        int fileStep = Integer.compare(end.file() - start.file(), 0);
+        int rankStep = Integer.compare(end.rank() - start.rank(), 0);
+
         int currFile = start.file() + fileStep;
-        while (currFile != end.file()) {
-            if (board.getPiece(new Position(currFile, start.rank())).isPresent()) return false;
+        int currRank = start.rank() + rankStep;
+
+        while (currFile != end.file() || currRank != end.rank()) {
+            if (board.getPiece(new Position(currFile, currRank)).isPresent()) return false;
             currFile += fileStep;
+            currRank += rankStep;
         }
         return true;
     }
@@ -272,10 +320,34 @@ public class Game {
         return true;
     }
 
+    /**
+     * Evaluates if a given square can be captured by the opponent.
+     */
     private boolean isSquareAttacked(Position pos, Color attackerColor) {
         return board.findAllPieces().stream()
             .filter(p -> p.getColor() == attackerColor)
-            .anyMatch(p -> p.isValidMove(pos, board));
+            .anyMatch(p -> {
+                Position pPos = p.getPosition();
+                int fileDiff = pos.file() - pPos.file();
+                int rankDiff = pos.rank() - pPos.rank();
+                int absFileDiff = Math.abs(fileDiff);
+                int absRankDiff = Math.abs(rankDiff);
+
+                switch (p.getType()) {
+                    case PAWN:
+                        int attackDirection = (p.getColor() == Color.WHITE) ? 1 : -1;
+                        return absFileDiff == 1 && rankDiff == attackDirection;
+                    case KNIGHT:
+                        return (absFileDiff == 1 && absRankDiff == 2) || (absFileDiff == 2 && absRankDiff == 1);
+                    case KING:
+                        return absFileDiff <= 1 && absRankDiff <= 1;
+                    case ROOK:
+                    case BISHOP:
+                    case QUEEN:
+                        return isGeometricMoveValid(p, pos);
+                    default: return false;
+                }
+            });
     }
 
     private void switchTurn() {
@@ -287,7 +359,7 @@ public class Game {
             .filter(p -> p.getColor() == color && p.getType() == PieceType.KING)
             .map(Piece::getPosition)
             .findFirst()
-            .orElseThrow(() -> new IllegalStateException(color + " King not found"));
+            .orElseThrow(() -> new IllegalStateException("CRITICAL: " + color + " King not found"));
     }
 
     private Color getOpponentColor(Color color) {

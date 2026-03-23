@@ -42,27 +42,31 @@ This project is architected as a **high-cohesion monorepo**. Operational process
 
 ## 🎯 Engineering Highlights
 
-### 🧩 Domain-Driven Design (DDD)
-The core chess logic is encapsulated in a **Pure Java** domain layer, entirely decoupled from Spring Boot or any infrastructure. This ensures 100% testability of the move validation engine.
+### 🧩 Domain-Driven Design (DDD) & Clean Architecture
+The core chess logic is encapsulated in a **Pure Java** domain layer.
+* **Zero Infrastructure Leakage:** Move validation is entirely decoupled from Spring Boot, ensuring 100% testability.
+* **Polymorphic Validation:** Leverages OOP principles where each piece (`Rook`, `Bishop`, etc.) encapsulates its own movement logic, significantly reducing conditional complexity in the `Game` engine.
 
-### ⚡ Modern Java 17 Standards
-* **Sealed Classes:** Used for the `Piece` hierarchy to enforce exhaustive pattern matching.
-* **Records:** Utilized for immutable Game State snapshots and DTOs.
+### ⚡ Robust Rule Engine
+* **FIDE Compliance:** Full support for **En Passant**, **Castling**, and **Pawn Promotion**.
+* **King Safety Simulation:** Implements a dry-run execution mechanism (with automatic rollback) to verify move legality and detect Check/Checkmate/Stalemate states.
+* **Efficient Pathfinding:** Optimized vector-based collision detection for sliding pieces.
 
-### 🔄 Real-Time System
-* **WebSockets (STOMP):** Low-latency, bi-directional move transmission.
-* **Dual-Database Strategy:** **PostgreSQL** for persistence, **H2** for isolated unit testing.
+### 🔄 State Synchronization
+* **Modern React (v19):** Utilizing custom hooks and Tailwind CSS for a high-performance, responsive chess board.
+* **WebSocket Integration:** Prepared for real-time move transmission using STOMP protocol.
 
 ---
 
 ## 🚀 Development Roadmap
-*Current Status: **Phase 4: Multi-player Infrastructure***
+*Current Status: **Phase 5: UI & Local Play Integration***
 
 - ✅ **Phase 1: Foundation** - Monorepo scaffolding and environment setup.
-- ✅ **Phase 2: Domain Modeling** - Piece-specific logic, board initialization, and turn management.
-- ✅ **Phase 3: Rule Engine** - Full FIDE compliance (Checkmate, Special Moves, and Draw conditions).
-- 🏗️ **Phase 4: Multi-player** - WebSocket integration and Real-time messaging.
-- ⏳ **Phase 5: UI Integration** - React board development and state synchronization.
+- ✅ **Phase 2: Domain Modeling** - Piece-specific logic and board initialization.
+- ✅ **Phase 3: Rule Engine** - Legal move validation, King safety, and FIDE rules.
+- ✅ **Phase 4: Communication Layer** - WebSocket infrastructure and API design.
+- 🏗️ **Phase 5: UI Integration** - Developing the React board for local "Hot-seat" play (Single machine, two players).
+- ⏳ **Phase 6: Remote Multiplayer** - Session management and remote matchmaking.
 
 ---
 

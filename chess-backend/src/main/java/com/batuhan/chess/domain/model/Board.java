@@ -5,17 +5,13 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Represents the 8x8 chess board domain entity.
- * Responsible for managing piece placement and maintaining the integrity of the board state.
+ * Represents the 8x8 chess board.
+ * Manages piece placement, board initialization, and state retrieval.
  */
 public class Board {
+
     private final Piece[][] squares;
 
-    /**
-     * Constructs a board with the option to initialize pieces.
-     * * @param fillBoard If true, populates the board with the standard chess starting position.
-     * If false, creates an empty board, useful for unit testing.
-     */
     public Board(boolean fillBoard) {
         this.squares = new Piece[8][8];
         if (fillBoard) {
@@ -23,45 +19,35 @@ public class Board {
         }
     }
 
-    /**
-     * Default constructor.
-     * Creates a standard board and initializes it with all pieces in their starting positions.
-     */
     public Board() {
         this(true);
     }
 
     /**
      * Retrieves a piece at a given position.
-     * @param position The coordinates to check.
-     * @return An Optional containing the piece if present, otherwise empty.
+     * Returns Optional.empty if the square is vacant or out of bounds.
      */
     public Optional<Piece> getPiece(Position position) {
-        Piece piece = squares[position.file()][position.rank()];
-        return Optional.ofNullable(piece);
+        if (isOutOfBounds(position)) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(squares[position.rank()][position.file()]);
     }
 
-    /**
-     * Places a piece at the specified position and updates the piece's internal state.
-     * @param position The target coordinates.
-     * @param piece The piece to place (can be null to clear the square).
-     */
     public void setPieceAt(Position position, Piece piece) {
-        squares[position.file()][position.rank()] = piece;
+        if (isOutOfBounds(position)) return;
+
+        squares[position.rank()][position.file()] = piece;
         if (piece != null) {
             piece.setPosition(position);
         }
     }
 
-    /**
-     * Scans the entire board and returns a list of all active pieces.
-     * @return A list containing all pieces currently on the board.
-     */
     public List<Piece> findAllPieces() {
         List<Piece> allPieces = new ArrayList<>();
-        for (int file = 0; file < 8; file++) {
-            for (int rank = 0; rank < 8; rank++) {
-                Piece piece = squares[file][rank];
+        for (int r = 0; r < 8; r++) {
+            for (int f = 0; f < 8; f++) {
+                Piece piece = squares[r][f];
                 if (piece != null) {
                     allPieces.add(piece);
                 }
@@ -70,44 +56,53 @@ public class Board {
         return allPieces;
     }
 
-    /**
-     * Removes all pieces from the board.
-     * Primarily used for setting up custom scenarios in unit tests.
-     */
     public void clearBoard() {
-        for (int f = 0; f < 8; f++) {
-            for (int r = 0; r < 8; r++) {
-                squares[f][r] = null;
+        for (int r = 0; r < 8; r++) {
+            for (int f = 0; f < 8; f++) {
+                squares[r][f] = null;
             }
         }
     }
 
-    /**
-     * Provides access to the raw square matrix.
-     * @return 2D array of pieces.
-     */
+    private boolean isOutOfBounds(Position pos) {
+        return pos.file() < 0 || pos.file() > 7 || pos.rank() < 0 || pos.rank() > 7;
+    }
+
     public Piece[][] getSquares() {
         return squares;
     }
 
+    /**
+     * Serializes the board state into a string format.
+     * Used for history tracking and threefold repetition checks.
+     */
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        for (int r = 0; r < 8; r++) {
+        StringBuilder sb = new StringBuilder(64);
+        for (int r = 7; r >= 0; r--) {
             for (int f = 0; f < 8; f++) {
-                sb.append(getPiece(new Position(f, r))
-                    .map(p -> p.getColor().name().substring(0,1) + p.getType().name().substring(0,1))
-                    .orElse("--"));
+                Piece p = squares[r][f];
+                if (p == null) {
+                    sb.append('.');
+                    continue;
+                }
+
+                char typeChar = p.getType().name().charAt(0);
+                if (p.getType() == PieceType.KNIGHT) {
+                    typeChar = 'N';
+                }
+
+                sb.append(p.getColor() == Color.WHITE
+                    ? Character.toLowerCase(typeChar)
+                    : Character.toUpperCase(typeChar));
             }
         }
         return sb.toString();
     }
 
-    // --- Private Helper Methods for Initialization ---
     private void initializeBoard() {
         setupMajorPieces(Color.BLACK, 7);
         setupMajorPieces(Color.WHITE, 0);
-
         setupPawns(Color.BLACK, 6);
         setupPawns(Color.WHITE, 1);
     }

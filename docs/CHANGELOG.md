@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-03-23
+
+### 🎨 Phase 5: UI Integration & Local Play Readiness
+> **Note:** This phase focuses on the transition from a pure backend engine to a playable local interface. It includes significant refactoring for better OOP adherence and the initial React-based board synchronization.
+
+- **2026-03-23:**
+    - **Domain Refactoring & Engine Optimization (PR #16):**
+        - **Polymorphic Validation:** Refactored `Game.java` to delegate movement logic entirely to individual `Piece` subclasses, eliminating redundant switch-case blocks and improving extensibility.
+        - **Enhanced Attack Detection:** Streamlined `isSquareAttacked` logic to leverage the unified `isValidMove` interface, enhancing engine performance and rule consistency.
+        - **Robust State Management:** Refined `handleCastlingRookMove` and `simulateAndCheckSafety` to ensure atomic board updates and reliable state rollback during move simulations.
+    - **Frontend Architecture (Initial):**
+        - **React 19 & Tailwind Setup:** Initialized the frontend component structure, including the main `App.tsx` and global styles.
+        - **Board State Hooks:** Developed custom hooks for board state management and move handling in preparation for the visual board.
+    - **Documentation & Governance:**
+        - **README Overhaul:** Updated the main documentation to reflect the current focus on "Hot-seat" local play and high-level engineering highlights.
+        - 
+---
+
 ## [0.4.0] - 2026-03-19
 
 ### 🌐 Phase 4: Multiplayer Infrastructure & Real-Time Communication

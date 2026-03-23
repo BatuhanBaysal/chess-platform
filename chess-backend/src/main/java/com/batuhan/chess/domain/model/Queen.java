@@ -1,5 +1,10 @@
-package com.batuhan.chess.domain.model;;
+package com.batuhan.chess.domain.model;
 
+/**
+ * Represents the Queen piece.
+ * Combines the movement of a Rook and a Bishop, moving any number of squares
+ * horizontally, vertically, or diagonally.
+ */
 public final class Queen extends Piece {
 
     public Queen(Color color, Position position) {
@@ -7,45 +12,30 @@ public final class Queen extends Piece {
     }
 
     /**
-     * Validates Queen movement: can move any number of squares diagonally, horizontally, or vertically.
-     * Combines the logic of both Rook and Bishop.
+     * Validates movement by checking horizontal, vertical, and diagonal geometry
+     * and ensuring the path is clear.
      */
     @Override
     public boolean isValidMove(Position target, Board board) {
-        int fileDiff = target.file() - position.file();
-        int rankDiff = target.rank() - position.rank();
+        int fileDiff = Math.abs(target.file() - position.file());
+        int rankDiff = Math.abs(target.rank() - position.rank());
 
-        int absFileDiff = Math.abs(fileDiff);
-        int absRankDiff = Math.abs(rankDiff);
-
-        // 1. Geometry Check: Must be either diagonal, horizontal, or vertical
-        boolean isDiagonal = (absFileDiff == absRankDiff && absFileDiff != 0);
+        // 1. Geometry: Must be diagonal (diffs equal) or straight (one diff is zero)
+        boolean isDiagonal = (fileDiff == rankDiff && fileDiff != 0);
         boolean isStraight = (fileDiff == 0 && rankDiff != 0) || (fileDiff != 0 && rankDiff == 0);
 
         if (!isDiagonal && !isStraight) {
             return false;
         }
 
-        // 2. Path Blocking Check
-        // Determine steps: 1, -1, or 0
-        int fileStep = Integer.compare(fileDiff, 0);
-        int rankStep = Integer.compare(rankDiff, 0);
-
-        int currentFile = position.file() + fileStep;
-        int currentRank = position.rank() + rankStep;
-
-        // Scan the path from current position to target
-        while (currentFile != target.file() || currentRank != target.rank()) {
-            if (board.getPiece(new Position(currentFile, currentRank)).isPresent()) {
-                return false;
-            }
-            currentFile += fileStep;
-            currentRank += rankStep;
+        // 2. Path: Utilize common logic from parent Piece class
+        if (!isPathClear(target, board)) {
+            return false;
         }
 
-        // 3. Target Square Check: Must be empty or contain an enemy
+        // 3. Target: Friendly fire check
         return board.getPiece(target)
-            .map(targetPiece -> targetPiece.getColor() != this.color)
+            .map(p -> p.getColor() != this.color)
             .orElse(true);
     }
 }

@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-03-24
+
+### ♟️ Phase 6: Special Moves & Stability Refinement
+> **Note:** This phase completes the implementation of FIDE special rules and harmonizes the communication between the React frontend and Spring Boot backend for complex move sequences.
+
+- **2026-03-24:**
+    - **Advanced Rule Completion (PR #17):**
+        - **Interactive Pawn Promotion:** Integrated a seamless promotion workflow between Frontend and Backend. Added support for selecting PieceType (Queen, Rook, Bishop, Knight) via a UI modal and ensuring the backend processes the `promotionType` correctly.
+        - **Castling Synchronization:** Finalized King-side and Queen-side castling logic, ensuring both the King and Rook are updated atomically on the board and the UI reflects the dual-piece move.
+    - **Bug Fixes & UX Improvements:**
+        - **Visual Synchronization:** Resolved a critical bug where piece colors were inverted in the UI due to Case-Sensitivity in the board representation string. Standardized **Uppercase for White** and **Lowercase for Black**.
+        - **Grid Alignment:** Fixed a UI layout issue where empty squares caused row/column shifts. Stabilized the 8x8 grid using `aspect-square` and fixed-size CSS grid templates.
+    - **Code Refactoring:**
+        - **DTO Alignment:** Updated `MoveRequest` to support optional promotion fields, ensuring compatibility with standard movement requests.
+        - **Board Serialization:** Optimized the `Board.toString()` method for reliable state broadcasting over WebSockets.
+
+---
+
 ## [0.5.0] - 2026-03-23
 
 ### 🎨 Phase 5: UI Integration & Local Play Readiness

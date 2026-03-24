@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/games")
 @RequiredArgsConstructor
@@ -19,6 +21,13 @@ public class GameRestController {
     public GameResponse createGame() {
         String gameId = gameService.createGame();
         Game game = gameService.getGame(gameId);
-        return new GameResponse(gameId, game.getBoard().toString(), game.getCurrentTurn(), game.getStatus());
+
+        return new GameResponse(
+            gameId,
+            game.getBoard().toString(),
+            game.getCurrentTurn(),
+            game.getStatus(),
+            List.of()
+        );
     }
 }

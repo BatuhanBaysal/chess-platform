@@ -7,5 +7,6 @@ public record MoveRequest(
     @NotNull Integer fromFile,
     @NotNull Integer fromRank,
     @NotNull Integer toFile,
-    @NotNull Integer toRank
+    @NotNull Integer toRank,
+    String promotionType
 ) {}

@@ -10,6 +10,8 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import java.util.List;
+
 @Controller
 @RequiredArgsConstructor
 public class GameWebSocketController {
@@ -19,18 +21,29 @@ public class GameWebSocketController {
 
     @MessageMapping("/move")
     public void processMove(MoveRequest request) {
-        Position from = new Position(request.fromFile(), request.fromRank());
-        Position to = new Position(request.toFile(), request.toRank());
+        try {
+            Position from = new Position(request.fromFile(), request.fromRank());
+            Position to = new Position(request.toFile(), request.toRank());
+            List<GameResponse.ExecutedMove> executedMoves = gameService.makeMove(
+                request.gameId(),
+                from,
+                to,
+                request.promotionType()
+            );
 
-        Game updatedGame = gameService.makeMove(request.gameId(), from, to);
+            Game updatedGame = gameService.getGame(request.gameId());
+            GameResponse response = new GameResponse(
+                request.gameId(),
+                updatedGame.getBoard().toString(),
+                updatedGame.getCurrentTurn(),
+                updatedGame.getStatus(),
+                executedMoves
+            );
 
-        GameResponse response = new GameResponse(
-            request.gameId(),
-            updatedGame.getBoard().toString(),
-            updatedGame.getCurrentTurn(),
-            updatedGame.getStatus()
-        );
+            messagingTemplate.convertAndSend("/topic/game/" + request.gameId(), response);
 
-        messagingTemplate.convertAndSend("/topic/game/" + request.gameId(), response);
+        } catch (Exception e) {
+            System.err.println("Move Error: " + e.getMessage());
+        }
     }
 }

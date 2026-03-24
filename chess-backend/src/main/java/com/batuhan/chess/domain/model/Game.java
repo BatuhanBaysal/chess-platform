@@ -1,5 +1,7 @@
 package com.batuhan.chess.domain.model;
 
+import com.batuhan.chess.api.dto.GameResponse;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,36 +37,40 @@ public class Game {
      * @param end Target position.
      * @return true if the move is legal and executed, false otherwise.
      */
-    public boolean makeMove(Position start, Position end) {
-        System.out.println("LOG: Move attempt from " + start + " to " + end);
-
-        if (isGameOver()) {
-            System.out.println("DEBUG: Move rejected. Game is over.");
-            return false;
-        }
+    public List<GameResponse.ExecutedMove> makeMove(Position start, Position end, String promotionType) {
+        if (isGameOver()) return List.of();
 
         return board.getPiece(start)
+            .filter(piece -> piece.getColor() == currentTurn)
+            .filter(piece -> isEnPassantAttempt(piece, end) ? canEnPassant(start, end) : piece.isValidMove(end, board))
+            .filter(piece -> isMoveSafe(start, end, piece))
             .filter(piece -> {
-                boolean isTurn = piece.getColor() == currentTurn;
-                if (!isTurn) System.out.println("DEBUG: Turn mismatch. Current: " + currentTurn);
-                return isTurn;
-            })
-            .filter(piece -> {
-                boolean valid = isEnPassantAttempt(piece, end) ? canEnPassant(start, end) : piece.isValidMove(end, board);
-                if (!valid) System.out.println("DEBUG: Geometric validation failed for " + piece.getType());
-                return valid;
-            })
-            .filter(piece -> {
-                boolean safe = isMoveSafe(start, end, piece);
-                if (!safe) System.out.println("DEBUG: King is in check after move.");
-                return safe;
-            })
-            .map(piece -> {
-                executeMove(start, end, piece);
-                finalizeTurn();
+                if (isPromotionSituation(piece, end)) {
+                    return promotionType != null && !promotionType.isBlank();
+                }
                 return true;
             })
-            .orElse(false);
+            .map(piece -> {
+                List<GameResponse.ExecutedMove> moves = new ArrayList<>();
+
+                moves.add(new GameResponse.ExecutedMove(
+                    start.file(), start.rank(), end.file(), end.rank(), piece.getType().name()
+                ));
+
+                if (isCastlingAttempt(piece, start, end)) {
+                    int direction = (end.file() > start.file()) ? 1 : -1;
+                    int rStartF = (direction == 1) ? 7 : 0;
+                    int rEndF = (direction == 1) ? 5 : 3;
+                    moves.add(new GameResponse.ExecutedMove(
+                        rStartF, start.rank(), rEndF, start.rank(), "ROOK"
+                    ));
+                }
+
+                executeMove(start, end, piece, promotionType);
+                finalizeTurn();
+                return moves;
+            })
+            .orElse(List.of());
     }
 
     private boolean isGameOver() {
@@ -116,7 +122,7 @@ public class Game {
      * Performs the actual state changes on the board, handling special moves
      * like promotion, castling, and en passant.
      */
-    private void executeMove(Position start, Position end, Piece piece) {
+    private void executeMove(Position start, Position end, Piece piece, String promotionType) {
         updateDrawConditions(piece, end);
         board.setPieceAt(start, null);
 
@@ -127,7 +133,8 @@ public class Game {
         }
 
         if (isPromotionSituation(piece, end)) {
-            board.setPieceAt(end, new Queen(piece.getColor(), end));
+            Piece promoted = createPromotedPiece(promotionType, piece.getColor(), end);
+            board.setPieceAt(end, promoted);
         } else {
             board.setPieceAt(end, piece);
             piece.setPosition(end);
@@ -135,6 +142,16 @@ public class Game {
 
         this.lastMove = new Move(start, end, piece);
         piece.setHasMoved(true);
+    }
+
+    private Piece createPromotedPiece(String type, Color color, Position pos) {
+        return switch (type.toUpperCase()) {
+            case "QUEEN" -> new Queen(color, pos);
+            case "ROOK" -> new Rook(color, pos);
+            case "BISHOP" -> new Bishop(color, pos);
+            case "KNIGHT" -> new Knight(color, pos);
+            default -> throw new IllegalArgumentException("Invalid promotion type: " + type);
+        };
     }
 
     private void updateDrawConditions(Piece piece, Position end) {
@@ -172,6 +189,11 @@ public class Game {
         int direction = (end.file() > start.file()) ? 1 : -1;
         int rookFile = (direction == 1) ? 7 : 0;
         Position rookPos = new Position(rookFile, start.rank());
+
+        if (direction == -1) {
+            Position bSquare = new Position(1, start.rank());
+            if (board.getPiece(bSquare).isPresent()) return false;
+        }
 
         return board.getPiece(rookPos)
             .filter(p -> p.getType() == PieceType.ROOK && !p.hasMoved())

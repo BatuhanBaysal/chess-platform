@@ -59,14 +59,16 @@ The core chess logic is encapsulated in a **Pure Java** domain layer.
 ---
 
 ## 🚀 Development Roadmap
-*Current Status: **Phase 5: UI & Local Play Integration***
+*Current Status: **Phase 6: Visual Polish & UX Enhancement***
 
 - ✅ **Phase 1: Foundation** - Monorepo scaffolding and environment setup.
 - ✅ **Phase 2: Domain Modeling** - Piece-specific logic and board initialization.
 - ✅ **Phase 3: Rule Engine** - Legal move validation, King safety, and FIDE rules.
 - ✅ **Phase 4: Communication Layer** - WebSocket infrastructure and API design.
-- 🏗️ **Phase 5: UI Integration** - Developing the React board for local "Hot-seat" play (Single machine, two players).
-- ⏳ **Phase 6: Remote Multiplayer** - Session management and remote matchmaking.
+- ✅ **Phase 5: UI Integration & Local Play** - Interactive React board for "Hot-seat" play (Pawn Promotion, Castling UI, and Layout Fixes).
+- 🏗️ **Phase 6: Visual Polish & UX** - High-quality SVG assets, Drag & Drop (dnd-kit), move highlights, and sound effects.
+- ⏳ **Phase 7: Remote Multiplayer** - Session management, matchmaking, and real-time STOMP broadcasting.
+- ⏳ **Phase 8: Engine & Analysis** - Stockfish integration, PGN move history, and match replay system.
 
 ---
 

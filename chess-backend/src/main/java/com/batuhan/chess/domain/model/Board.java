@@ -87,14 +87,10 @@ public class Board {
                     continue;
                 }
 
-                char typeChar = p.getType().name().charAt(0);
-                if (p.getType() == PieceType.KNIGHT) {
-                    typeChar = 'N';
-                }
-
+                char typeChar = (p.getType() == PieceType.KNIGHT) ? 'N' : p.getType().name().charAt(0);
                 sb.append(p.getColor() == Color.WHITE
-                    ? Character.toLowerCase(typeChar)
-                    : Character.toUpperCase(typeChar));
+                    ? Character.toUpperCase(typeChar)
+                    : Character.toLowerCase(typeChar));
             }
         }
         return sb.toString();

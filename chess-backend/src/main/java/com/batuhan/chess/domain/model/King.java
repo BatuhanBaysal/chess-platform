@@ -28,7 +28,7 @@ public final class King extends Piece {
         // 2. Castling: 2 squares horizontally, provided the King hasn't moved yet
         // Path safety and check status are validated in the Game service
         if (fileDiff == 2 && rankDiff == 0 && !hasMoved) {
-            return board.getPiece(target).isEmpty();
+            return true;
         }
 
         return false;

@@ -37,7 +37,7 @@ public final class Pawn extends Piece {
         if (Math.abs(fileDiff) == 1 && rankDiff == direction) {
             return board.getPiece(target)
                 .map(p -> p.getColor() != this.color)
-                .orElse(false); // Normal şartlarda hedef boşsa piyon çapraz gidemez
+                .orElse(false);
         }
 
         return false;

@@ -7,6 +7,17 @@ All notable changes to this project will be documented in this file. This projec
 ### ♟️ Phase 6: Special Moves & Stability Refinement
 > **Note:** This phase completes the implementation of FIDE special rules and harmonizes the communication between the React frontend and Spring Boot backend for complex move sequences.
 
+- **2026-03-25:**
+    - **Live Operations Engine (UX) (PR #18):**
+        - **Event Synchronization:** Optimized the `useEffect` hook in `ChessBoard.tsx` to accurately distinguish between system messages (Game Started, Errors) and player moves.
+        - **Color Attribution Persistence:** Resolved a bug where White's promotion logs were incorrectly attributed or missing markers. The system now correctly identifies the move owner by tracking the `currentTurn` state offset.
+        - **Real-time Formatting:** Enhanced log readability with high-precision timestamps, dynamic turn badges (White/Black), and animated entry transitions.
+    - **Visual Polish & Asset Management:**
+        - **Asset Standardization:** Refactored the asset pipeline to transition from external Wikipedia SVG dependencies to local hosting; established a semantic naming convention (e.g., `initial-state`, `promotion-modal`).
+        - **Status Feedback:** Integrated dynamic visual alerts for "CHECK" and "CHECKMATE" within the Live Operations panel, including pulse animations for critical game states.
+    - **Code Quality & Performance:**
+        - **Side-Effect Optimization:** Refined `useEffect` dependencies to prevent redundant re-renders and duplicate logging of WebSocket messages using `useRef` for message tracking.
+        - **Conditional Rendering Logic:** Hardened the Promotion Modal triggers to ensure activation occurs strictly during legal pawn-to-8th-rank transitions.
 - **2026-03-24:**
     - **Advanced Rule Completion (PR #17):**
         - **Interactive Pawn Promotion:** Integrated a seamless promotion workflow between Frontend and Backend. Added support for selecting PieceType (Queen, Rook, Bishop, Knight) via a UI modal and ensuring the backend processes the `promotionType` correctly.

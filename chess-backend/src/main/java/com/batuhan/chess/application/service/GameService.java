@@ -31,10 +31,6 @@ public class GameService {
         }
 
         List<GameResponse.ExecutedMove> executedMoves = game.makeMove(from, to, promotionType);
-        if (executedMoves.isEmpty()) {
-            throw new IllegalStateException("Invalid move or king in safety risk.");
-        }
-
         return executedMoves;
     }
 

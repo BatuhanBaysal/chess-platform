@@ -4,7 +4,7 @@
 
 ---
 
-![Social Preview](docs/assets/01_chess-board.png)
+![Game Preview](docs/assets/screenshots/gameplay-features/initial-game-state.png)
 
 ### 🛠️ Technology Stack
 

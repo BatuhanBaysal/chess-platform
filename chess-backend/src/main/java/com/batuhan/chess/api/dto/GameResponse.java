@@ -10,7 +10,9 @@ public record GameResponse(
     String boardRepresentation,
     Color currentTurn,
     GameStatus status,
-    List<ExecutedMove> lastMoves
+    List<ExecutedMove> lastMoves,
+    List<String> moveHistory,
+    String lastMoveMessage
 ) {
     public record ExecutedMove(int fromFile, int fromRank, int toFile, int toRank, String pieceType) {}
 }

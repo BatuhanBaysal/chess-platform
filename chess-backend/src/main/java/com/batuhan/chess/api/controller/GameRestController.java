@@ -3,16 +3,16 @@ package com.batuhan.chess.api.controller;
 import com.batuhan.chess.api.dto.GameResponse;
 import com.batuhan.chess.application.service.GameService;
 import com.batuhan.chess.domain.model.Game;
+import com.batuhan.chess.domain.model.Position;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/games")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:5173")
 public class GameRestController {
 
     private final GameService gameService;
@@ -27,7 +27,20 @@ public class GameRestController {
             game.getBoard().toString(),
             game.getCurrentTurn(),
             game.getStatus(),
-            List.of()
+            List.of(),
+            List.of(),
+            game.getLastMoveMessage()
         );
+    }
+
+    @GetMapping("/{gameId}/legal-moves")
+    public List<Position> getLegalMoves(
+        @PathVariable String gameId,
+        @RequestParam int file,
+        @RequestParam int rank) {
+
+        Game game = gameService.getGame(gameId);
+        Position startPos = new Position(file, rank);
+        return game.getLegalMovesForSquare(startPos);
     }
 }

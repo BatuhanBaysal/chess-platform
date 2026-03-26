@@ -1,8 +1,23 @@
 @import "tailwindcss";
 
+@theme {
+  --color-background: white;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
 body {
   margin: 0;
-  background-color: #0f172a;
+  padding: 0;
+  transition: background-color 0.3s ease;
+}
+
+:root {
+  background-color: #f8fafc; 
+}
+
+:root.dark {
+  background-color: #020617; 
 }
 
 .modern-scroll {

@@ -4,7 +4,15 @@
 
 ---
 
-![Game Preview](docs/assets/screenshots/gameplay-features/initial-game-state.png)
+### 📡 Project Status: Core Engine & UX Finalized
+> **Operational Status:** The core chess engine is 100% operational, supporting all FIDE rules (Castling, En Passant, Promotion) with full synchronization between the **Spring Boot** backend and **React 19** frontend.
+>
+> **Current Sprint:** Moving from local "Hot-seat" play to a global platform. I am currently implementing **Phase 7**, which focuses on **JWT-based Authentication**, **Persistent User Profiles**, and **Multiplayer Session Management** to support remote matches.
+
+![Menu Preview](docs/assets/screenshots/gameplay-features/main-menu.png)
+![Board Preview](docs/assets/screenshots/gameplay-features/initial-game-state.png)
+
+---
 
 ### 🛠️ Technology Stack
 
@@ -59,16 +67,20 @@ The core chess logic is encapsulated in a **Pure Java** domain layer.
 ---
 
 ## 🚀 Development Roadmap
-*Current Status: **Phase 6: Visual Polish & UX Enhancement***
 
-- ✅ **Phase 1: Foundation** - Monorepo scaffolding and environment setup.
-- ✅ **Phase 2: Domain Modeling** - Piece-specific logic and board initialization.
-- ✅ **Phase 3: Rule Engine** - Legal move validation, King safety, and FIDE rules.
-- ✅ **Phase 4: Communication Layer** - WebSocket infrastructure and API design.
-- ✅ **Phase 5: UI Integration & Local Play** - Interactive React board for "Hot-seat" play (Pawn Promotion, Castling UI, and Layout Fixes).
-- 🏗️ **Phase 6: Visual Polish & UX** - High-quality SVG assets, Drag & Drop (dnd-kit), move highlights, and sound effects.
-- ⏳ **Phase 7: Remote Multiplayer** - Session management, matchmaking, and real-time STOMP broadcasting.
-- ⏳ **Phase 8: Engine & Analysis** - Stockfish integration, PGN move history, and match replay system.
+*Current Status: ⏳ **Phase 7: Architecture Expansion (Identity & Persistence)***
+
+- ✅ **Phase 1: Foundation** 🏗️ - Monorepo scaffolding, environment setup, and Spring Boot/React initialization.
+- ✅ **Phase 2: Domain Modeling** ♟️ - Piece-specific logic, board initialization, and DDD-based movement rules.
+- ✅ **Phase 3: Rule Engine** ⚖️ - Legal move validation (King safety, check/mate detection) and FIDE standards.
+- ✅ **Phase 4: Communication Layer** 📡 - WebSocket infrastructure using STOMP protocol and real-time event mapping.
+- ✅ **Phase 5: UI Integration & Local Play** 🖥️ - Interactive React 19 board, Pawn Promotion, and Castling UI.
+- ✅ **Phase 6: Visual Polish & UX** 🎨 - Dark/Light mode, theme support (Classic, Modern, Emerald), Drag & Drop (`dnd-kit`), and Live Operation Logs.
+- ⏳ **Phase 7: Identity & Persistence** 🔐 - Restructuring into a **Modular Monolith**. Implementing Spring Security + JWT, User/Guest profiles, and PostgreSQL integration.
+- ⏳ **Phase 8: Server-Side Authority** 🛡️ - Server-side move validation, anti-cheat time synchronization, and backend-driven game state management.
+- ⏳ **Phase 9: Remote Multiplayer & Matchmaking** 🤝 - Session management, lobby system, and real-time player pairing based on ELO ratings.
+
+> **Note:** The project is evolving from a client-side heavy application to a robust, enterprise-grade chess platform focusing on **Domain-Driven Design (DDD)** and high-availability architecture.
 
 ---
 

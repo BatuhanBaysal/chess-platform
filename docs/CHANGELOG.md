@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.6.0] - 2026-03-24
+## [0.6.0] - 2026-03-26
 
 ### ♟️ Phase 6: Special Moves & Stability Refinement
 > **Note:** This phase completes the implementation of FIDE special rules and harmonizes the communication between the React frontend and Spring Boot backend for complex move sequences.
 
+- **2026-03-26:**
+    - **UI/UX Transformation & Theme Engine (PR #19):**
+        - **Dynamic Theming:** Implemented a multi-theme engine supporting `Classic`, `Modern`, and `Emerald` board styles with synchronized coordinate colors.
+        - **Dark/Light Mode:** Integrated a global theme toggle using Tailwind CSS and CSS variables for seamless dark/light mode transitions.
+        - **Game-Over & Timeout Modals:** Developed high-fidelity overlay modals for `CHECKMATE` and `TIMEOUT` states, including navigation actions (New Game, Main Menu).
+        - **Advanced Timing System:** Implemented dual-player countdown timers with visual urgency indicators (red-pulse animation below 30s) and frontend-side termination logic.
+        - **Enhanced Sidebars:** Refactored the "Captured Pieces" and "Advantage Tracker" panels for better space efficiency and visual clarity using SVG filtering.
 - **2026-03-25:**
     - **Live Operations Engine (UX) (PR #18):**
         - **Event Synchronization:** Optimized the `useEffect` hook in `ChessBoard.tsx` to accurately distinguish between system messages (Game Started, Errors) and player moves.

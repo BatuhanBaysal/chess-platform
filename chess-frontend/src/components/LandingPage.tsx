@@ -5,7 +5,7 @@ type ChessTheme = 'classic' | 'modern' | 'emerald';
 type TimeControl = 3 | 10 | 30;
 
 interface LandingPageProps {
-  onStart: (name: string, theme: ChessTheme, time: TimeControl) => void;
+  onStart: (theme: ChessTheme, time: TimeControl) => void;
 }
 
 const THEME_PREVIEWS = {
@@ -15,19 +15,11 @@ const THEME_PREVIEWS = {
 };
 
 const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
-  const [name, setName] = useState('');
   const [selectedTheme, setSelectedTheme] = useState<ChessTheme>('classic');
   const [selectedTime, setSelectedTime] = useState<TimeControl>(10);
 
-  // Validation logic for player name
-  const nameError = name.length > 0 && (
-    name.length < 3 ? 'Too short' : !/^[a-z]+$/.test(name) ? 'Lower alphabetic only' : null
-  );
-
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 relative">
-      
-      {/* Dynamic background accents */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full blur-[120px] bg-blue-500/10 dark:bg-blue-600/20" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full blur-[120px] bg-purple-500/10 dark:bg-purple-600/20" />
@@ -35,26 +27,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
 
       <div className="z-10 text-center mb-10">
         <h1 className="text-6xl font-black tracking-tighter mb-1 bg-clip-text text-transparent bg-gradient-to-b from-slate-950 to-slate-500 dark:from-white dark:to-slate-500">
-          CHESS CORE
+          CHESS PLATFORM
         </h1>
-        <p className="text-[9px] font-black tracking-[0.5em] uppercase opacity-40">Architectural Strategic Interface</p>
+        <p className="text-[9px] font-black tracking-[0.5em] uppercase opacity-40">Real-Time Multiplayer Experience</p>
       </div>
 
       <div className="z-10 w-full max-w-[420px] p-10 rounded-[3rem] border border-slate-200 dark:border-slate-800/60 bg-white/70 dark:bg-slate-900/40 backdrop-blur-3xl shadow-2xl">
         <div className="space-y-8">
-          
-          <section>
-            <label className="block text-[10px] font-black uppercase tracking-widest mb-3 opacity-40 ml-1">Player Identity</label>
-            <input 
-              type="text" 
-              value={name}
-              onChange={(e) => setName(e.target.value.toLowerCase())}
-              placeholder="Assign name..."
-              className="w-full bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-bold"
-            />
-            {nameError && <p className="text-[10px] text-red-500 font-bold mt-2 ml-1 uppercase tracking-tighter">{nameError}</p>}
-          </section>
-
           <section>
             <label className="block text-[10px] font-black uppercase tracking-widest mb-3 opacity-40 ml-1">Time Control</label>
             <div className="grid grid-cols-3 gap-2">
@@ -97,9 +76,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
           </section>
 
           <button 
-            disabled={!name || !!nameError}
-            onClick={() => onStart(name, selectedTheme, selectedTime)}
-            className="w-full py-5 rounded-[1.5rem] font-black uppercase tracking-[0.3em] text-xs transition-all bg-slate-950 text-white dark:bg-white dark:text-slate-950 hover:scale-[1.02] active:scale-95 disabled:opacity-20 shadow-xl"
+            onClick={() => onStart(selectedTheme, selectedTime)}
+            className="w-full py-5 rounded-[1.5rem] font-black uppercase tracking-[0.3em] text-xs transition-all bg-slate-950 text-white dark:bg-white dark:text-slate-950 hover:scale-[1.02] active:scale-95 shadow-xl"
           >
             Initiate Match
           </button>

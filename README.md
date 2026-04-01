@@ -9,8 +9,7 @@
 >
 > **Current Sprint:** Moving from local "Hot-seat" play to a global platform. I am currently implementing **Phase 7**, which focuses on **JWT-based Authentication**, **Persistent User Profiles**, and **Multiplayer Session Management** to support remote matches.
 
-![Menu Preview](docs/assets/screenshots/gameplay-features/main-menu.png)
-![Board Preview](docs/assets/screenshots/gameplay-features/initial-game-state.png)
+![Board Preview](docs/assets/screenshots/gameplay-features/user-dark-game.png)
 
 ---
 

@@ -1,13 +1,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Client } from '@stomp/stompjs';
+import { Client, StompHeaders } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
 interface ExecutedMove {
-  fromFile: number;
-  fromRank: number;
-  toFile: number;
-  toRank: number;
-  pieceType: string;
+  fromFile: number; fromRank: number; toFile: number; toRank: number; pieceType: string;
 }
 
 interface GameState {
@@ -20,110 +16,77 @@ interface GameState {
   lastMoveMessage: string; 
 }
 
-interface GameLog {
-  id: number;
-  message: string;
-  type: 'INFO' | 'ERROR' | 'SYSTEM';
-  timestamp: string;
-}
-
 const API_BASE_URL = 'http://localhost:8080';
 
 export const useChess = () => {
   const [game, setGame] = useState<GameState | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [activityLogs, setActivityLogs] = useState<GameLog[]>([]); 
-  
   const stompClientRef = useRef<Client | null>(null);
   const gameIdRef = useRef<string | null>(null);
 
-  const addLog = useCallback((message: string, type: 'INFO' | 'ERROR' | 'SYSTEM' = 'INFO') => {
-    setActivityLogs(prev => [{
-      id: Date.now(),
-      message,
-      type,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-    }, ...prev]); 
+  const getAuthHeader = useCallback((): Record<string, string> => {
+    const token = localStorage.getItem('token');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
   }, []);
 
   const connectWebSocket = useCallback((gameId: string) => {
-    if (stompClientRef.current?.active && gameIdRef.current === gameId) return;
+    if (stompClientRef.current) stompClientRef.current.deactivate();
 
-    if (stompClientRef.current) {
-      stompClientRef.current.deactivate();
-    }
-
+    const token = localStorage.getItem('token');
     const socket = new SockJS(`${API_BASE_URL}/ws-chess`);
+
     const client = new Client({
       webSocketFactory: () => socket,
+      connectHeaders: token ? { 'Authorization': `Bearer ${token}` } : {},
       reconnectDelay: 5000,
       onConnect: () => {
         setIsConnected(true);
-        addLog("Connected to game server.", "SYSTEM");
-        
         client.subscribe(`/topic/game/${gameId}`, (message) => {
-          const updatedGame: GameState = JSON.parse(message.body);
-          setGame(updatedGame);
-          if (updatedGame.lastMoveMessage) {
-            addLog(updatedGame.lastMoveMessage, "INFO");
-          }
-        });
-
-        client.subscribe(`/topic/game/${gameId}/errors`, (message) => {
-          addLog(message.body, "ERROR");
+          setGame(JSON.parse(message.body));
         });
       },
-      onDisconnect: () => {
-        setIsConnected(false);
-        addLog("Disconnected from server.", "SYSTEM");
+      onDisconnect: () => setIsConnected(false),
+      onStompError: (frame) => {
+        console.error('STOMP error:', frame.headers['message']);
       }
     });
 
     client.activate();
     stompClientRef.current = client;
     gameIdRef.current = gameId; 
-  }, [addLog]);
+  }, []);
 
   const startNewGame = useCallback(async () => {
     try {
-      setActivityLogs([]); 
-      setGame(null); 
+      setGame(null);
+      setIsConnected(false);
       
-      const res = await fetch(`${API_BASE_URL}/api/games`, { method: 'POST' });
+      const res = await fetch(`${API_BASE_URL}/api/games`, { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader() 
+        } as HeadersInit 
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`HTTP ${res.status}: ${errorText}`);
+      }
+
       const data: GameState = await res.json();
-      
       setGame(data);
-      addLog("New game session initialized.", "SYSTEM");
       connectWebSocket(data.gameId);
     } catch (err) {
-      addLog("Failed to start new game.", "ERROR");
-      console.error("New game error:", err);
+      console.error("Failed to start game:", err);
     }
-  }, [connectWebSocket, addLog]);
+  }, [connectWebSocket, getAuthHeader]);
 
   useEffect(() => {
-    let isMounted = true;
+    return () => { if (stompClientRef.current) stompClientRef.current.deactivate(); };
+  }, []);
 
-    fetch(`${API_BASE_URL}/api/games`, { method: 'POST' })
-      .then(res => res.json())
-      .then((data: GameState) => {
-        if (!isMounted) return;
-        setGame(data);
-        connectWebSocket(data.gameId);
-      })
-      .catch(err => console.error("Game initialization error:", err));
-
-    return () => {
-      isMounted = false;
-      if (stompClientRef.current) stompClientRef.current.deactivate();
-    };
-  }, [connectWebSocket]);
-
-  const makeMove = useCallback((
-    fromFile: number, fromRank: number, 
-    toFile: number, toRank: number, 
-    promotionPiece?: string 
-  ) => {
+  const makeMove = useCallback((fromFile: number, fromRank: number, toFile: number, toRank: number, promotionPiece?: string) => {
     const client = stompClientRef.current;
     if (client?.connected && gameIdRef.current) {
       client.publish({
@@ -132,28 +95,22 @@ export const useChess = () => {
           gameId: gameIdRef.current,
           fromFile, fromRank, toFile, toRank,
           promotionType: promotionPiece || null 
-        })
+        }),
+        headers: getAuthHeader() as StompHeaders 
       });
     }
-  }, []);
+  }, [getAuthHeader]);
 
   const fetchLegalMoves = useCallback(async (file: number, rank: number) => {
-    const currentId = gameIdRef.current;
-    if (!currentId) return [];
+    if (!gameIdRef.current) return [];
     try {
-      const response = await fetch(`${API_BASE_URL}/api/games/${currentId}/legal-moves?file=${file}&rank=${rank}`);
+      const response = await fetch(
+        `${API_BASE_URL}/api/games/${gameIdRef.current}/legal-moves?file=${file}&rank=${rank}`,
+        { headers: getAuthHeader() as HeadersInit }
+      );
       return response.ok ? await response.json() : [];
-    } catch (err) {
-      return [];
-    }
-  }, []);
+    } catch (err) { return []; }
+  }, [getAuthHeader]);
 
-  return { 
-    game, 
-    makeMove, 
-    isConnected, 
-    fetchLegalMoves, 
-    startNewGame,
-    activityLogs 
-  };
+  return { game, makeMove, isConnected, fetchLegalMoves, startNewGame };
 };

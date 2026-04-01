@@ -11,3 +11,9 @@ spring:
       # Automatically manages schema lifecycle for each test run.
       ddl-auto: create-drop
     show-sql: true
+
+chess:
+    security:
+        jwt:
+            secret-key: 638B4D6251655468576D5A7134743777217A25432A462D4A614E645267556B58 # for test
+            expiration: 86400000

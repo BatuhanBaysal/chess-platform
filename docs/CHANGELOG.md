@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+---
+
+## [0.7.0] - 2026-04-01
+
+### 🔐 Phase 7: Identity Management & Authentication Security
+> **Note:** This phase marks the transition from an anonymous platform to a User-Centric ecosystem. It hardens backend data security while establishing a professional "Identity Gateway" on the React frontend.
+
+- **2026-04-01:**
+    - **Integrated Authentication Suite (PR #20):**
+        - **Backend Security Hardening:** Implemented secure registration workflows with password hashing and robust credential validation. Tightened access controls for all Auth endpoints.
+        - **Frontend Identity Gateway:** Developed the `AuthCard` component, a high-fidelity interface for Login and Registration featuring React 19 state-driven form management.
+        - **API Validation:** Integrated server-side validation for `UserRequest` DTOs, ensuring data integrity (email formats, password complexity).
+        - **UX & Identity Switching:** Enabled fluid transitions between auth views and integrated a "Guest Login" bypass for immediate play access.
+        - **Theme Synchronization:** Fully integrated the Auth UI with the global Dark/Light mode engine for a seamless visual experience.
+        - **Verification:** Successfully conducted end-to-end (E2E) testing via Postman, covering all login, registration, and error-handling scenarios with a 100% pass rate.
+
+---
+
 ## [0.6.0] - 2026-03-26
 
 ### ♟️ Phase 6: Special Moves & Stability Refinement

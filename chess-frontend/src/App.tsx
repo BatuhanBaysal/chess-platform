@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useChess } from './hooks/useChess';
+import { useAuth } from './hooks/useAuth';
+import AuthCard from './components/AuthCard';
 import ChessBoard from './components/ChessBoard';
 import LandingPage from './components/LandingPage';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, LogOut } from 'lucide-react';
 
 export type ChessTheme = 'classic' | 'modern' | 'emerald';
 export type TimeControl = 3 | 10 | 30;
 
 function App() {
+  const { user, login, register, loginAsGuest, logout, loading: authLoading } = useAuth();
   const [view, setView] = useState<'MENU' | 'GAME'>('MENU');
   const [gameConfig, setGameConfig] = useState({
     playerName: '',
@@ -15,7 +18,6 @@ function App() {
     timeControl: 10 as TimeControl
   });
 
-  // Dark/Light mode state sync with localStorage
   const [colorMode, setColorMode] = useState(() => 
     localStorage.getItem('chess_color_mode') || 'dark'
   );
@@ -24,42 +26,58 @@ function App() {
 
   useEffect(() => {
     const html = window.document.documentElement;
-    colorMode === 'dark' ? html.classList.add('dark') : html.classList.remove('dark');
+    if (colorMode === 'dark') {
+      html.classList.add('dark');
+      document.body.style.backgroundColor = "#020617";
+    } else {
+      html.classList.remove('dark');
+      document.body.style.backgroundColor = "#ffffff";
+    }
     localStorage.setItem('chess_color_mode', colorMode);
   }, [colorMode]);
 
-  const handleStartMatch = (name: string, theme: ChessTheme, time: TimeControl) => {
-    setGameConfig({ playerName: name, theme, timeControl: time });
+  useEffect(() => {
+    if (user) setGameConfig(prev => ({ ...prev, playerName: user.username }));
+  }, [user]);
+
+  const handleStartMatch = (theme: ChessTheme, time: TimeControl) => {
+    setGameConfig(prev => ({ ...prev, theme, timeControl: time }));
     setView('GAME');
+    startNewGame();
   };
 
   const handleRestart = () => {
-    if (window.confirm("Are you sure you want to start a new game?")) {
-      startNewGame();
-    }
+    if (window.confirm("Start new game?")) startNewGame();
   };
 
-  // Loading state when transitioning to game
-  if (view === 'GAME' && !game) {
+  if (authLoading) return <div className="min-h-screen bg-white dark:bg-[#020617] flex items-center justify-center font-black uppercase text-xs">Loading...</div>;
+
+  if (!user) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#020617] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <div className="text-blue-500 font-mono animate-pulse text-xl tracking-widest uppercase">
-            Initializing Engine...
-          </div>
-        </div>
+      <AuthCard 
+        colorMode={colorMode}
+        setColorMode={setColorMode}
+        onLogin={(u, p) => login({ username: u, password: p })} 
+        onRegister={(u, p) => register({ username: u, password: p, email: `${u}@chess.com` })} 
+        onGuestLogin={loginAsGuest} 
+      />
+    );
+  }
+
+  if (view === 'GAME' && (!game || !isConnected)) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#020617] flex items-center justify-center flex-col gap-4">
+        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div className="text-blue-500 font-mono animate-pulse font-black uppercase">Initializing...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#020617] dark:text-white transition-colors duration-500 overflow-x-hidden">
-      
-      {/* Global Theme Toggle */}
+    <div className="min-h-screen bg-white text-slate-900 dark:bg-[#020617] dark:text-white transition-colors duration-500">
       <button 
-        onClick={() => setColorMode(prev => prev === 'dark' ? 'light' : 'dark')}
-        className="fixed top-6 right-6 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/50 backdrop-blur-md hover:scale-110 transition-all z-[9999] shadow-xl"
+        onClick={() => setColorMode(p => p === 'dark' ? 'light' : 'dark')} 
+        className="fixed top-6 right-6 p-3 rounded-2xl border dark:border-slate-800 bg-white/80 dark:bg-slate-900/50 z-[9999] hover:scale-110 transition-transform shadow-xl"
       >
         {colorMode === 'dark' ? <Sun size={20} className="text-yellow-500" /> : <Moon size={20} className="text-blue-600" />}
       </button>
@@ -67,71 +85,29 @@ function App() {
       {view === 'MENU' ? (
         <LandingPage onStart={handleStartMatch} />
       ) : (
-        <main className="flex flex-col items-center justify-start p-4 md:p-8 min-h-screen">
-          
-          <header className="z-10 text-center mb-10">
-            <h1 className="text-6xl font-black tracking-tighter mb-1 bg-clip-text text-transparent bg-gradient-to-b from-slate-950 to-slate-500 dark:from-white dark:to-slate-500">
-              CHESS CORE
-            </h1>
-            <p className="text-[9px] font-black tracking-[0.5em] uppercase opacity-40">Architectural Strategic Interface</p>
+        <main className="flex flex-col items-center p-4 md:p-8 min-h-screen">
+          <header className="mb-10 text-center">
+            <h1 className="text-6xl font-black tracking-tighter">CHESS PLATFORM</h1>
           </header>
 
-          {/* Unified Navigation & Status Bar */}
-          <nav className="z-20 w-full max-w-[1550px] mb-8 px-4 shrink-0">
-            <div className="flex flex-row items-center justify-between bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-3 px-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl transition-all duration-500">
-              
-              {/* Navigation Actions */}
-              <div className="flex-1 flex justify-start">
-                <button 
-                  onClick={() => setView('MENU')}
-                  className="group flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white hover:border-red-500 transition-all shadow-sm active:scale-95"
-                >
-                  <span className="group-hover:-translate-x-1 transition-transform">←</span> Main Menu
-                </button>
-              </div>
-
-              {/* Live Game Status */}
-              <div className={`flex-1 flex justify-center items-center gap-6 px-8 py-2 rounded-2xl transition-colors duration-500
-                ${game!.status === 'CHECK' || game!.status === 'CHECKMATE' ? 'bg-red-500/10' : 'bg-transparent'}`}>
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Turn:</span>
-                  <span className="text-[11px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
-                    {game!.currentTurn}
-                  </span>
-                </div>
-                <div className="w-px h-4 bg-slate-200 dark:bg-slate-700/50" />
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Status:</span>
-                  <span className={`text-[11px] font-black uppercase tracking-widest ${game!.status !== 'ACTIVE' ? 'text-red-500 animate-pulse' : ''}`}>
-                    {game!.status}
-                  </span>
-                </div>
-              </div>
-
-              {/* User Identity & System Connection */}
-              <div className="flex-1 flex justify-end">
-                <div className="flex items-center gap-4 bg-slate-100/50 dark:bg-slate-800/40 px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700/50 shadow-inner">
-                  <div className="flex flex-col items-end">
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">Identity</span>
-                    <span className="text-[11px] font-black uppercase tracking-widest italic">{gameConfig.playerName}</span>
-                  </div>
-                  <div className="w-px h-6 bg-slate-300 dark:bg-slate-700" />
-                  <div className="relative flex items-center justify-center">
-                    <div className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-                    {isConnected && <div className="absolute w-2.5 h-2.5 rounded-full bg-green-500 animate-ping opacity-75" />}
-                  </div>
-                </div>
-              </div>
-
+          <nav className="w-full max-w-[1550px] mb-8 px-4 flex justify-between items-center bg-white/80 dark:bg-slate-900/80 p-3 rounded-[2rem] border dark:border-slate-800 shadow-xl backdrop-blur-md">
+            <button onClick={() => setView('MENU')} className="px-5 py-2.5 rounded-xl border dark:border-slate-800 text-[10px] font-black uppercase hover:bg-red-500 hover:text-white transition-all">← Menu</button>
+            <div className="flex gap-6 items-center">
+              <span className="text-[11px] font-black uppercase text-blue-600 dark:text-blue-400">Turn: {game?.currentTurn}</span>
+              <div className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-[11px] font-black uppercase italic">{gameConfig.playerName}</span>
+              <button onClick={logout} className="p-1 hover:text-red-500 transition-colors"><LogOut size={18} /></button>
             </div>
           </nav>
 
           <ChessBoard 
-            boardRepresentation={game!.boardRepresentation} 
-            gameStatus={game!.status}
-            currentTurn={game!.currentTurn} 
-            moveHistory={game!.moveHistory || []} 
-            lastMoveMessage={game!.lastMoveMessage || ""}
+            boardRepresentation={game?.boardRepresentation || ""} 
+            gameStatus={game?.status || "ACTIVE"}
+            currentTurn={game?.currentTurn || "WHITE"} 
+            moveHistory={game?.moveHistory || []} 
+            lastMoveMessage={game?.lastMoveMessage || ""} 
             onMove={makeMove} 
             fetchLegalMoves={fetchLegalMoves}
             onNewGame={handleRestart}

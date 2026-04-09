@@ -1,22 +1,23 @@
 # ♟️ Chess Platform (Full-Stack Monorepo) ♔
 
-**A high-performance, real-time chess ecosystem engineered with a focus on Domain-Driven Design (DDD), Clean Architecture, and Modern Java 17 standards.**
+**A high-performance, real-time chess ecosystem engineered with a focus on Domain-Driven Design (DDD), Clean Architecture, and Modern Java 17+ standards.**
 
 ---
 
 ### 📡 Project Status: Core Engine & UX Finalized
-> **Operational Status:** The core chess engine is 100% operational, supporting all FIDE rules (Castling, En Passant, Promotion) with full synchronization between the **Spring Boot** backend and **React 19** frontend.
+> **Operational Status:** The core chess engine is **100% operational**, strictly adhering to **FIDE rules**. The system maintains full synchronization between the **Spring Boot** backend (Server-Side Logic) and **React 19** frontend (State Management).
 >
-> **Current Sprint:** Moving from local "Hot-seat" play to a global platform. I am currently implementing **Phase 7**, which focuses on **JWT-based Authentication**, **Persistent User Profiles**, and **Multiplayer Session Management** to support remote matches.
+> **Current Sprint:** Transitioning from local engine verification to a global multiplayer ecosystem. I have successfully implemented **Phase 7 & 8**, establishing **JWT-based Authentication**, **Persistent ELO Tracking**, and **Server-Side Move Validation** to ensure a cheat-proof environment.
 
-![Board Preview](docs/assets/screenshots/gameplay-features/user-dark-game.png)
+![Board Preview](docs/assets/screenshots/gameplay-features/chess-board.png)
 
 ---
 
-### 🛠️ Technology Stack
+### 🛠️ Technology Stack & Modern Standards
 
 **Backend:**
 ![Java 17](https://img.shields.io/badge/Java-17-orange?style=flat-square&logo=openjdk&logoColor=white)
+*(Utilizing **Sealed Classes** for piece hierarchies and **Records** for immutable DTOs)*
 ![Spring Boot 3.4.6](https://img.shields.io/badge/Spring_Boot-3.4.6-green?style=flat-square&logo=springboot&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
 ![JUnit 5](https://img.shields.io/badge/JUnit_5-C2185B?style=flat-square&logo=junit5&logoColor=white)
@@ -47,43 +48,63 @@ This project is architected as a **high-cohesion monorepo**. Operational process
 
 ---
 
+## 🧠 Engineering Challenges & Solutions
+
+### 1. Type-Safe Domain Modeling with Sealed Classes
+* **The Challenge:** Handling diverse piece movements often leads to brittle `instanceof` checks that are prone to runtime failures.
+* **The Solution:** I utilized **Java 17 Sealed Classes** to define a closed hierarchy for chess pieces. Combined with **Pattern Matching for switch**, the compiler now enforces exhaustive checks for every piece type.
+* **The Result:** Eliminated "unhandled piece type" bugs and created a highly readable, self-documenting movement logic.
+
+### 2. The "Single Source of Truth" Dilemma
+* **The Challenge:** Initial client-side validations were vulnerable to manipulation via the browser console.
+* **The Solution:** Migrated all logic to a **Server-Side Authority** in Spring Boot. The frontend now acts strictly as a "Viewer" and "Event Emitter."
+* **The Result:** Every move is validated by the server-side engine before persisting to PostgreSQL, ensuring a 100% cheat-proof environment.
+
+### 3. "Check" Validation Without Side Effects
+* **The Challenge:** Validating King safety required executing a move, which risked corrupting the live game state.
+* **The Solution:** Developed a **"Simulation & Rollback"** mechanism. The engine clones the state using **Java Records** for immutability, simulates the move on a virtual board, and then discards the simulation.
+
+---
+
 ## 🎯 Engineering Highlights
 
 ### 🧩 Domain-Driven Design (DDD) & Clean Architecture
 The core chess logic is encapsulated in a **Pure Java** domain layer.
 * **Zero Infrastructure Leakage:** Move validation is entirely decoupled from Spring Boot, ensuring 100% testability.
-* **Polymorphic Validation:** Leverages OOP principles where each piece (`Rook`, `Bishop`, etc.) encapsulates its own movement logic, significantly reducing conditional complexity in the `Game` engine.
+* **Polymorphic Validation:** Each piece (`Rook`, `Bishop`, etc.) encapsulates its own logic, reducing conditional complexity.
 
 ### ⚡ Robust Rule Engine
-* **FIDE Compliance:** Full support for **En Passant**, **Castling**, and **Pawn Promotion**.
-* **King Safety Simulation:** Implements a dry-run execution mechanism (with automatic rollback) to verify move legality and detect Check/Checkmate/Stalemate states.
+* **FIDE Compliance:** Full support for [Castling](docs/assets/screenshots/gameplay-features/castling.png), [En Passant](docs/assets/screenshots/gameplay-features/en-passant.png), and [Pawn Promotion](docs/assets/screenshots/gameplay-features/pawn-promotion.png).
+* **King Safety Simulation:** Dry-run execution to detect [Check](docs/assets/screenshots/gameplay-features/check.png), [Checkmate](docs/assets/screenshots/gameplay-features/checkmate.png), or Stale-mate.
 * **Efficient Pathfinding:** Optimized vector-based collision detection for sliding pieces.
 
-### 🔄 State Synchronization
-* **Modern React (v19):** Utilizing custom hooks and Tailwind CSS for a high-performance, responsive chess board.
-* **WebSocket Integration:** Prepared for real-time move transmission using STOMP protocol.
+### 🔄 State Synchronization & UX
+* **Modern React (v19):** Utilizing custom hooks and Tailwind CSS for a high-performance, responsive [Board UI](docs/assets/screenshots/gameplay-features/chess-board.png).
+* **Lobby & Social:** Sophisticated [Lobby System](docs/assets/screenshots/gameplay-features/menu-page.png) and persistent [User Statistics](docs/assets/screenshots/ui-previews/checkmate-victory-screen.png) against players or the **Training Bot**.
 
 ---
 
 ## 🚀 Development Roadmap
 
-*Current Status: ⏳ **Phase 7: Architecture Expansion (Identity & Persistence)***
+*Current Status: ⏳ **Phase 9: Global Ecosystem (Multiplayer & Matchmaking)***
 
 - ✅ **Phase 1: Foundation** 🏗️ - Monorepo scaffolding, environment setup, and Spring Boot/React initialization.
 - ✅ **Phase 2: Domain Modeling** ♟️ - Piece-specific logic, board initialization, and DDD-based movement rules.
 - ✅ **Phase 3: Rule Engine** ⚖️ - Legal move validation (King safety, check/mate detection) and FIDE standards.
 - ✅ **Phase 4: Communication Layer** 📡 - WebSocket infrastructure using STOMP protocol and real-time event mapping.
 - ✅ **Phase 5: UI Integration & Local Play** 🖥️ - Interactive React 19 board, Pawn Promotion, and Castling UI.
-- ✅ **Phase 6: Visual Polish & UX** 🎨 - Dark/Light mode, theme support (Classic, Modern, Emerald), Drag & Drop (`dnd-kit`), and Live Operation Logs.
-- ⏳ **Phase 7: Identity & Persistence** 🔐 - Restructuring into a **Modular Monolith**. Implementing Spring Security + JWT, User/Guest profiles, and PostgreSQL integration.
-- ⏳ **Phase 8: Server-Side Authority** 🛡️ - Server-side move validation, anti-cheat time synchronization, and backend-driven game state management.
-- ⏳ **Phase 9: Remote Multiplayer & Matchmaking** 🤝 - Session management, lobby system, and real-time player pairing based on ELO ratings.
+- ✅ **Phase 6: Visual Polish & UX** 🎨 - Dark/Light mode, theme support (Classic, Modern, Emerald), and Drag & Drop (`dnd-kit`).
+- ✅ **Phase 7: Identity & Persistence** 🔐 - Implemented **Spring Security + JWT**, User profiles, and PostgreSQL integration.
+- ✅ **Phase 8: Server-Side Authority** 🛡️ - Hardened backend validation for all moves and anti-cheat state management.
+- ⏳ **Phase 9: Remote Multiplayer & Matchmaking** 🤝 - Implementing global session management and real-time player pairing via WebSockets.
+- 📅 **Phase 10: Advanced Analytics & AI** 🧠 - Integration of Stockfish for move analysis and "Hint" system for the Training Bot.
 
-> **Note:** The project is evolving from a client-side heavy application to a robust, enterprise-grade chess platform focusing on **Domain-Driven Design (DDD)** and high-availability architecture.
+> **Note:** With the completion of **Phase 8**, the project has matured into a secure, server-authoritative platform focusing on **Domain-Driven Design (DDD)** and high-availability architecture.
 
 ---
 
 ## 👨‍💻 Developed By
-**Batuhan Baysal** - *Software Engineer* *Specializing in Scalable Software Design and Modern Backend Architectures.*
+**Batuhan Baysal** - *Software Engineer*
+*Specializing in Scalable Software Design, Modern Java, and Backend Architectures.*
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/in/batuhan-baysal) [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/BatuhanBaysal) [![Gmail](https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:batuhanbaysal3@gmail.com)

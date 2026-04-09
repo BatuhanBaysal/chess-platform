@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-04-09
+
+### 🛡️ Phase 8: Server-Side Authority & Engineering Hardening
+> **Note:** This phase establishes the Backend as the "Single Source of Truth." It eliminates client-side trust, enforcing strict server-side validation for every game action and ensuring architectural integrity through modern Java features.
+
+- **2026-04-09:**
+    - **Implementation of Server-Authoritative Logic (PR #21):**
+        - **Engine Centralization:** Migrated move validation from the React frontend to the Spring Boot core. The backend now performs exhaustive FIDE checks before updating the PostgreSQL state.
+        - **Advanced Piece Modeling:** Refactored the `Piece` hierarchy using **Java 17 Sealed Classes** and **Pattern Matching**, ensuring compile-time safety for move calculations across different piece types.
+        - **Domain Persistence:** Integrated **Java Records** for immutable state snapshots (`MoveRecord`, `GameStateRecord`), preventing accidental side effects during game simulations.
+        - **Anti-Cheat Infrastructure:** Developed a server-side "Clock-Sync" mechanism to prevent client-side timer manipulation during high-stakes matches.
+        - **ELO & Stats Engine:** Developed the initial `StatisticsService` to persist ELO ratings and match history against the **Training Bot** after game termination.
+        - **Performance Optimization:** Implemented a **Simulation & Rollback** pattern for "Check" detection, reducing object allocation overhead during heavy move-tree scans.
+        - **Validation:** Conducted a stress-test suite using JUnit 5, simulating 10,000+ random move sequences to verify state consistency and memory leak prevention.
+
 ---
 
 ## [0.7.0] - 2026-04-01

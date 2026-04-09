@@ -5,10 +5,12 @@ import {
   useDroppable, 
   PointerSensor, 
   useSensor, 
-  useSensors 
+  useSensors,
+  DragOverlay
 } from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core'; 
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'; 
 import { CSS } from '@dnd-kit/utilities';
+import { Trophy, ArrowLeft } from 'lucide-react';
 
 interface ChessBoardProps {
   boardRepresentation: string;
@@ -19,8 +21,10 @@ interface ChessBoardProps {
   onMove: (fromFile: number, fromRank: number, toFile: number, toRank: number, promotion?: string) => void;
   fetchLegalMoves?: (file: number, rank: number) => Promise<{ file: number, rank: number }[]>;
   onNewGame?: () => void;
+  onBackToMenu?: () => void;
   theme: 'classic' | 'modern' | 'emerald';
   timeLimit: number;
+  orientation: 'WHITE' | 'BLACK';
 }
 
 const PIECE_IMAGES: { [key: string]: string } = {
@@ -54,16 +58,32 @@ const INITIAL_PIECES = {
   black: ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'n', 'n', 'b', 'b', 'r', 'r', 'q', 'k']
 };
 
+const SCROLLBAR_STYLE = `
+  .custom-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scroll::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 10px;
+  }
+  .custom-scroll::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+  }
+`;
+
 const DraggablePiece: React.FC<{ char: string; index: number; isSelected: boolean }> = ({ char, index, isSelected }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `piece-${index}`,
-    data: { fromIndex: index }
+    data: { fromIndex: index, char }
   });
 
   const style = {
     transform: CSS.Translate.toString(transform),
     zIndex: isDragging ? 1000 : 10,
-    opacity: isDragging ? 0.6 : 1,
+    opacity: isDragging ? 0 : 1, 
   };
 
   return (
@@ -72,7 +92,7 @@ const DraggablePiece: React.FC<{ char: string; index: number; isSelected: boolea
       style={style}
       {...listeners}
       {...attributes}
-      className={`w-[90%] h-[90%] transition-transform cursor-grab active:cursor-grabbing ${isSelected ? 'scale-110' : ''}`}
+      className={`w-[95%] h-[95%] flex items-center justify-center transition-transform cursor-grab active:cursor-grabbing ${isSelected ? 'scale-110' : ''}`}
     >
       <img src={PIECE_IMAGES[char]} alt={char} className="w-full h-full pointer-events-none drop-shadow-md" />
     </div>
@@ -80,12 +100,12 @@ const DraggablePiece: React.FC<{ char: string; index: number; isSelected: boolea
 };
 
 const DroppableSquare: React.FC<{ index: number; children: React.ReactNode; className: string; onClick: () => void }> = ({ index, children, className, onClick }) => {
-  const { setNodeRef } = useDroppable({
+  const { setNodeRef, isOver } = useDroppable({
     id: `square-${index}`,
   });
 
   return (
-    <div ref={setNodeRef} onClick={onClick} className={className}>
+    <div ref={setNodeRef} onClick={onClick} className={`${className} ${isOver ? 'brightness-125' : ''}`}>
       {children}
     </div>
   );
@@ -99,35 +119,93 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
   lastMoveMessage,
   onMove, 
   fetchLegalMoves, 
-  onNewGame,
+  onBackToMenu,
   theme,
-  timeLimit
+  timeLimit,
+  orientation
 }) => {
   const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
   const [promotionPending, setPromotionPending] = useState<{ from: number, to: number } | null>(null);
   const [legalMoves, setLegalMoves] = useState<{ file: number, rank: number }[]>([]);
   const [logs, setLogs] = useState<{text: string, turn: string, time: string}[]>([]);
+  const [activePiece, setActivePiece] = useState<{char: string, index: number} | null>(null);
+  const [showGameOverModal, setShowGameOverModal] = useState(false);
+  const [activeTheme, setActiveTheme] = useState(theme);
   
   const [whiteTime, setWhiteTime] = useState(timeLimit * 60);
   const [blackTime, setBlackTime] = useState(timeLimit * 60);
 
   const lastProcessedMessage = useRef<string | null>(null);
-  const currentTheme = BOARD_THEMES[theme] || BOARD_THEMES.classic;
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('chess_preferred_theme');
+    if (savedTheme && (savedTheme === 'classic' || savedTheme === 'modern' || savedTheme === 'emerald')) {
+      setActiveTheme(savedTheme as any);
+    } else {
+      setActiveTheme(theme);
+    }
+  }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('chess_preferred_theme', activeTheme);
+  }, [activeTheme]);
+
+  const currentTheme = BOARD_THEMES[activeTheme] || BOARD_THEMES.classic;
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
+      activationConstraint: { distance: 5 },
     })
   );
 
   const boardData = boardRepresentation.split('|');
   const squares = boardData[0] ? boardData[0].slice(0, 64).split('') : Array(64).fill('.');
+  const upperStatus = gameStatus.toUpperCase();
+
+  useEffect(() => {
+    if (moveHistory.length > 0 && logs.length === 0) {
+      const initialLogs = moveHistory.map((move, idx) => ({
+        text: `Move: ${move}`,
+        turn: idx % 2 === 0 ? 'WHITE' : 'BLACK',
+        time: '--:--'
+      })).reverse();
+      setLogs(initialLogs);
+    }
+  }, [moveHistory]);
+
+  useEffect(() => {
+    const isNowGameOver = ['CHECKMATE', 'STALEMATE', 'DRAW', 'RESIGNED', 'TIMEOUT'].includes(upperStatus);
+    
+    if (isNowGameOver) {
+      const timer = setTimeout(() => {
+        setShowGameOverModal(true);
+        setSelectedSquare(null);
+        setLegalMoves([]);
+      }, 150); 
+      return () => clearTimeout(timer);
+    } else {
+      setShowGameOverModal(false);
+    }
+  }, [upperStatus]);
+
+  useEffect(() => {
+    if (upperStatus === 'ACTIVE' || upperStatus === 'CHECK' || upperStatus === 'WAITING') {
+      if (moveHistory.length === 0) {
+        setWhiteTime(timeLimit * 60);
+        setBlackTime(timeLimit * 60);
+      }
+    }
+  }, [moveHistory.length, timeLimit, upperStatus]);
+
+  const getVisualIndex = (index: number) => {
+    if (orientation === 'BLACK') return 63 - index;
+    return index;
+  };
 
   useEffect(() => {
     let interval: any;
-    const isGameOver = ['CHECKMATE', 'STALEMATE', 'DRAW', 'RESIGNED'].includes(gameStatus.toUpperCase());
-
-    if (!isGameOver) {
+    const isGameOver = ['CHECKMATE', 'STALEMATE', 'DRAW', 'RESIGNED', 'TIMEOUT'].includes(upperStatus);
+    if (!isGameOver && upperStatus !== 'WAITING') {
       interval = setInterval(() => {
         if (currentTurn.toUpperCase() === 'WHITE') {
           setWhiteTime(prev => Math.max(0, prev - 1));
@@ -137,21 +215,16 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [currentTurn, gameStatus]);
+  }, [currentTurn, upperStatus]);
 
   useEffect(() => {
-    setLegalMoves([]);
-    setSelectedSquare(null);
-    
     if (lastMoveMessage && lastMoveMessage !== lastProcessedMessage.current) {
       const isError = lastMoveMessage.includes("Illegal") || lastMoveMessage.includes("not your turn");
       const isStart = lastMoveMessage.includes("Game started");
       
-      let moveColor = "";
-      if (!isError && !isStart) {
-        moveColor = currentTurn.toUpperCase() === 'WHITE' ? 'BLACK' : 'WHITE';
-      }
-      
+      let moveColor = isStart ? "" : (currentTurn.toUpperCase() === 'WHITE' ? 'BLACK' : 'WHITE');
+      if (isError) moveColor = currentTurn.toUpperCase();
+
       const newLog = {
         text: lastMoveMessage,
         turn: moveColor,
@@ -160,6 +233,11 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
 
       setLogs(prev => [newLog, ...prev].slice(0, 50));
       lastProcessedMessage.current = lastMoveMessage;
+      
+      if (!isError) {
+        setSelectedSquare(null);
+        setLegalMoves([]);
+      }
     }
   }, [boardRepresentation, lastMoveMessage, currentTurn]);
 
@@ -179,12 +257,12 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
       if (idx > -1) tempBlack.splice(idx, 1);
     });
 
-    const whiteScore = tempBlack.reduce((acc, p) => acc + PIECE_VALUES[p], 0);
-    const blackScore = tempWhite.reduce((acc, p) => acc + PIECE_VALUES[p], 0);
+    const whiteScore = tempBlack.reduce((acc, p) => acc + PIECE_VALUES[p.toUpperCase()], 0);
+    const blackScore = tempWhite.reduce((acc, p) => acc + PIECE_VALUES[p.toUpperCase()], 0);
 
     return {
-      whiteCaptured: tempBlack.sort((a, b) => PIECE_VALUES[a] - PIECE_VALUES[b]),
-      blackCaptured: tempWhite.sort((a, b) => PIECE_VALUES[a] - PIECE_VALUES[b]),
+      whiteCaptured: tempBlack.sort((a, b) => PIECE_VALUES[a.toUpperCase()] - PIECE_VALUES[b.toUpperCase()]),
+      blackCaptured: tempWhite.sort((a, b) => PIECE_VALUES[a.toUpperCase()] - PIECE_VALUES[b.toUpperCase()]),
       advantage: whiteScore - blackScore
     };
   }, [squares]);
@@ -198,7 +276,7 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
   };
 
   const handleSquareClick = async (index: number) => {
-    const isGameOver = ['CHECKMATE', 'STALEMATE', 'DRAW', 'RESIGNED'].includes(gameStatus.toUpperCase());
+    const isGameOver = ['CHECKMATE', 'STALEMATE', 'DRAW', 'RESIGNED', 'TIMEOUT'].includes(upperStatus);
     if (isGameOver) return;
     
     const file = index % 8;
@@ -218,34 +296,32 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
           setLegalMoves(moves);
         }
       }
-      return;
-    }
-
-    if (selectedSquare === index) {
-      setSelectedSquare(null);
-      setLegalMoves([]);
-      return;
-    }
-
-    const isLegal = legalMoves.some(m => m.file === file && m.rank === rank);
-    
-    if (isLegal) {
-      executeMove(selectedSquare, index);
     } else {
-      const isWhite = pieceAtTarget !== '.' && pieceAtTarget === pieceAtTarget.toUpperCase();
-      const isBlack = pieceAtTarget !== '.' && pieceAtTarget === pieceAtTarget.toLowerCase();
-      const isOwnPiece = (currentTurn.toLowerCase() === 'white' && isWhite) || 
-                         (currentTurn.toLowerCase() === 'black' && isBlack);
-
-      if (isOwnPiece) {
-        setSelectedSquare(index);
-        if (fetchLegalMoves) {
-          const moves = await fetchLegalMoves(file, rank);
-          setLegalMoves(moves);
-        }
-      } else {
+      if (selectedSquare === index) {
         setSelectedSquare(null);
         setLegalMoves([]);
+        return;
+      }
+
+      const isLegal = legalMoves.some(m => m.file === file && m.rank === rank);
+      if (isLegal) {
+        executeMove(selectedSquare, index);
+      } else {
+        const isWhite = pieceAtTarget !== '.' && pieceAtTarget === pieceAtTarget.toUpperCase();
+        const isBlack = pieceAtTarget !== '.' && pieceAtTarget === pieceAtTarget.toLowerCase();
+        const isOwnPiece = (currentTurn.toLowerCase() === 'white' && isWhite) || 
+                           (currentTurn.toLowerCase() === 'black' && isBlack);
+        
+        if (isOwnPiece) {
+          setSelectedSquare(index);
+          if (fetchLegalMoves) {
+            const moves = await fetchLegalMoves(file, rank);
+            setLegalMoves(moves);
+          }
+        } else {
+          setSelectedSquare(null);
+          setLegalMoves([]);
+        }
       }
     }
   };
@@ -263,20 +339,36 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
       setPromotionPending({ from: fromIndex, to: toIndex });
     } else {
       onMove(fromFile, fromRank, toFile, toRank);
-      setSelectedSquare(null);
-      setLegalMoves([]);
     }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over) return;
+  const handleDragStart = (event: DragStartEvent) => {
+    const isGameOver = ['CHECKMATE', 'STALEMATE', 'DRAW', 'RESIGNED', 'TIMEOUT'].includes(upperStatus);
+    if (isGameOver) return;
+    const { active } = event;
+    const visualIndex = parseInt((active.id as string).split('-')[1]);
+    const index = getVisualIndex(visualIndex);
+    const char = active.data.current?.char;
+    setActivePiece({ char, index });
+    handleSquareClick(index); 
+  };
 
-    const fromIndex = active.data.current?.fromIndex;
-    const toIndex = parseInt((over.id as string).split('-')[1]);
+  const handleDragEnd = (event: DragEndEvent) => {
+    const isGameOver = ['CHECKMATE', 'STALEMATE', 'DRAW', 'RESIGNED', 'TIMEOUT'].includes(upperStatus);
+    const { active, over } = event;
+    setActivePiece(null);
+    if (!over || isGameOver) return;
+    
+    const visualFromIndex = parseInt((active.id as string).split('-')[1]);
+    const fromIndex = getVisualIndex(visualFromIndex);
+    const visualToIndex = parseInt((over.id as string).split('-')[1]);
+    const toIndex = getVisualIndex(visualToIndex);
 
     if (fromIndex !== undefined && fromIndex !== toIndex) {
-      executeMove(fromIndex, toIndex);
+      const file = toIndex % 8;
+      const rank = 7 - Math.floor(toIndex / 8);
+      const isLegal = legalMoves.some(m => m.file === file && m.rank === rank);
+      if (isLegal) executeMove(fromIndex, toIndex);
     }
   };
 
@@ -289,38 +381,62 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
     setLegalMoves([]);
   };
 
-  const renderMoveHistory = () => {
-    const rows = [];
+  const renderNotation = () => {
+    const pairs = [];
     for (let i = 0; i < moveHistory.length; i += 2) {
-      rows.push(
-        <div key={i} className="grid grid-cols-7 gap-1 border-b border-slate-100 dark:border-slate-700/50 py-2 px-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-          <span className="col-span-1 text-slate-400 dark:text-slate-500 font-bold text-[10px]">{Math.floor(i / 2) + 1}.</span>
-          <span className="col-span-3 text-slate-800 dark:text-slate-200 text-xs font-mono text-center">{moveHistory[i]}</span>
-          <span className="col-span-3 text-slate-800 dark:text-slate-200 text-xs font-mono text-center">{moveHistory[i + 1] || ""}</span>
-        </div>
-      );
+      pairs.push({
+        index: Math.floor(i / 2) + 1,
+        white: moveHistory[i],
+        black: moveHistory[i + 1] || "..."
+      });
     }
-    return rows;
+    return [...pairs].reverse();
   };
 
   return (
-    <div className="flex flex-col xl:flex-row items-stretch justify-center gap-6 p-8 
-    bg-white dark:bg-[#0f172a] 
-    border border-slate-200 dark:border-slate-800
-    rounded-2xl shadow-2xl max-w-[1550px] transition-colors duration-500">
+    <div className="flex flex-col xl:flex-row items-stretch justify-center gap-6 p-8 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-[1550px] transition-all relative">
+      <style>{SCROLLBAR_STYLE}</style>
       
+      {showGameOverModal && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-md">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-10 rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] flex flex-col items-center text-center animate-in zoom-in-95 duration-300">
+            <div className="w-20 h-20 bg-yellow-500/10 rounded-3xl flex items-center justify-center mb-6 border border-yellow-500/20">
+              <Trophy size={40} className="text-yellow-500" />
+            </div>
+            <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-2 uppercase tracking-tighter italic">MISSION COMPLETE</h2>
+            <div className="px-4 py-1.5 bg-blue-500/10 rounded-full border border-blue-500/20 mb-8">
+               <p className="text-blue-500 text-xs font-black uppercase tracking-widest">{upperStatus}: {currentTurn.toUpperCase() === 'WHITE' ? 'BLACK' : 'WHITE'} VICTORIOUS</p>
+            </div>
+            
+            <div className="grid grid-cols-1 gap-3 w-full min-w-[240px]">
+              <button 
+                onClick={() => {
+                  setShowGameOverModal(false);
+                  if (onBackToMenu) onBackToMenu();
+                  else window.location.href = '/';
+                }} 
+                className="group flex items-center justify-center gap-3 w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black rounded-2xl uppercase text-[10px] tracking-[0.2em] hover:scale-[1.02] active:scale-95 transition-all shadow-xl"
+              >
+                <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+                Return to Menu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {promotionPending && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl flex flex-col items-center min-w-[360px] gap-6 animate-in zoom-in-95">
-            <h3 className="text-blue-600 dark:text-white font-black uppercase text-xs tracking-[0.3em] bg-blue-500/10 px-4 py-1.5 rounded-full border border-blue-500/30">Promotion</h3>
-            <div className="grid grid-cols-2 gap-4 w-full">
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-700 shadow-2xl flex flex-col items-center gap-6">
+            <h3 className="text-blue-500 font-black uppercase text-xs tracking-widest px-4 py-1.5 rounded-full border border-blue-500/30">Promotion</h3>
+            <div className="grid grid-cols-2 gap-4">
               {['QUEEN', 'ROOK', 'BISHOP', 'KNIGHT'].map((type) => {
                 const pieceKey = type === 'KNIGHT' ? 'N' : type[0];
                 const finalKey = currentTurn.toUpperCase() === 'WHITE' ? pieceKey : pieceKey.toLowerCase();
                 return (
-                  <button key={type} onClick={() => completePromotion(type)} className="flex flex-col items-center justify-center gap-3 p-6 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl hover:bg-blue-600/10 dark:hover:bg-blue-600/20 hover:border-blue-500/50 transition-all group">
+                  <button key={type} onClick={() => completePromotion(type)} className="flex flex-col items-center p-6 bg-slate-800 border border-slate-700 rounded-2xl hover:bg-blue-600/20 transition-all group">
                     <img src={PIECE_IMAGES[finalKey]} className="w-16 h-16 group-hover:scale-110 transition-transform" alt={type} />
-                    <span className="text-[10px] text-slate-600 dark:text-slate-400 font-bold tracking-widest uppercase group-hover:text-blue-500">{type}</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase mt-2 group-hover:text-blue-500">{type}</span>
                   </button>
                 );
               })}
@@ -329,135 +445,115 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
         </div>
       )}
 
-      {/* LEFT PANEL: TIMERS & CAPTURED */}
-      <div className="w-32 bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700/50 rounded-xl flex flex-col justify-between p-3 py-4 backdrop-blur-sm h-[600px] transition-colors">
+      <div className="w-full xl:w-32 bg-slate-900/40 border border-slate-700/50 rounded-xl flex xl:flex-col justify-between p-3 py-4 backdrop-blur-sm h-auto xl:h-[600px]">
         <div className="flex flex-col items-center gap-2">
-          <div className="text-[14px] font-black font-mono text-slate-700 dark:text-slate-400 mb-2 bg-white dark:bg-slate-800 px-3 py-1 rounded border border-slate-200 dark:border-slate-700 shadow-sm">{formatTime(blackTime)}</div>
-          <div className="grid grid-cols-2 gap-1 overflow-y-auto modern-scroll max-h-[180px]">
-            {blackCaptured.map((p, i) => (<img key={i} src={PIECE_IMAGES[p]} className="w-6 h-6 opacity-80 dark:opacity-60 grayscale hover:grayscale-0 transition-all" alt="cap" />))}
+          <div className="text-[14px] font-black font-mono text-slate-400 bg-slate-800 px-3 py-1 rounded border border-slate-700">{formatTime(blackTime)}</div>
+          <div className="grid grid-cols-4 xl:grid-cols-2 gap-1 max-h-[180px] overflow-y-auto custom-scroll">
+            {blackCaptured.map((p, i) => (<img key={i} src={PIECE_IMAGES[p]} className="w-6 h-6 grayscale hover:grayscale-0" alt="cap" />))}
           </div>
-          {advantage < 0 && <span className="text-[10px] font-black bg-red-500/20 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full">+{Math.abs(advantage)}</span>}
+          {advantage < 0 && <span className="text-[10px] font-black bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">+{Math.abs(advantage)}</span>}
         </div>
-        <div className="h-px bg-slate-200 dark:bg-slate-700/30 w-full my-4" />
+        <div className="hidden xl:block h-px bg-slate-700/30 w-full" />
         <div className="flex flex-col items-center gap-2">
-          {advantage > 0 && <span className="text-[10px] font-black bg-green-500/20 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full">+{advantage}</span>}
-          <div className="grid grid-cols-2 gap-1 overflow-y-auto modern-scroll max-h-[180px]">
-            {whiteCaptured.map((p, i) => (<img key={i} src={PIECE_IMAGES[p]} className="w-6 h-6 opacity-80 dark:opacity-60 grayscale hover:grayscale-0 transition-all" alt="cap" />))}
+          {advantage > 0 && <span className="text-[10px] font-black bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">+{advantage}</span>}
+          <div className="grid grid-cols-4 xl:grid-cols-2 gap-1 max-h-[180px] overflow-y-auto custom-scroll">
+            {whiteCaptured.map((p, i) => (<img key={i} src={PIECE_IMAGES[p]} className="w-6 h-6 grayscale hover:grayscale-0" alt="cap" />))}
           </div>
-          <div className="text-[14px] font-black font-mono text-blue-700 dark:text-blue-400 mt-2 bg-blue-50 dark:bg-blue-500/10 px-3 py-1 rounded border border-blue-200 dark:border-blue-500/30 shadow-sm">{formatTime(whiteTime)}</div>
+          <div className="text-[14px] font-black font-mono text-blue-400 bg-blue-500/10 px-3 py-1 rounded border border-blue-500/30">{formatTime(whiteTime)}</div>
         </div>
       </div>
 
-      {/* CENTER: CHESS BOARD */}
-      <div className="relative select-none">
-        {gameStatus === 'CHECKMATE' && (
-          <div className="absolute inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md rounded-lg">
-            <div className="bg-white dark:bg-slate-800 border-2 border-yellow-500/50 p-8 rounded-3xl shadow-2xl flex flex-col items-center text-center">
-              <span className="text-4xl mb-4">🏆</span>
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2 uppercase tracking-tighter">Checkmate!</h2>
-              <p className="text-slate-600 dark:text-slate-400 text-sm mb-6 uppercase font-bold tracking-widest">{currentTurn.toUpperCase() === 'WHITE' ? 'BLACK' : 'WHITE'} Wins</p>
-              <button onClick={onNewGame} className="w-full py-3 px-6 bg-yellow-500 text-slate-900 font-black rounded-xl uppercase text-xs tracking-widest hover:bg-yellow-400 transition-colors shadow-lg">New Game</button>
-            </div>
-          </div>
-        )}
-
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <div className="grid grid-cols-8 grid-rows-8 border-[12px] border-slate-200 dark:border-slate-900 bg-slate-200 dark:bg-slate-900 rounded-lg shadow-2xl transition-colors" style={{ width: '600px', height: '600px' }}>
-            {squares.map((char, index) => {
-              const row = Math.floor(index / 8);
-              const col = index % 8;
+      <div className="relative">
+        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          <div className="grid grid-cols-8 grid-rows-8 border-[12px] border-slate-900 bg-slate-900 rounded-lg shadow-2xl" style={{ width: '600px', height: '600px' }}>
+            {Array.from({ length: 64 }).map((_, visualIndex) => {
+              const actualIndex = getVisualIndex(visualIndex);
+              const char = squares[actualIndex];
+              const row = Math.floor(actualIndex / 8);
+              const col = actualIndex % 8;
               const currentRank = 7 - row;
+              
               const isDark = (row + col) % 2 === 1;
-              const isSelected = selectedSquare === index;
+              const isSelected = selectedSquare === actualIndex;
               const isLegalTarget = legalMoves.some(m => m.file === col && m.rank === currentRank);
-              const isCheck = gameStatus === 'CHECK' || gameStatus === 'CHECKMATE';
-              const isKingInDanger = isCheck && ((currentTurn.toUpperCase() === 'WHITE' && char === 'K') || (currentTurn.toUpperCase() === 'BLACK' && char === 'k'));
+              const isKingInDanger = (upperStatus === 'CHECK' || upperStatus === 'CHECKMATE') && 
+                                     ((currentTurn.toUpperCase() === 'WHITE' && char === 'K') || 
+                                      (currentTurn.toUpperCase() === 'BLACK' && char === 'k'));
 
-              const squareClass = `relative flex items-center justify-center transition-all aspect-square 
+              const squareClass = `relative flex items-center justify-center aspect-square transition-all
                 ${isDark ? currentTheme.dark : currentTheme.light} 
-                ${isSelected ? 'bg-blue-500/50 shadow-[inset_0_0_0_4px_#3b82f6] z-10' : 'hover:brightness-110'} 
-                ${isKingInDanger ? 'bg-red-600/90 shadow-[0_0_20px_rgba(220,38,38,0.8)] z-50 animate-pulse' : ''}`;
+                ${isSelected ? 'bg-blue-500/50 shadow-[inset_0_0_0_4px_#3b82f6] z-10' : ''} 
+                ${isKingInDanger ? 'bg-red-600/90 animate-pulse z-20' : ''}`;
 
               return (
-                <DroppableSquare key={index} index={index} onClick={() => handleSquareClick(index)} className={squareClass}>
+                <DroppableSquare key={visualIndex} index={visualIndex} onClick={() => handleSquareClick(actualIndex)} className={squareClass}>
                   {col === 0 && <span className={`absolute left-1 top-0.5 text-[10px] font-bold ${isDark ? currentTheme.textLight : currentTheme.textDark}`}>{currentRank + 1}</span>}
                   {row === 7 && <span className={`absolute right-1 bottom-0.5 text-[10px] font-bold ${isDark ? currentTheme.textLight : currentTheme.textDark}`}>{String.fromCharCode(97 + col)}</span>}
-                  {isLegalTarget && (<div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">{char === '.' ? (<div className="w-4 h-4 bg-black/15 rounded-full" />) : (<div className="w-full h-full border-[8px] border-black/10 rounded-full" />)}</div>)}
+                  
+                  {isLegalTarget && (
+                    <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+                      {char === '.' ? <div className="w-4 h-4 bg-black/15 rounded-full" /> : <div className="w-full h-full border-[6px] border-black/10 rounded-full" />}
+                    </div>
+                  )}
+
                   {char !== '.' && (
-                    <DraggablePiece char={char} index={index} isSelected={isSelected} />
+                    <DraggablePiece char={char} index={visualIndex} isSelected={isSelected} />
                   )}
                 </DroppableSquare>
               );
             })}
           </div>
+          
+          <DragOverlay dropAnimation={null}>
+            {activePiece ? (
+              <div className="w-[70px] h-[70px] flex items-center justify-center cursor-grabbing">
+                <img src={PIECE_IMAGES[activePiece.char]} alt="dragging" className="w-[90%] h-[90%] drop-shadow-2xl" />
+              </div>
+            ) : null}
+          </DragOverlay>
         </DndContext>
       </div>
 
-      {/* RIGHT PANELS: LOGS & NOTATION */}
-      <div className="flex gap-4 h-[600px]">
-        <div className="w-[400px] bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-xl flex flex-col overflow-hidden backdrop-blur-md transition-colors">
-          <div className="bg-slate-100 dark:bg-slate-800 p-4 border-b border-slate-200 dark:border-slate-700">
-            <h2 className="text-slate-900 dark:text-white text-[10px] font-black uppercase tracking-[0.2em] text-center">Live Operations</h2>
+      <div className="flex flex-row gap-4 h-[600px] w-full xl:w-[500px]">
+        
+        <div className="flex-1 bg-slate-900/50 border border-slate-700/50 rounded-xl flex flex-col overflow-hidden backdrop-blur-md">
+          <div className="bg-slate-800 p-3 border-b border-slate-700 text-center">
+            <h2 className="text-[10px] font-black uppercase tracking-widest text-white italic">Live Telemetry</h2>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 modern-scroll">
-            {logs.length === 0 && <div className="h-full flex items-center justify-center opacity-20 text-[10px] font-black text-slate-900 dark:text-white">READY...</div>}
-            {logs.map((log, i) => {
-              const isError = log.text.includes("Illegal") || log.text.includes("not your turn");
-              const isCheck = log.text.includes("CHECK");
-              return (
-                <div key={i} className={`text-[11px] p-3 rounded-lg border-l-2 leading-relaxed transition-all animate-in slide-in-from-right-2
-                  ${isError ? "bg-red-500/10 border-red-500 text-red-700 dark:text-red-200" : 
-                    isCheck ? "bg-red-600/20 border-red-500 text-red-800 dark:text-red-100 shadow-sm" : 
-                    "bg-white dark:bg-slate-800/40 border-blue-500 text-slate-800 dark:text-slate-300 shadow-sm"}`}>
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="opacity-50 dark:opacity-40 font-mono text-[9px]">{log.time}</span>
-                    {log.turn && (
-                       <span className={`text-[9px] px-2 py-0.5 rounded-md font-black uppercase tracking-tighter shadow-sm
-                         ${log.turn === 'WHITE' ? 'bg-white dark:bg-white text-black border border-slate-200 dark:border-transparent' : 'bg-slate-700 text-white border border-slate-600'}`}>
-                         {log.turn}
-                       </span>
-                    )}
-                  </div>
-                  <span className={`font-semibold tracking-wide ${isCheck ? "animate-pulse" : ""}`}>
-                    {log.text.startsWith("Game") || log.text.includes("WHITE") || log.text.includes("BLACK") 
-                      ? log.text 
-                      : `${log.turn} ${log.text}`}
-                  </span>
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scroll">
+            {logs.length === 0 && (
+              <div className="flex items-center justify-center h-full text-[9px] font-black uppercase tracking-widest text-slate-600">Waiting for data...</div>
+            )}
+            {logs.map((log, i) => (
+              <div key={i} className={`text-[11px] p-3 rounded-lg border-l-2 ${log.text.includes("Illegal") ? "bg-rose-500/10 border-rose-500 text-rose-200" : "bg-slate-800/40 border-blue-500 text-slate-300"}`}>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="opacity-40 font-mono text-[9px]">{log.time}</span>
+                  {log.turn && <span className={`text-[8px] px-1.5 py-0.5 rounded font-black ${log.turn === 'WHITE' ? 'bg-white text-black' : 'bg-slate-700 text-white'}`}>{log.turn}</span>}
                 </div>
-              );
-            })}
+                <span className="font-semibold">{log.text}</span>
+              </div>
+            ))}
           </div>
-          <div className={`p-3 text-center text-[10px] font-black uppercase tracking-widest border-t border-slate-200 dark:border-slate-800/50 ${gameStatus === 'ACTIVE' ? 'bg-green-500/10 text-green-600 dark:text-green-500' : 'bg-red-500/10 text-red-600 dark:text-red-400'}`}>STATUS: {gameStatus}</div>
         </div>
 
-        <div className="w-64 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-xl flex flex-col overflow-hidden backdrop-blur-md shadow-2xl h-full transition-colors">
-          <div className="bg-slate-100 dark:bg-slate-800/80 p-3 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between shrink-0">
-            <h2 className="text-slate-900 dark:text-white text-[10px] font-black uppercase tracking-[0.2em]">Live Notation</h2>
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+        <div className="w-[180px] bg-slate-900/50 border border-slate-700/50 rounded-xl flex flex-col overflow-hidden backdrop-blur-md">
+          <div className="bg-slate-800 p-3 border-b border-slate-700">
+            <h2 className="text-[10px] font-black uppercase tracking-widest text-white italic">Notation</h2>
           </div>
-          <div className="grid grid-cols-7 gap-1 bg-slate-50 dark:bg-slate-800/30 py-2 px-3 text-[9px] font-black text-slate-500 uppercase border-b border-slate-200 dark:border-slate-700/50 shrink-0">
-            <span className="col-span-1 text-center">#</span>
-            <span className="col-span-3 text-center">White</span>
-            <span className="col-span-3 text-center">Black</span>
-          </div>
-          <div className="flex-1 overflow-y-auto modern-scroll flex flex-col">
-            {moveHistory.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-32 opacity-20">
-                <span className="font-bold uppercase text-[10px] tracking-widest text-slate-900 dark:text-white">No Moves Yet</span>
+          <div className="flex-1 overflow-y-auto p-2 custom-scroll">
+            {renderNotation().map((pair) => (
+              <div key={pair.index} className="grid grid-cols-3 text-[11px] py-2 border-b border-slate-800/50 text-slate-400 font-mono items-center">
+                <span className="font-bold text-blue-500/50 text-center">{pair.index}.</span>
+                <span className="text-slate-200">{pair.white}</span>
+                <span className="text-slate-400">{pair.black}</span>
               </div>
-            ) : (
-              <div className="flex flex-col-reverse divide-y divide-y-reverse divide-slate-100 dark:divide-slate-800/50">
-                {renderMoveHistory()}
-              </div>
+            ))}
+            {moveHistory.length === 0 && (
+              <div className="text-[9px] text-center mt-10 text-slate-600 font-black uppercase tracking-tighter">No moves yet</div>
             )}
           </div>
-          <div className="bg-slate-100 dark:bg-slate-800/60 p-2 border-t border-slate-200 dark:border-slate-700/50 mt-auto shrink-0">
-            <div className="flex justify-between items-center px-2">
-                <span className="text-[8px] text-slate-500 uppercase font-bold tracking-tighter">Status: {gameStatus}</span>
-                <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-black tabular-nums">TOTAL MOVES: {moveHistory.length}</span>
-            </div>
-          </div>
         </div>
+
       </div>
     </div>
   );

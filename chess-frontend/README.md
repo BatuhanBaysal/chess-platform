@@ -27,32 +27,33 @@ To maintain a single source of truth, all installation and environment configura
 ---
 
 ## 🛠️ Technical Stack
-- **Bundler:** [Vite](https://vitejs.dev/) (Chosen for ultra-fast Hot Module Replacement and optimized build times).
-- **Styling:** [Tailwind CSS](https://tailwindcss.com/) (Utility-first CSS for rapid UI development and design consistency).
-- **Icons & Assets:** Optimized SVGs for resolution-independent, high-fidelity chess pieces.
-- **State Management:** React 19 State API + Custom Hooks for lightweight, high-performance logic.
+- **Bundler:** [Vite](https://vitejs.dev/) - Selected for ultra-fast Hot Module Replacement (HMR) and an optimized Rollup-based build pipeline.
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/) - Utility-first approach used to implement a consistent, design-system-oriented UI with full Dark/Light mode support.
+- **Assets:** Optimized high-fidelity SVGs for pieces, hosted locally to ensure resolution-independent rendering and zero external latency.
+- **State Management:** React 19 Context & Hooks API - Utilized for lightweight, high-performance logic management without the overhead of external state libraries.
 
 ---
 
 ## 📂 Directory Structure
 ```text
 src/
-├── assets/      # Optimized Piece SVGs & Media assets
-├── components/  # Atomic UI Components (ChessBoard.tsx, Square, etc.)
-├── hooks/       # Custom Business Logic (useChess.ts for engine sync)
-├── App.tsx      # Main application orchestrator
-├── main.tsx     # React DOM entry point
-└── index.css    # Tailwind directives & global styles
+├── api/         # Infrastructure Layer: API clients (Axios) & Service definitions
+├── assets/      # Media Gallery: Specialized piece SVGs, backgrounds & brand assets
+├── components/  # Atomic UI Components: Modular React 19 units (ChessBoard, AuthCard, Piece)
+├── hooks/       # Custom Business Logic: Engine synchronization & Auth state management
+├── App.tsx      # Application Root: Global routing and context orchestration
+├── main.tsx     # React DOM entry point and strict mode initialization
+└── index.css    # Global styling: Tailwind CSS directives & theme variables
 ```
 
 ## 🧪 Engineering Focus Areas
 This frontend is architected as a high-performance state machine, designed for real-time accuracy and fluid gameplay:
 
-* **Hook-Based Logic Orchestration:** By centralizing the game engine logic within the `useChess.ts` custom hook, we achieve a clean separation of concerns. This allows the UI components to remain "dumb" and focus purely on rendering, while the hook manages complex move validation, turn switching, and state synchronization.
-* **Optimized Board Rendering:** We utilize React 19's rendering optimization strategies (such as `memo` and selective state updates) to ensure that only the affected squares (e.g., source and target squares of a move) are re-rendered. This keeps the 64-square board interactions fluid and lag-free.
-* **Full-Stack Type Integrity:** We maintain strict synchronization between **TypeScript** interfaces and Backend Domain models (Java Records). This ensures total data consistency and prevents runtime errors when receiving complex game state snapshots over the bridge.
-* **Atomic Component Architecture:** By breaking the UI into small, reusable components (Square -> Piece -> ChessBoard), we ensure the codebase remains maintainable. This structure is specifically designed to easily integrate future features like move history, captured piece displays, and promotion modals.
-* **Responsive Fluidity:** A mobile-first, responsive design approach using **Tailwind CSS**, ensuring a seamless and aesthetic experience across all screen sizes from large desktop monitors to mobile browsers.
+* **Engine Synchronization (useChess):** The `useChess.ts` custom hook acts as the bridge between the UI and the Backend Rule Engine. It orchestrates real-time WebSocket events and local optimistic updates while maintaining strict state synchronization with the **Server-Side Authority**.
+* **Identity & Access Management:** With the implementation of **Phase 7**, the frontend now manages secure session persistence via **JWT**. The `AuthCard` and dedicated auth hooks ensure that user identity is consistently injected into the API layer for authenticated gameplay.
+* **Component-Level Rendering Optimization:** We leverage React 19's optimized rendering cycle to ensure that only the affected squares of the 64-tile grid are updated during a move. This results in fluid, sub-millisecond board interactions.
+* **Full-Stack Type Integrity:** Strict synchronization is maintained between **TypeScript** interfaces and Backend Java Records. This "Domain Mirroring" ensures total data consistency and provides compile-time protection when processing complex server-side state snapshots.
+* **Atomic Component Philosophy:** The UI is decomposed into small, reusable units (Square -> Piece -> MoveLog). This modularity allowed for the rapid integration of complex features like the **Promotion Modal** and **Live Operations Log** without breaking the core board architecture.
 
 ---
 *Focus: Delivering a seamless, real-time user experience with modern React standards.*

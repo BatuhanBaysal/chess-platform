@@ -27,26 +27,31 @@ To maintain a single source of truth, all installation and environment setup ins
 ---
 
 ## 🛠️ Key Technical Features
+- **Server-Side Authority (Single Source of Truth):** Complete migration of game logic to the backend. All move validations, timer synchronizations, and game state transitions are strictly enforced by the server to prevent client-side manipulation.
 - **Polymorphic Move Validation:** Leveraging OOP principles where each `Piece` subclass encapsulates its own movement rules, eliminating complex conditional logic in the core engine.
 - **Simulative Move Safety:** Sophisticated check-detection mechanism using temporary state simulation with **atomic rollback** (`try-finally`) to ensure moves never leave the King vulnerable.
-- **FIDE-Compliant Rule Engine:** Full implementation of **En Passant**, **Castling**, **Pawn Promotion**, and draw conditions (**50-move rule**, **Threefold Repetition**).
-- **Modern Java 17 Features:** Extensive use of **Sealed Classes** for the piece hierarchy and **Records** for immutable DTOs and state snapshots.
+- **Modern Java 17+ Standards:** Extensive use of **Sealed Classes** and **Pattern Matching** for the piece hierarchy, and **Records** for immutable DTOs and thread-safe state snapshots.
 
 ---
 
 ## 📂 Package Structure (DDD Oriented)
 ```text
 com.batuhan.chess
-├── api                   # Entry points for the application
-│   ├── config            # Security & WebSocket protocol configurations
-│   ├── controller        # REST & WebSocket STOMP message handlers
-│   └── dto               # Immutable Data Transfer Objects (Records)
-├── application.service   # Orchestration logic (GameService)
-├── domain.model          # Pure Java Core (The Chess Engine)
-│   ├── Bishop, Rook...   # Polymorphic piece implementations
-│   ├── Board, Game       # Aggregate roots and board state
-│   └── Color, Position   # Domain Value Objects & Enums
-└── ChessBackendApplication # Spring Boot Bootstrapper
+├── api                         # Infrastructure Layer: External communication interfaces
+│   ├── config                  # Protocol configurations (Security, WebSocket, CORS)
+│   ├── controller              # Interface Adapters (REST Controllers & WebSocket Handlers)
+│   ├── dto                     # Data Transfer Objects (Auth, Game, Error records)
+│   └── exception               # Global API error handling and custom domain exceptions
+├── application.service         # Application Layer: Use case orchestration
+│   ├── auth                    # Identity and access management workflows
+│   └── game                    # Game session coordination and match logic
+├── domain                      # Domain Layer: Pure Java business logic (Heart of the engine)
+│   ├── model                   # Core Domain Models
+│   │   ├── chess               # Piece-specific logic (Sealed Classes), Board, and Game engine
+│   │   ├── history             # Persistent match tracking and move archives
+│   │   └── user                # User aggregate and identity domain models
+│   └── repository              # Domain Repository interfaces (Contract for Persistence)
+└── ChessBackendApplication     # Spring Boot entry point and auto-configuration
 ```
 
 ## 🧪 Testing Strategy
@@ -67,11 +72,11 @@ Our testing methodology focuses on **Domain Integrity**. Since the core logic is
 ## 📂 Engineering Focus Areas
 This backend serves as a technical showcase for modern software engineering standards and clean coding practices:
 
-* **Domain Purity:** Framework-agnostic "Pure Java" core for maximum testability. This architecture allows the chess engine to be ported or reused without any Spring Boot dependency.
-* **Polymorphic Move Engine:** By moving validation logic into the `Piece` hierarchy, we've achieved a highly extensible design. Adding a new "Fairy Chess" piece is as simple as creating a new class, without touching the core `Game` logic.
-* **Sealed Piece Hierarchy:** Leveraging Java 17 `sealed` types to provide compile-time safety. This ensures that only valid chess pieces exist in the system and allows for exhaustive pattern matching.
-* **Hexagonal Alignment:** Clear boundaries between business rules (Domain) and technical implementations (Infrastructure). The `api` layer "drives" the domain, while the domain remains blissfully unaware of WebSockets or REST.
-* **Record-Based Data Flow:** Using Java **Records** for DTOs and internal state snapshots to guarantee immutability and thread-safety across different system layers.
+* **Domain Purity & Encapsulation:** A framework-agnostic "Pure Java" core. The engine's logic is isolated from Spring Boot, allowing for high-speed unit testing and ensuring that business rules remain decoupled from infrastructure.
+* **Modern Java Patterns:** Leveraging **Sealed Classes** to define a closed hierarchy for chess pieces. This allows for exhaustive **Pattern Matching** in the move engine, providing compile-time safety and eliminating the need for brittle `instanceof` checks.
+* **Immutability & Thread Safety:** Using **Java Records** for internal state snapshots (`MoveRecord`, `PositionRecord`). This ensures that the game state remains predictable and side-effect-free, especially during complex move simulations.
+* **Hexagonal Alignment:** Strict boundaries where the `api` layer "drives" the domain, and the `infrastructure` layer handles persistence through `domain` interfaces, keeping the core "Hexagon" unaware of technical details like PostgreSQL or WebSockets.
+* **Security & Authority:** Implementation of **JWT-based authentication** and server-side move enforcement, transforming the project from a visual tool into a secure, enterprise-grade chess platform.
 
 ---
 *Maintained with professional intent and a focus on Scalable Software Design.*

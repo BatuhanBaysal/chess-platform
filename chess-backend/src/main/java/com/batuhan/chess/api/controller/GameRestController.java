@@ -23,10 +23,9 @@ public class GameRestController {
 
     @GetMapping("/{gameId}")
     public GameResponse getGame(@PathVariable String gameId,
-                                @RequestParam(required = false) Long blackId) {
-        log.info("Fetching game context for ID: {}, Rejoining Player: {}", gameId, blackId);
-
+                                @RequestParam(required = false) Long userId) {
         Game game = gameService.getGame(gameId);
+        boolean isStarted = gameService.isGameStarted(gameId);
 
         return new GameResponse(
             gameId,
@@ -37,7 +36,8 @@ public class GameRestController {
             game.getHumanReadableHistory(),
             game.getLastMoveMessage(),
             game.getWhitePlayerId(),
-            game.getBlackPlayerId()
+            game.getBlackPlayerId(),
+            isStarted
         );
     }
 
@@ -45,8 +45,6 @@ public class GameRestController {
     public GameResponse createGame(
         @RequestParam(value = "whiteId", required = false) Long whiteId,
         @RequestParam(value = "blackId", required = false) Long blackId) {
-
-        log.info("New Game Request - WhiteID: {}, BlackID: {}", whiteId, blackId);
 
         String gameId = gameService.createGame(whiteId, blackId);
         Game game = gameService.getGame(gameId);
@@ -60,7 +58,8 @@ public class GameRestController {
             List.of(),
             game.getLastMoveMessage(),
             whiteId,
-            blackId
+            blackId,
+            false
         );
     }
 
@@ -69,6 +68,10 @@ public class GameRestController {
         @PathVariable String gameId,
         @RequestParam int file,
         @RequestParam int rank) {
+
+        if (!gameService.isGameStarted(gameId)) {
+            return List.of();
+        }
 
         Game game = gameService.getGame(gameId);
         Position startPos = new Position(file, rank);

@@ -12,10 +12,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -25,142 +26,147 @@ public class GameService {
     private final GameRepository gameRepository;
     private final UserRepository userRepository;
     private final EloService eloService;
+
     private final Map<String, Game> activeGames = new ConcurrentHashMap<>();
+    private final Map<String, Set<Long>> readyPlayers = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public String createGame(Long whiteId, Long blackId) {
-        String gameId = UUID.randomUUID().toString();
-        Board board = new Board();
-        Game newGame = new Game(board, whiteId, blackId);
-        activeGames.put(gameId, newGame);
-        log.info("New game session started with ID: {}. WhitePlayerID: {}, BlackPlayerID: {}", gameId, whiteId, blackId);
+        String gameId = UUID.randomUUID().toString().substring(0, 8);
+        createNewGameWithPlayers(gameId, whiteId, blackId);
         return gameId;
+    }
+
+    public void createNewGameWithPlayers(String roomId, Long whiteId, Long blackId) {
+        activeGames.remove(roomId);
+        readyPlayers.remove(roomId);
+
+        Board board = new Board();
+        Game newGame = new Game(board);
+        newGame.setWhitePlayerId(whiteId);
+        newGame.setBlackPlayerId(blackId);
+
+        activeGames.put(roomId, newGame);
+        log.info("Multiplayer Game Session initialized! Room ID: {}, White: {}, Black: {}",
+            roomId, whiteId, blackId);
+    }
+
+    public boolean setPlayerReady(String gameId, Long userId) {
+        readyPlayers.computeIfAbsent(gameId, k -> ConcurrentHashMap.newKeySet()).add(userId);
+        Game game = activeGames.get(gameId);
+        if (game == null) return false;
+
+        return readyPlayers.get(gameId).contains(game.getWhitePlayerId()) &&
+            readyPlayers.get(gameId).contains(game.getBlackPlayerId());
+    }
+
+    public boolean isGameStarted(String gameId) {
+        Game game = activeGames.get(gameId);
+        if (game == null) return false;
+        Set<Long> ready = readyPlayers.get(gameId);
+        return ready != null && ready.size() >= 2;
     }
 
     @Transactional
     public List<GameResponse.ExecutedMove> makeMove(String gameId, Position from, Position to, String promotionType) {
         Game game = activeGames.get(gameId);
-        if (game == null) {
-            log.error("Move execution failed. Game session {} not found in memory", gameId);
-            throw new IllegalArgumentException("Game not found");
+        if (game == null) throw new IllegalArgumentException("Game not found");
+
+        if (!isGameStarted(gameId)) {
+            throw new IllegalStateException("Game has not started yet.");
         }
 
-        List<GameResponse.ExecutedMove> moves = game.makeMove(from, to, promotionType);
-        GameStatus status = game.getStatus();
+        synchronized (game) {
+            if (game.getStatus().isFinished()) {
+                throw new IllegalStateException("Cannot make a move in a finished game.");
+            }
 
-        if (status.isFinished()) {
-            log.info("Game over detected for session {}. Final status: {}", gameId, status);
-            GameResult result = determineResult(game, status);
-            processGameFinish(gameId, result, status);
+            List<GameResponse.ExecutedMove> moves = game.makeMove(from, to, promotionType);
+            if (moves.isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            if (game.getStatus().isFinished() && game.getStatus() != GameStatus.CLOSING) {
+                processGameFinish(gameId, determineResult(game, game.getStatus()), game.getStatus());
+            }
+            return moves;
         }
-        return moves;
     }
 
     private GameResult determineResult(Game game, GameStatus status) {
-        if (status == GameStatus.STALEMATE || status == GameStatus.DRAW) {
-            return GameResult.DRAW;
-        }
+        if (status == GameStatus.STALEMATE || status == GameStatus.DRAW) return GameResult.DRAW;
         return (game.getCurrentTurn() == Color.WHITE) ? GameResult.BLACK_WIN : GameResult.WHITE_WIN;
     }
 
-    private void processGameFinish(String gameId, GameResult result, GameStatus finishMethod) {
+    @Transactional
+    public void processGameFinish(String gameId, GameResult result, GameStatus finishMethod) {
         Game game = activeGames.get(gameId);
-        if (game == null) {
-            log.error("ProcessGameFinish failed: Game {} not found in memory", gameId);
-            return;
+        if (game == null || game.getStatus() == GameStatus.CLOSING) return;
+
+        synchronized (game) {
+            if (game.getStatus() == GameStatus.CLOSING) return;
+            game.setStatus(finishMethod);
+
+            UserEntity white = findUserSafe(game.getWhitePlayerId());
+            UserEntity black = findUserSafe(game.getBlackPlayerId());
+
+            GameEntity history = buildGameEntity(game, white, black, result, finishMethod);
+            applyEloChanges(white, black, result, history);
+
+            gameRepository.save(history);
+            scheduler.schedule(() -> {
+                Game g = activeGames.get(gameId);
+                if (g != null) g.setStatus(GameStatus.CLOSING);
+                activeGames.remove(gameId);
+                readyPlayers.remove(gameId);
+                log.info("Game session {} cleanup completed.", gameId);
+            }, 30, TimeUnit.SECONDS);
         }
+    }
 
-        Long whiteId = game.getWhitePlayerId();
-        Long blackId = game.getBlackPlayerId();
-
-        log.info("Finalizing Game Process -> Room: {}, WhiteID: {}, BlackID: {}, Result: {}", gameId, whiteId, blackId, result);
-
-        UserEntity white = findUserSafe(whiteId);
-        UserEntity black = findUserSafe(blackId);
-
-        if (white == null) log.warn("Persistence Warning: White player (ID: {}) not found in database.", whiteId);
-        if (black == null) log.warn("Persistence Warning: Black player (ID: {}) not found in database.", blackId);
-
-        GameEntity history = GameEntity.builder()
-            .whitePlayer(white)
-            .blackPlayer(black)
-            .result(result)
-            .finishMethod(finishMethod)
-            .pgnData(game.getHistoryAsPgn())
+    private GameEntity buildGameEntity(Game game, UserEntity white, UserEntity black, GameResult result, GameStatus method) {
+        String pgnData = String.join(" ", game.getHumanReadableHistory());
+        return GameEntity.builder()
+            .whitePlayer(white).blackPlayer(black)
+            .result(result).finishMethod(method).pgnData(pgnData)
             .whiteEloBefore(white != null ? white.getEloRating() : 1200)
             .blackEloBefore(black != null ? black.getEloRating() : 1200)
             .build();
+    }
 
-        double whiteScore = (result == GameResult.WHITE_WIN) ? 1.0 : (result == GameResult.DRAW ? 0.5 : 0.0);
-        double blackScore = 1.0 - whiteScore;
-
-        if (white != null) {
-            int oppElo = (black != null) ? black.getEloRating() : 1200;
-            int gain = eloService.calculateGain(white.getEloRating(), oppElo, whiteScore);
+    private void applyEloChanges(UserEntity white, UserEntity black, GameResult result, GameEntity history) {
+        if (white != null && black != null) {
+            double whiteScore = (result == GameResult.WHITE_WIN) ? 1.0 : (result == GameResult.DRAW ? 0.5 : 0.0);
+            double blackScore = 1.0 - whiteScore;
+            int whiteGain = eloService.calculateGain(white.getEloRating(), black.getEloRating(), whiteScore);
+            int blackGain = eloService.calculateGain(black.getEloRating(), white.getEloRating(), blackScore);
             updateUserStats(white, result == GameResult.WHITE_WIN, result == GameResult.DRAW);
-            white.setEloRating(white.getEloRating() + gain);
-            history.setWhiteEloGain(gain);
-            userRepository.saveAndFlush(white);
-            log.info("Updated White Player stats. New ELO: {}, Total Wins: {}", white.getEloRating(), white.getTotalWins());
-        }
-
-        if (black != null) {
-            int oppElo = (white != null) ? white.getEloRating() : 1200;
-            int gain = eloService.calculateGain(black.getEloRating(), oppElo, blackScore);
             updateUserStats(black, result == GameResult.BLACK_WIN, result == GameResult.DRAW);
-            black.setEloRating(black.getEloRating() + gain);
-            history.setBlackEloGain(gain);
-            userRepository.saveAndFlush(black);
-            log.info("Updated Black Player stats. New ELO: {}, Total Wins: {}", black.getEloRating(), black.getTotalWins());
+            white.setEloRating(white.getEloRating() + whiteGain);
+            black.setEloRating(black.getEloRating() + blackGain);
+            history.setWhiteEloGain(whiteGain);
+            history.setBlackEloGain(blackGain);
+            userRepository.save(white);
+            userRepository.save(black);
         }
-
-        gameRepository.save(history);
-        // activeGames.remove(gameId);
-        log.info("Game history record created successfully for room: {}", gameId);
     }
 
     private UserEntity findUserSafe(Long id) {
-        if (id == null || id <= 0) {
-            return null;
-        }
-        return userRepository.findById(id).orElse(null);
+        return (id == null || id <= 0) ? null : userRepository.findById(id).orElse(null);
     }
 
     private void updateUserStats(UserEntity user, boolean isWin, boolean isDraw) {
-        if (isWin) {
-            user.setTotalWins(user.getTotalWins() + 1);
-        } else if (isDraw) {
-            user.setTotalDraws(user.getTotalDraws() + 1);
-        } else {
-            user.setTotalLosses(user.getTotalLosses() + 1);
-        }
+        if (isWin) user.setTotalWins(user.getTotalWins() + 1);
+        else if (isDraw) user.setTotalDraws(user.getTotalDraws() + 1);
+        else user.setTotalLosses(user.getTotalLosses() + 1);
     }
 
     public Game getGame(String gameId) {
-        Game game = activeGames.get(gameId);
-        if (game == null) throw new IllegalArgumentException("Game not found.");
-        return game;
+        return activeGames.get(gameId);
     }
 
+    @Transactional(readOnly = true)
     public List<GameEntity> getGameHistory(Long userId) {
         return gameRepository.findByWhitePlayerIdOrBlackPlayerIdOrderByPlayedAtDesc(userId, userId);
-    }
-
-    public void initializeGameFromLobby(String roomId, Long whiteId, Long blackId) {
-        activeGames.remove(roomId);
-
-        Long finalBlackId = blackId;
-        if (finalBlackId == null) {
-            finalBlackId = 1L;
-            log.info("Test Mode: Black player was null, assigned ID 1 as opponent");
-        }
-
-        Game newGame = new Game(new Board(), whiteId, finalBlackId);
-        activeGames.put(roomId, newGame);
-        log.info("Game initialized -> Room: {}, White: {}, Black: {}", roomId, whiteId, finalBlackId);
-    }
-
-    @Transactional
-    public void finishAndPersistGame(String gameId, GameResult result, GameStatus finishMethod) {
-        processGameFinish(gameId, result, finishMethod);
     }
 }

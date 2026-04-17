@@ -4,13 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Represents the 8x8 chess board.
- * Manages piece placement, board initialization, and state retrieval.
- */
 public class Board {
 
     private final Piece[][] squares;
+
+    public Board() {
+        this(true);
+    }
 
     public Board(boolean fillBoard) {
         this.squares = new Piece[8][8];
@@ -19,41 +19,63 @@ public class Board {
         }
     }
 
-    public Board() {
-        this(true);
-    }
-
-    /**
-     * Retrieves a piece at a given position.
-     * Returns Optional.empty if the square is vacant or out of bounds.
-     */
     public Optional<Piece> getPiece(Position position) {
-        if (isOutOfBounds(position)) {
-            return Optional.empty();
-        }
         return Optional.ofNullable(squares[position.rank()][position.file()]);
     }
 
     public void setPieceAt(Position position, Piece piece) {
-        if (isOutOfBounds(position)) return;
-
         squares[position.rank()][position.file()] = piece;
         if (piece != null) {
             piece.setPosition(position);
         }
     }
 
+    public void removePiece(Position position) {
+        squares[position.rank()][position.file()] = null;
+    }
+
     public List<Piece> findAllPieces() {
         List<Piece> allPieces = new ArrayList<>();
         for (int r = 0; r < 8; r++) {
             for (int f = 0; f < 8; f++) {
-                Piece piece = squares[r][f];
-                if (piece != null) {
-                    allPieces.add(piece);
+                if (squares[r][f] != null) {
+                    allPieces.add(squares[r][f]);
                 }
             }
         }
         return allPieces;
+    }
+
+    public List<Piece> findPiecesByColor(Color color) {
+        return findAllPieces().stream()
+            .filter(p -> p.getColor() == color)
+            .toList();
+    }
+
+    public Optional<Piece> findKing(Color color) {
+        return findAllPieces().stream()
+            .filter(p -> p.getType() == PieceType.KING && p.getColor() == color)
+            .findFirst();
+    }
+
+    public Board copy() {
+        Board newBoard = new Board(false);
+        for (int r = 0; r < 8; r++) {
+            for (int f = 0; f < 8; f++) {
+                Piece original = this.squares[r][f];
+                if (original != null) {
+                    Position pos = new Position(f, r);
+                    Piece copyPiece = createPieceCopy(original, pos);
+                    copyPiece.setHasMoved(original.hasMoved());
+                    newBoard.setPieceAt(pos, copyPiece);
+                }
+            }
+        }
+        return newBoard;
+    }
+
+    public Piece[][] getSquares() {
+        return squares;
     }
 
     public void clearBoard() {
@@ -64,36 +86,15 @@ public class Board {
         }
     }
 
-    private boolean isOutOfBounds(Position pos) {
-        return pos.file() < 0 || pos.file() > 7 || pos.rank() < 0 || pos.rank() > 7;
-    }
-
-    public Piece[][] getSquares() {
-        return squares;
-    }
-
-    /**
-     * Serializes the board state into a string format.
-     * Used for history tracking and threefold repetition checks.
-     */
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder(64);
-        for (int r = 7; r >= 0; r--) {
-            for (int f = 0; f < 8; f++) {
-                Piece p = squares[r][f];
-                if (p == null) {
-                    sb.append('.');
-                    continue;
-                }
-
-                char typeChar = (p.getType() == PieceType.KNIGHT) ? 'N' : p.getType().name().charAt(0);
-                sb.append(p.getColor() == Color.WHITE
-                    ? Character.toUpperCase(typeChar)
-                    : Character.toLowerCase(typeChar));
-            }
-        }
-        return sb.toString();
+    private Piece createPieceCopy(Piece p, Position pos) {
+        return switch (p.getType()) {
+            case PAWN -> new Pawn(p.getColor(), pos);
+            case KNIGHT -> new Knight(p.getColor(), pos);
+            case BISHOP -> new Bishop(p.getColor(), pos);
+            case ROOK -> new Rook(p.getColor(), pos);
+            case QUEEN -> new Queen(p.getColor(), pos);
+            case KING -> new King(p.getColor(), pos);
+        };
     }
 
     private void initializeBoard() {
@@ -118,5 +119,19 @@ public class Board {
         for (int file = 0; file < 8; file++) {
             setPieceAt(new Position(file, rank), new Pawn(color, new Position(file, rank)));
         }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (int r = 7; r >= 0; r--) {
+            for (int f = 0; f < 8; f++) {
+                getPiece(new Position(f, r)).ifPresentOrElse(
+                    p -> sb.append(p.getColor() == Color.WHITE ? p.getType().getSymbol() : Character.toLowerCase(p.getType().getSymbol())),
+                    () -> sb.append('.')
+                );
+            }
+        }
+        return sb.toString();
     }
 }

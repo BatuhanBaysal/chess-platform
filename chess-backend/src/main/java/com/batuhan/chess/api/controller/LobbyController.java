@@ -1,8 +1,8 @@
 package com.batuhan.chess.api.controller;
 
-import com.batuhan.chess.application.service.game.GameService;
 import com.batuhan.chess.application.service.game.LobbyService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,10 +12,10 @@ import java.util.Collection;
 @RequestMapping("/api/lobby")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:5173")
+@Slf4j
 public class LobbyController {
 
     private final LobbyService lobbyService;
-    private final GameService gameService;
 
     @PostMapping("/create")
     public ResponseEntity<String> createRoom(
@@ -23,36 +23,39 @@ public class LobbyController {
         @RequestParam String username,
         @RequestParam int time) {
 
+        log.info("Lobby create request - User: {}, Time: {}", username, time);
         String roomId = lobbyService.createRoom(userId, username, time);
-        gameService.initializeGameFromLobby(roomId, userId, null);
-
         return ResponseEntity.ok(roomId);
     }
 
     @PostMapping("/join")
     public ResponseEntity<Boolean> joinRoom(
         @RequestParam String roomId,
-        @RequestParam Long userId) {
+        @RequestParam Long userId,
+        @RequestParam String username) {
 
-        boolean joined = lobbyService.joinRoom(roomId, userId);
+        log.info("Lobby join request - Room: {}, User: {}", roomId, username);
+        boolean joined = lobbyService.joinRoom(roomId, userId, username);
 
-        if (joined) {
-            var rooms = lobbyService.getAllActiveRooms();
-            var room = rooms.stream()
-                .filter(r -> r.getRoomId().equals(roomId))
-                .findFirst()
-                .orElse(null);
-
-            if (room != null) {
-                gameService.initializeGameFromLobby(roomId, room.getHostId(), userId);
-            }
+        if (!joined) {
+            log.warn("Join failed for Room: {} and User: {}", roomId, username);
+            return ResponseEntity.badRequest().body(false);
         }
 
-        return ResponseEntity.ok(joined);
+        return ResponseEntity.ok(true);
     }
 
     @GetMapping("/rooms")
     public ResponseEntity<Collection<LobbyService.GameRoom>> getRooms() {
         return ResponseEntity.ok(lobbyService.getAllActiveRooms());
+    }
+
+    @GetMapping("/status/{roomId}")
+    public ResponseEntity<LobbyService.GameRoom> getLobbyStatus(@PathVariable String roomId) {
+        LobbyService.GameRoom room = lobbyService.getRoom(roomId);
+        if (room == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(room);
     }
 }

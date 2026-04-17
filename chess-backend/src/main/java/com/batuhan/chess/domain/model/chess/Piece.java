@@ -1,9 +1,8 @@
 package com.batuhan.chess.domain.model.chess;
 
-/**
- * Abstract base class for all chess pieces.
- * Uses a sealed hierarchy to strictly control piece types.
- */
+import java.util.Objects;
+import java.util.List;
+
 public abstract sealed class Piece
     permits Pawn, Knight, Bishop, Rook, Queen, King {
 
@@ -18,34 +17,16 @@ public abstract sealed class Piece
         this.position = position;
     }
 
-    public Color getColor() {
-        return color;
+    public abstract boolean isPseudoLegalMove(Position target, Board board);
+
+    public abstract List<Position> getPseudoLegalMoves(Board board);
+
+    protected boolean canCaptureOrMoveTo(Position target, Board board) {
+        return board.getPiece(target)
+            .map(p -> p.getColor() != this.color)
+            .orElse(true);
     }
 
-    public PieceType getType() {
-        return type;
-    }
-
-    public Position getPosition() {
-        return position;
-    }
-
-    public boolean hasMoved() {
-        return hasMoved;
-    }
-
-    public void setPosition(Position position) {
-        this.position = position;
-    }
-
-    public void setHasMoved(boolean hasMoved) {
-        this.hasMoved = hasMoved;
-    }
-
-    /**
-     * Validates if the path between current position and target is empty.
-     * Does not check the target square itself.
-     */
     protected boolean isPathClear(Position target, Board board) {
         int fileDiff = target.file() - position.file();
         int rankDiff = target.rank() - position.rank();
@@ -66,8 +47,40 @@ public abstract sealed class Piece
         return true;
     }
 
-    /**
-     * Defines the movement strategy for the specific piece type.
-     */
-    public abstract boolean isValidMove(Position targetPosition, Board board);
+    public Color getColor() {
+        return color;
+    }
+
+    public PieceType getType() {
+        return type;
+    }
+
+    public Position getPosition() {
+        return position;
+    }
+
+    public boolean hasMoved() {
+        return hasMoved;
+    }
+
+    public void setPosition(Position position) {
+        this.position = position;
+        this.hasMoved = true;
+    }
+
+    public void setHasMoved(boolean hasMoved) {
+        this.hasMoved = hasMoved;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Piece piece)) return false;
+        return color == piece.color && type == piece.type;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(color, type);
+    }
 }

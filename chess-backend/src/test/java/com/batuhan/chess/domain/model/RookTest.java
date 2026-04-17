@@ -26,7 +26,7 @@ public class RookTest {
         board.setPieceAt(start, rook);
 
         // Act & Assert
-        assertThat(rook.isValidMove(target, board)).isTrue();
+        assertThat(rook.isPseudoLegalMove(target, board)).isTrue();
     }
 
     @Test
@@ -39,7 +39,7 @@ public class RookTest {
         board.setPieceAt(start, rook);
 
         // Act & Assert
-        assertThat(rook.isValidMove(target, board)).isTrue();
+        assertThat(rook.isPseudoLegalMove(target, board)).isTrue();
     }
 
     @Test
@@ -56,7 +56,7 @@ public class RookTest {
         board.setPieceAt(blocker, new Pawn(Color.WHITE, blocker));
 
         // Act & Assert
-        assertThat(rook.isValidMove(target, board)).isFalse();
+        assertThat(rook.isPseudoLegalMove(target, board)).isFalse();
     }
 
     @Test
@@ -69,7 +69,7 @@ public class RookTest {
         board.setPieceAt(start, rook);
 
         // Act & Assert
-        assertThat(rook.isValidMove(target, board)).isFalse();
+        assertThat(rook.isPseudoLegalMove(target, board)).isFalse();
     }
 
     @Test
@@ -85,7 +85,7 @@ public class RookTest {
         board.setPieceAt(target, new Pawn(Color.BLACK, target));
 
         // Act & Assert
-        assertThat(rook.isValidMove(target, board)).isTrue();
+        assertThat(rook.isPseudoLegalMove(target, board)).isTrue();
     }
 
     @Test
@@ -101,6 +101,6 @@ public class RookTest {
         board.setPieceAt(target, new Bishop(Color.WHITE, target));
 
         // Act & Assert
-        assertThat(rook.isValidMove(target, board)).isFalse();
+        assertThat(rook.isPseudoLegalMove(target, board)).isFalse();
     }
 }

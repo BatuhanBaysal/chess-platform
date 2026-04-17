@@ -86,7 +86,7 @@ The core chess logic is encapsulated in a **Pure Java** domain layer.
 
 ## 🚀 Development Roadmap
 
-*Current Status: ⏳ **Phase 9: Global Ecosystem (Multiplayer & Matchmaking)***
+*Current Status: ⏳ **Phase 10: Infrastructure & Containerization***
 
 - ✅ **Phase 1: Foundation** 🏗️ - Monorepo scaffolding, environment setup, and Spring Boot/React initialization.
 - ✅ **Phase 2: Domain Modeling** ♟️ - Piece-specific logic, board initialization, and DDD-based movement rules.
@@ -96,10 +96,10 @@ The core chess logic is encapsulated in a **Pure Java** domain layer.
 - ✅ **Phase 6: Visual Polish & UX** 🎨 - Dark/Light mode, theme support (Classic, Modern, Emerald), and Drag & Drop (`dnd-kit`).
 - ✅ **Phase 7: Identity & Persistence** 🔐 - Implemented **Spring Security + JWT**, User profiles, and PostgreSQL integration.
 - ✅ **Phase 8: Server-Side Authority** 🛡️ - Hardened backend validation for all moves and anti-cheat state management.
-- ⏳ **Phase 9: Remote Multiplayer & Matchmaking** 🤝 - Implementing global session management and real-time player pairing via WebSockets.
-- 📅 **Phase 10: Advanced Analytics & AI** 🧠 - Integration of Stockfish for move analysis and "Hint" system for the Training Bot.
-
-> **Note:** With the completion of **Phase 8**, the project has matured into a secure, server-authoritative platform focusing on **Domain-Driven Design (DDD)** and high-availability architecture.
+- ✅ **Phase 9: Remote Multiplayer & Matchmaking** 🤝 - Global session management and real-time player pairing via WebSockets.
+- ⏳ **Phase 10: Infrastructure & Quality** 🐳 - Orchestrating services with **Docker & Docker Compose** and enhancing **JUnit 5/Mockito** test coverage.
+- 📅 **Phase 11: Full-Stack Observability (LGTM)** 📈 - Implementing **Grafana, Loki, and Prometheus** for real-time logs, metrics, and system health.
+- 📅 **Phase 12: Advanced Analytics & AI** 🧠 - Integration of **Stockfish** via UCI protocol for move analysis and "Hint" system.
 
 ---
 

@@ -25,9 +25,9 @@ public class KingTest {
         board.setPieceAt(start, king);
 
         // Act & Assert
-        assertThat(king.isValidMove(new Position(4, 5), board)).isTrue(); // Up
-        assertThat(king.isValidMove(new Position(5, 5), board)).isTrue(); // Up-Right
-        assertThat(king.isValidMove(new Position(3, 4), board)).isTrue(); // Left
+        assertThat(king.isPseudoLegalMove(new Position(4, 5), board)).isTrue(); // Up
+        assertThat(king.isPseudoLegalMove(new Position(5, 5), board)).isTrue(); // Up-Right
+        assertThat(king.isPseudoLegalMove(new Position(3, 4), board)).isTrue(); // Left
     }
 
     @Test
@@ -39,8 +39,8 @@ public class KingTest {
         board.setPieceAt(start, king);
 
         // Act & Assert
-        assertThat(king.isValidMove(new Position(4, 6), board)).isFalse(); // Two squares up
-        assertThat(king.isValidMove(new Position(6, 6), board)).isFalse(); // Two squares diagonal
+        assertThat(king.isPseudoLegalMove(new Position(4, 6), board)).isFalse(); // Two squares up
+        assertThat(king.isPseudoLegalMove(new Position(6, 6), board)).isFalse(); // Two squares diagonal
     }
 
     @Test
@@ -54,7 +54,7 @@ public class KingTest {
         board.setPieceAt(target, new Pawn(Color.BLACK, target)); // Enemy
 
         // Act & Assert
-        assertThat(king.isValidMove(target, board)).isTrue();
+        assertThat(king.isPseudoLegalMove(target, board)).isTrue();
     }
 
     @Test
@@ -68,6 +68,6 @@ public class KingTest {
         board.setPieceAt(target, new Rook(Color.WHITE, target)); // Friendly
 
         // Act & Assert
-        assertThat(king.isValidMove(target, board)).isFalse();
+        assertThat(king.isPseudoLegalMove(target, board)).isFalse();
     }
 }

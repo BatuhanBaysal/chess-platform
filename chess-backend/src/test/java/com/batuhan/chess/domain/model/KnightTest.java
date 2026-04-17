@@ -26,7 +26,7 @@ public class KnightTest {
         board.setPieceAt(start, knight);
 
         // Act & Assert
-        assertThat(knight.isValidMove(target, board)).isTrue();
+        assertThat(knight.isPseudoLegalMove(target, board)).isTrue();
     }
 
     @Test
@@ -39,7 +39,7 @@ public class KnightTest {
         board.setPieceAt(start, knight);
 
         // Act & Assert
-        assertThat(knight.isValidMove(target, board)).isTrue();
+        assertThat(knight.isPseudoLegalMove(target, board)).isTrue();
     }
 
     @Test
@@ -53,7 +53,7 @@ public class KnightTest {
         board.setPieceAt(target, new Pawn(Color.BLACK, target));
 
         // Act & Assert
-        assertThat(knight.isValidMove(target, board)).isTrue();
+        assertThat(knight.isPseudoLegalMove(target, board)).isTrue();
     }
 
     @Test
@@ -67,7 +67,7 @@ public class KnightTest {
         board.setPieceAt(target, new Rook(Color.WHITE, target));
 
         // Act & Assert
-        assertThat(knight.isValidMove(target, board)).isFalse();
+        assertThat(knight.isPseudoLegalMove(target, board)).isFalse();
     }
 
     @Test
@@ -80,7 +80,7 @@ public class KnightTest {
         board.setPieceAt(start, knight);
 
         // Act & Assert
-        assertThat(knight.isValidMove(target, board)).isFalse();
+        assertThat(knight.isPseudoLegalMove(target, board)).isFalse();
     }
 
     @Test
@@ -98,7 +98,7 @@ public class KnightTest {
         };
 
         for (int[] move : moves) {
-            assertThat(knight.isValidMove(new Position(move[0], move[1]), board)).isTrue();
+            assertThat(knight.isPseudoLegalMove(new Position(move[0], move[1]), board)).isTrue();
         }
     }
 
@@ -111,7 +111,7 @@ public class KnightTest {
         board.setPieceAt(start, knight);
 
         // Act & Assert
-        assertThat(knight.isValidMove(start, board)).isFalse();
+        assertThat(knight.isPseudoLegalMove(start, board)).isFalse();
     }
 
     @Test
@@ -124,6 +124,6 @@ public class KnightTest {
         board.setPieceAt(start, knight);
 
         // Act & Assert
-        assertThat(knight.isValidMove(target, board)).isFalse();
+        assertThat(knight.isPseudoLegalMove(target, board)).isFalse();
     }
 }

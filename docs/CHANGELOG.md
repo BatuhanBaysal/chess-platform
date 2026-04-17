@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-04-17
+
+### 🤝 Phase 9: Remote Multiplayer & Global Matchmaking
+> **Note:** This phase marks the project's evolution from a local engine to a distributed gaming platform. It enables real-time synchronization between disparate clients using a stateful WebSocket architecture and global session orchestration.
+
+- **2026-04-17:**
+    - **Global Multiplayer Implementation (PR #22):**
+        - **Distributed Session Orchestration:** Finalized the `GameSessionService` to manage real-time player pairing, allowing users to join matches from different local instances via a unique `gameId`.
+        - **Synchronized State Propagation:** Refactored the WebSocket event pipeline to ensure that move executions, turn transitions, and game-status updates are broadcasted atomically to hem her iki istemciye (clients).
+        - **STOMP Destination Security:** Implemented dynamic subscription guards to ensure players can only listen to and send moves within their authorized game sessions.
+        - **Handshake & Reconnection Logic:** Developed a robust WebSocket handshake mechanism that recovers game state for clients during brief network interruptions or browser refreshes.
+        - **Concurrency Management:** Integrated `ConcurrentHashMap` and thread-safe locks within the `Game` model to prevent race conditions during simultaneous move attempts or resignation events.
+        - **Cross-Client UX:** Enhanced the React frontend to handle "Waiting for Opponent" states and integrated real-time visual feedback when the remote player performs an action.
+        - **Validation:**
+          - **Cross-Session Verification:** Successfully verified real-time synchronization by conducting manual playtests across multiple browser instances, confirming consistent state updates.
+          - **Latency Consistency:** Observed stable move delivery and event broadcasting across local network sessions without noticeable synchronization drift.
+
+---
+
 ## [0.8.0] - 2026-04-09
 
 ### 🛡️ Phase 8: Server-Side Authority & Engineering Hardening

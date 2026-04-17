@@ -47,6 +47,10 @@ public abstract sealed class Piece
         return true;
     }
 
+    public void updatePositionWithoutMoving(Position position) {
+        this.position = position;
+    }
+
     public Color getColor() {
         return color;
     }

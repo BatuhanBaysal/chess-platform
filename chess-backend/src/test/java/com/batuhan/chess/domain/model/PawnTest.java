@@ -89,8 +89,8 @@ public class PawnTest {
     }
 
     @Test
-    @DisplayName("Pawn should not move diagonally to an empty square.")
-    void pawnShouldNotMoveDiagonallyToEmptySquare() {
+    @DisplayName("Pawn diagonal move to empty square should be pseudo-legal for En Passant potential")
+    void pawnShouldAllowDiagonalMoveToEmptySquareForEnPassant() {
         // Arrange
         Position start = new Position(3, 1); // d2
         Position target = new Position(4, 2); // e3
@@ -98,7 +98,7 @@ public class PawnTest {
         board.setPieceAt(start, pawn);
 
         // Act & Assert
-        assertThat(pawn.isPseudoLegalMove(target, board)).isFalse();
+        assertThat(pawn.isPseudoLegalMove(target, board)).isTrue();
     }
 
     @Test

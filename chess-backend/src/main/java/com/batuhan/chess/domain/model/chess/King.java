@@ -17,7 +17,6 @@ public final class King extends Piece {
         if (fileDiff <= 1 && rankDiff <= 1 && (fileDiff != 0 || rankDiff != 0)) {
             return canCaptureOrMoveTo(target, board);
         }
-
         if (!hasMoved() && rankDiff == 0 && fileDiff == 2) {
             return true;
         }
@@ -47,8 +46,15 @@ public final class King extends Piece {
         }
 
         if (!hasMoved()) {
-            moves.add(new Position(position.file() + 2, position.rank()));
-            moves.add(new Position(position.file() - 2, position.rank()));
+            int currentFile = position.file();
+            int currentRank = position.rank();
+
+            if (currentFile + 2 < 8) {
+                moves.add(new Position(currentFile + 2, currentRank));
+            }
+            if (currentFile - 2 >= 0) {
+                moves.add(new Position(currentFile - 2, currentRank));
+            }
         }
 
         return moves;

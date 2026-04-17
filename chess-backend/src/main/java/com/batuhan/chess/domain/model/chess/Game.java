@@ -41,17 +41,19 @@ public class Game {
             return List.of();
         }
 
-        if (!validator.isMoveLegal(start, end, board, currentTurn, lastMove)) {
+        if (!validator.isMoveLegal(start, end, board, currentTurn, this.lastMove)) {
             updateErrorMessage(currentTurn);
             return List.of();
         }
 
         Piece piece = board.getPiece(start).orElseThrow();
         Piece capturedPiece = board.getPiece(end).orElse(null);
-        boolean isCapture = capturedPiece != null || validator.isEnPassantAttempt(piece, end, board);
+
+        boolean isEnPassant = validator.isEnPassantAttempt(piece, end, board, this.lastMove);
+        boolean isCapture = capturedPiece != null || isEnPassant;
 
         List<GameResponse.ExecutedMove> executedMoves = prepareExecutedMoves(start, end, piece, promotionType);
-        executor.execute(start, end, piece, promotionType, board, validator);
+        executor.execute(start, end, piece, promotionType, board, validator, this.lastMove);
 
         updateDrawMetrics(piece, isCapture);
         recordMove(start, end, piece, isCapture, capturedPiece, promotionType);
@@ -60,6 +62,7 @@ public class Game {
         this.currentTurn = currentTurn.opposite();
         this.status = evaluator.evaluateStatus(board, currentTurn, validator, halfMoveClock, boardHistory, this.lastMove);
         this.lastMoveMessage = generateMoveMessage(piece, end, isCapture, capturedPiece, promotionType);
+
         return executedMoves;
     }
 
@@ -78,7 +81,9 @@ public class Game {
 
     private List<GameResponse.ExecutedMove> prepareExecutedMoves(Position start, Position end, Piece piece, String promotionType) {
         List<GameResponse.ExecutedMove> moves = new ArrayList<>();
-        String pieceName = (promotionType != null && validator.isPromotionSituation(piece, end)) ? promotionType.toUpperCase() : piece.getType().name();
+        String pieceName = (promotionType != null && validator.isPromotionSituation(piece, end))
+            ? promotionType.toUpperCase() : piece.getType().name();
+
         moves.add(new GameResponse.ExecutedMove(start.file(), start.rank(), end.file(), end.rank(), pieceName));
 
         if (validator.isCastlingAttempt(piece, start, end)) {
@@ -88,7 +93,7 @@ public class Game {
             moves.add(new GameResponse.ExecutedMove(rookStartFile, start.rank(), rookEndFile, start.rank(), "ROOK"));
         }
 
-        if (validator.isEnPassantAttempt(piece, end, board)) {
+        if (validator.isEnPassantAttempt(piece, end, board, lastMove)) {
             moves.add(new GameResponse.ExecutedMove(end.file(), start.rank(), -1, -1, "NONE"));
         }
         return moves;
@@ -101,9 +106,7 @@ public class Game {
         } else {
             halfMoveClock++;
         }
-
-        Color nextTurn = currentTurn.opposite();
-        boardHistory.add(board.toString() + "|" + nextTurn.name());
+        boardHistory.add(board.toString() + "|" + currentTurn.opposite().name());
     }
 
     private void recordMove(Position s, Position e, Piece p, boolean isCap, Piece cap, String promo) {

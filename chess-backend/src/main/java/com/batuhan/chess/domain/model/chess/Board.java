@@ -26,7 +26,7 @@ public class Board {
     public void setPieceAt(Position position, Piece piece) {
         squares[position.rank()][position.file()] = piece;
         if (piece != null) {
-            piece.setPosition(position);
+            piece.updatePositionWithoutMoving(position);
         }
     }
 
@@ -68,6 +68,7 @@ public class Board {
                     Piece copyPiece = createPieceCopy(original, pos);
                     copyPiece.setHasMoved(original.hasMoved());
                     newBoard.setPieceAt(pos, copyPiece);
+                    copyPiece.setHasMoved(original.hasMoved());
                 }
             }
         }
@@ -102,6 +103,7 @@ public class Board {
         setupMajorPieces(Color.WHITE, 0);
         setupPawns(Color.BLACK, 6);
         setupPawns(Color.WHITE, 1);
+        findAllPieces().forEach(p -> p.setHasMoved(false));
     }
 
     private void setupMajorPieces(Color color, int rank) {

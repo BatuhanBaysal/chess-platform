@@ -26,7 +26,7 @@ public class BishopTest {
         board.setPieceAt(start, bishop);
 
         // Act & Assert
-        assertThat(bishop.isValidMove(target, board)).isTrue();
+        assertThat(bishop.isPseudoLegalMove(target, board)).isTrue();
     }
 
     @Test
@@ -43,7 +43,7 @@ public class BishopTest {
         board.setPieceAt(blockerPosition, new Pawn(Color.WHITE, blockerPosition));
 
         // Act & Assert
-        assertThat(bishop.isValidMove(target, board)).isFalse();
+        assertThat(bishop.isPseudoLegalMove(target, board)).isFalse();
     }
 
     @Test
@@ -59,7 +59,7 @@ public class BishopTest {
         board.setPieceAt(target, new Pawn(Color.BLACK, target));
 
         // Act & Assert
-        assertThat(bishop.isValidMove(target, board)).isTrue();
+        assertThat(bishop.isPseudoLegalMove(target, board)).isTrue();
     }
 
     @Test
@@ -75,7 +75,7 @@ public class BishopTest {
         board.setPieceAt(target, new Pawn(Color.WHITE, target));
 
         // Act & Assert
-        assertThat(bishop.isValidMove(target, board)).isFalse();
+        assertThat(bishop.isPseudoLegalMove(target, board)).isFalse();
     }
 
     @Test
@@ -88,7 +88,7 @@ public class BishopTest {
         board.setPieceAt(start, bishop);
 
         // Act & Assert
-        assertThat(bishop.isValidMove(target, board)).isFalse();
+        assertThat(bishop.isPseudoLegalMove(target, board)).isFalse();
     }
 
     @Test
@@ -100,10 +100,10 @@ public class BishopTest {
         board.setPieceAt(start, bishop);
 
         // Act & Assert
-        assertThat(bishop.isValidMove(new Position(6, 6), board)).isTrue(); // Up-Right
-        assertThat(bishop.isValidMove(new Position(2, 2), board)).isTrue(); // Down-Left
-        assertThat(bishop.isValidMove(new Position(6, 2), board)).isTrue(); // Down-Right
-        assertThat(bishop.isValidMove(new Position(2, 6), board)).isTrue(); // Up-Left
+        assertThat(bishop.isPseudoLegalMove(new Position(6, 6), board)).isTrue(); // Up-Right
+        assertThat(bishop.isPseudoLegalMove(new Position(2, 2), board)).isTrue(); // Down-Left
+        assertThat(bishop.isPseudoLegalMove(new Position(6, 2), board)).isTrue(); // Down-Right
+        assertThat(bishop.isPseudoLegalMove(new Position(2, 6), board)).isTrue(); // Up-Left
     }
 
     @Test
@@ -115,6 +115,6 @@ public class BishopTest {
         board.setPieceAt(start, bishop);
 
         // Act & Assert
-        assertThat(bishop.isValidMove(start, board)).isFalse();
+        assertThat(bishop.isPseudoLegalMove(start, board)).isFalse();
     }
 }

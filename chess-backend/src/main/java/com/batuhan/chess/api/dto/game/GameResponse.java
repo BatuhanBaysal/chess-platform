@@ -14,7 +14,8 @@ public record GameResponse(
     List<String> moveHistory,
     String lastMoveMessage,
     Long whiteId,
-    Long blackId
+    Long blackId,
+    boolean isStarted
 ) {
     public record ExecutedMove(int fromFile, int fromRank, int toFile, int toRank, String pieceType) {}
 }

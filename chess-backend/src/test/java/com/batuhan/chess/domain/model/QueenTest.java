@@ -25,12 +25,12 @@ public class QueenTest {
         board.setPieceAt(start, queen);
 
         // Act & Assert
-        assertThat(queen.isValidMove(new Position(3, 7), board)).isTrue(); // d8 - Up
-        assertThat(queen.isValidMove(new Position(3, 0), board)).isTrue(); // d1 - Down
-        assertThat(queen.isValidMove(new Position(7, 3), board)).isTrue(); // h4 - Right
-        assertThat(queen.isValidMove(new Position(0, 3), board)).isTrue(); // a4 - Left
-        assertThat(queen.isValidMove(new Position(7, 7), board)).isTrue(); // h8 - Up-Right
-        assertThat(queen.isValidMove(new Position(0, 0), board)).isTrue(); // a1 - Down-Left
+        assertThat(queen.isPseudoLegalMove(new Position(3, 7), board)).isTrue(); // d8 - Up
+        assertThat(queen.isPseudoLegalMove(new Position(3, 0), board)).isTrue(); // d1 - Down
+        assertThat(queen.isPseudoLegalMove(new Position(7, 3), board)).isTrue(); // h4 - Right
+        assertThat(queen.isPseudoLegalMove(new Position(0, 3), board)).isTrue(); // a4 - Left
+        assertThat(queen.isPseudoLegalMove(new Position(7, 7), board)).isTrue(); // h8 - Up-Right
+        assertThat(queen.isPseudoLegalMove(new Position(0, 0), board)).isTrue(); // a1 - Down-Left
     }
 
     @Test
@@ -42,7 +42,7 @@ public class QueenTest {
         board.setPieceAt(start, queen);
 
         // Act & Assert
-        assertThat(queen.isValidMove(new Position(4, 5), board)).isFalse(); // e6 - L-shape move
+        assertThat(queen.isPseudoLegalMove(new Position(4, 5), board)).isFalse(); // e6 - L-shape move
     }
 
     @Test
@@ -58,7 +58,7 @@ public class QueenTest {
         board.setPieceAt(new Position(0, 2), new Pawn(Color.WHITE, new Position(0, 2))); // a3
 
         // Act & Assert
-        assertThat(queen.isValidMove(target, board)).isFalse();
+        assertThat(queen.isPseudoLegalMove(target, board)).isFalse();
     }
 
     @Test
@@ -71,16 +71,16 @@ public class QueenTest {
 
         // Act & Assert
         // Straight lines
-        assertThat(queen.isValidMove(new Position(3, 7), board)).isTrue(); // d8 - Up
-        assertThat(queen.isValidMove(new Position(3, 0), board)).isTrue(); // d1 - Down
-        assertThat(queen.isValidMove(new Position(7, 3), board)).isTrue(); // h4 - Right
-        assertThat(queen.isValidMove(new Position(0, 3), board)).isTrue(); // a4 - Left
+        assertThat(queen.isPseudoLegalMove(new Position(3, 7), board)).isTrue(); // d8 - Up
+        assertThat(queen.isPseudoLegalMove(new Position(3, 0), board)).isTrue(); // d1 - Down
+        assertThat(queen.isPseudoLegalMove(new Position(7, 3), board)).isTrue(); // h4 - Right
+        assertThat(queen.isPseudoLegalMove(new Position(0, 3), board)).isTrue(); // a4 - Left
 
         // Diagonals
-        assertThat(queen.isValidMove(new Position(7, 7), board)).isTrue(); // h8 - Up-Right
-        assertThat(queen.isValidMove(new Position(0, 0), board)).isTrue(); // a1 - Down-Left
-        assertThat(queen.isValidMove(new Position(0, 6), board)).isTrue(); // a7 - Up-Left
-        assertThat(queen.isValidMove(new Position(6, 0), board)).isTrue(); // g1- Down-Right
+        assertThat(queen.isPseudoLegalMove(new Position(7, 7), board)).isTrue(); // h8 - Up-Right
+        assertThat(queen.isPseudoLegalMove(new Position(0, 0), board)).isTrue(); // a1 - Down-Left
+        assertThat(queen.isPseudoLegalMove(new Position(0, 6), board)).isTrue(); // a7 - Up-Left
+        assertThat(queen.isPseudoLegalMove(new Position(6, 0), board)).isTrue(); // g1- Down-Right
     }
 
     @Test
@@ -96,7 +96,7 @@ public class QueenTest {
         board.setPieceAt(target, new Pawn(Color.BLACK, target));
 
         // Act & Assert
-        assertThat(queen.isValidMove(target, board)).isTrue();
+        assertThat(queen.isPseudoLegalMove(target, board)).isTrue();
     }
 
     @Test
@@ -112,6 +112,6 @@ public class QueenTest {
         board.setPieceAt(target, new Rook(Color.WHITE, target));
 
         // Act & Assert
-        assertThat(queen.isValidMove(target, board)).isFalse();
+        assertThat(queen.isPseudoLegalMove(target, board)).isFalse();
     }
 }

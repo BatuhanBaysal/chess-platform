@@ -1,32 +1,45 @@
 package com.batuhan.chess.domain.model.chess;
 
-/**
- * Represents a Knight piece.
- * Moves in an 'L' shape and has the unique ability to jump over other pieces.
- */
+import java.util.ArrayList;
+import java.util.List;
+
 public final class Knight extends Piece {
 
     public Knight(Color color, Position position) {
         super(color, PieceType.KNIGHT, position);
     }
 
-    /**
-     * Validates the L-shaped move.
-     * Since Knights jump over pieces, path clearance is not checked.
-     */
     @Override
-    public boolean isValidMove(Position target, Board board) {
+    public boolean isPseudoLegalMove(Position target, Board board) {
         int fileDiff = Math.abs(target.file() - position.file());
         int rankDiff = Math.abs(target.rank() - position.rank());
 
-        // 1. Geometry: L-shape check (2x1 or 1x2)
         if (fileDiff * rankDiff != 2) {
             return false;
         }
 
-        // 2. Target: Friendly fire check only
-        return board.getPiece(target)
-            .map(p -> p.getColor() != this.color)
-            .orElse(true);
+        return canCaptureOrMoveTo(target, board);
+    }
+
+    @Override
+    public List<Position> getPseudoLegalMoves(Board board) {
+        List<Position> moves = new ArrayList<>();
+        int[][] offsets = {
+            {-2, -1}, {-2, 1}, {2, -1}, {2, 1},
+            {-1, -2}, {-1, 2}, {1, -2}, {1, 2}
+        };
+
+        for (int[] o : offsets) {
+            int newFile = position.file() + o[0];
+            int newRank = position.rank() + o[1];
+
+            if (newFile >= 0 && newFile < 8 && newRank >= 0 && newRank < 8) {
+                Position target = new Position(newFile, newRank);
+                if (isPseudoLegalMove(target, board)) {
+                    moves.add(target);
+                }
+            }
+        }
+        return moves;
     }
 }

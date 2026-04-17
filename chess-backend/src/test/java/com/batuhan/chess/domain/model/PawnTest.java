@@ -27,7 +27,7 @@ public class PawnTest {
         board.setPieceAt(start, pawn);
 
         // Act & Assert
-        assertThat(pawn.isValidMove(target, board)).isTrue();
+        assertThat(pawn.isPseudoLegalMove(target, board)).isTrue();
     }
 
     @Test
@@ -40,7 +40,7 @@ public class PawnTest {
         board.setPieceAt(start, blackPawn);
 
         // Act & Assert
-        assertThat(blackPawn.isValidMove(target, board)).isTrue();
+        assertThat(blackPawn.isPseudoLegalMove(target, board)).isTrue();
     }
 
     @Test
@@ -53,7 +53,7 @@ public class PawnTest {
         board.setPieceAt(start, pawn);
 
         // Act & Assert
-        assertThat(pawn.isValidMove(target, board)).isTrue();
+        assertThat(pawn.isPseudoLegalMove(target, board)).isTrue();
     }
 
     @Test
@@ -69,7 +69,7 @@ public class PawnTest {
         board.setPieceAt(target, new Rook(Color.BLACK, target));
 
         // Act & Assert
-        assertThat(pawn.isValidMove(target, board)).isFalse();
+        assertThat(pawn.isPseudoLegalMove(target, board)).isFalse();
     }
 
     @Test
@@ -85,7 +85,7 @@ public class PawnTest {
         board.setPieceAt(target, new Knight(Color.BLACK, target));
 
         // Act & Assert
-        assertThat(pawn.isValidMove(target, board)).isTrue();
+        assertThat(pawn.isPseudoLegalMove(target, board)).isTrue();
     }
 
     @Test
@@ -98,7 +98,7 @@ public class PawnTest {
         board.setPieceAt(start, pawn);
 
         // Act & Assert
-        assertThat(pawn.isValidMove(target, board)).isFalse();
+        assertThat(pawn.isPseudoLegalMove(target, board)).isFalse();
     }
 
     @Test
@@ -111,7 +111,7 @@ public class PawnTest {
         board.setPieceAt(start, pawn);
 
         // Act & Assert
-        assertThat(pawn.isValidMove(target, board)).isFalse();
+        assertThat(pawn.isPseudoLegalMove(target, board)).isFalse();
     }
 
     @Test
@@ -127,7 +127,7 @@ public class PawnTest {
         board.setPieceAt(target, new Bishop(Color.WHITE, target));
 
         // Act & Assert
-        assertThat(pawn.isValidMove(target, board)).isFalse();
+        assertThat(pawn.isPseudoLegalMove(target, board)).isFalse();
     }
 
     @Test
@@ -145,7 +145,7 @@ public class PawnTest {
         board.setPieceAt(blocker, new Knight(Color.BLACK, blocker));
 
         // Act & Assert
-        assertThat(pawn.isValidMove(target, board)).isFalse();
+        assertThat(pawn.isPseudoLegalMove(target, board)).isFalse();
     }
 
     @Test
@@ -158,7 +158,7 @@ public class PawnTest {
         board.setPieceAt(start, pawn);
 
         // Act & Assert
-        assertThat(pawn.isValidMove(target, board)).isFalse();
+        assertThat(pawn.isPseudoLegalMove(target, board)).isFalse();
     }
 
     @Test
@@ -172,6 +172,6 @@ public class PawnTest {
         board.setPieceAt(target, new Bishop(Color.WHITE, target)); // Friendly blocker
 
         // Act & Assert
-        assertThat(pawn.isValidMove(target, board)).isFalse();
+        assertThat(pawn.isPseudoLegalMove(target, board)).isFalse();
     }
 }

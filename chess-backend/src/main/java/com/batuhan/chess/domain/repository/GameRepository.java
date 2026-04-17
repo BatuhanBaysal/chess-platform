@@ -6,9 +6,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface GameRepository extends JpaRepository<GameEntity, Long> {
+
+    @EntityGraph(attributePaths = {"whitePlayer", "blackPlayer"})
+    Optional<GameEntity> findWithPlayersById(Long id);
 
     @EntityGraph(attributePaths = {"whitePlayer", "blackPlayer"})
     List<GameEntity> findByWhitePlayerIdOrBlackPlayerIdOrderByPlayedAtDesc(Long whiteId, Long blackId);

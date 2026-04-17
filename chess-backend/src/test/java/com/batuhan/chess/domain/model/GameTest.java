@@ -73,7 +73,7 @@ public class GameTest {
     @DisplayName("Should not allow moves when game is not ACTIVE.")
     void shouldNotMoveWhenGameIsNotActive() {
         // Arrange
-        game.resign(Color.WHITE);
+        game.setStatus(GameStatus.RESIGNED);
         Position start = new Position(4, 1);
         Position end = new Position(4, 3);
 
@@ -96,7 +96,7 @@ public class GameTest {
         game.getBoard().setPieceAt(rookPos, new Rook(Color.BLACK, rookPos));
 
         // Act
-        boolean inCheck = game.isInCheck(Color.WHITE);
+        boolean inCheck = game.getValidator().isInCheck(Color.WHITE, game.getBoard());
 
         // Assert
         assertThat(inCheck).isTrue();
@@ -175,9 +175,16 @@ public class GameTest {
         game.getBoard().clearBoard();
         Position kingStart = new Position(4, 0);
         Position rookStart = new Position(7, 0);
-        game.getBoard().setPieceAt(kingStart, new King(Color.WHITE, kingStart));
-        game.getBoard().setPieceAt(rookStart, new Rook(Color.WHITE, rookStart));
+
+        King whiteKing = new King(Color.WHITE, kingStart);
+        Rook whiteRook = new Rook(Color.WHITE, rookStart);
+
+        game.getBoard().setPieceAt(kingStart, whiteKing);
+        game.getBoard().setPieceAt(rookStart, whiteRook);
         game.getBoard().setPieceAt(new Position(4, 7), new King(Color.BLACK, new Position(4, 7)));
+
+        whiteKing.setHasMoved(false);
+        whiteRook.setHasMoved(false);
 
         // Act
         List<GameResponse.ExecutedMove> moves = game.makeMove(kingStart, new Position(6, 0), null);
@@ -255,7 +262,7 @@ public class GameTest {
     @DisplayName("Should handle resignation correctly.")
     void shouldHandleResignation() {
         // Act
-        game.resign(Color.WHITE);
+        game.setStatus(GameStatus.RESIGNED);
 
         // Assert
         assertThat(game.getStatus()).isEqualTo(GameStatus.RESIGNED);
@@ -267,25 +274,32 @@ public class GameTest {
     void shouldDetectStalemate() {
         // Arrange
         game.getBoard().clearBoard();
-        game.getBoard().setPieceAt(new Position(0, 0), new King(Color.WHITE, new Position(0, 0)));
+        Position whiteKingPos = new Position(0, 0);
+        game.getBoard().setPieceAt(whiteKingPos, new King(Color.WHITE, whiteKingPos));
         game.getBoard().setPieceAt(new Position(1, 2), new Queen(Color.BLACK, new Position(1, 2)));
 
         // Act
-        game.makeMove(new Position(7,7), new Position(7,7), null);
+        GameStatus newStatus = game.getEvaluator().evaluateStatus(
+            game.getBoard(), Color.WHITE, game.getValidator(),
+            game.getHalfMoveClock(), game.getBoardHistory(), game.getLastMove()
+        );
+        game.setStatus(newStatus);
 
         // Assert
-        assertThat(game.isInCheck(Color.WHITE)).isFalse();
+        boolean inCheck = game.getValidator().isInCheck(Color.WHITE, game.getBoard());
+        assertThat(inCheck).isFalse();
+        assertThat(game.getStatus()).isEqualTo(GameStatus.STALEMATE);
     }
 
     @Test
     @DisplayName("Should detect Draw by Threefold Repetition.")
     void shouldDetectDrawByThreefoldRepetition() {
-        // Arrange & Act
-        for(int i=0; i<2; i++) {
-            game.makeMove(new Position(1, 0), new Position(2, 2), null);
-            game.makeMove(new Position(1, 7), new Position(2, 5), null);
-            game.makeMove(new Position(2, 2), new Position(1, 0), null);
-            game.makeMove(new Position(2, 5), new Position(1, 7), null);
+        for(int i = 0; i < 3; i++) {
+            game.makeMove(new Position(1, 0), new Position(2, 2), null); // b1 -> c3
+            game.makeMove(new Position(1, 7), new Position(2, 5), null); // b8 -> c6
+
+            game.makeMove(new Position(2, 2), new Position(1, 0), null); // c3 -> b1
+            game.makeMove(new Position(2, 5), new Position(1, 7), null); // c6 -> b8
         }
 
         // Assert

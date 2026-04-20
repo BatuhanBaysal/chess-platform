@@ -35,8 +35,14 @@ public class SecurityConfig {
             }))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/api/lobby/**", "/ws-chess/**").permitAll()
-                .requestMatchers("/api/users/**", "/api/games/**").permitAll()
+                .requestMatchers(
+                    "/api/auth/**",
+                    "/api/lobby/**",
+                    "/api/users/**",
+                    "/api/games/**",
+                    "/ws-chess/**",
+                    "/actuator/**"
+                ).permitAll()
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider)

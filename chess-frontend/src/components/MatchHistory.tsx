@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { getPlayerHistory } from '../api/gameService';
-import { Trophy, Calendar, User, Activity, Sword, Hash } from 'lucide-react';
+import { User, Activity, Sword, Hash } from 'lucide-react';
 
 interface GameHistory {
     id: number;

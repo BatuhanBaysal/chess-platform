@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { getUserStats, getPlayerHistory, getLobbyStatus } from '../api/gameService'; 
-import { Trophy, Swords, User, TrendingUp, History, RefreshCw, ChevronRight, AlertCircle, Loader2, LayoutDashboard } from 'lucide-react';
-import ChessBoard from './ChessBoard'; 
-import { useChess } from '../hooks/useChess'; 
+import { getUserStats, getPlayerHistory } from '../api/gameService';
+import { Trophy, Swords, User, TrendingUp, History, RefreshCw, ChevronRight, Loader2, LayoutDashboard, AlertCircle } from 'lucide-react';
+import ChessBoard from './ChessBoard';
+import { useChess } from '../hooks/useChess';
 
 interface Stats {
     username: string;
@@ -25,7 +25,7 @@ interface GameHistory {
 
 interface DashboardProps {
     userId: number;
-    activeLobbyId?: string | null; 
+    activeLobbyId?: string | null;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) => {
@@ -35,14 +35,15 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) => {
     const [error, setError] = useState<string | null>(null);
     const [theme, setTheme] = useState<'classic' | 'modern' | 'emerald'>('classic');
 
-    const { 
-        game, 
-        isConnected, 
-        playerColor, 
-        makeMove, 
-        fetchLegalMoves, 
-        startNewGame, 
-        resetChessState 
+    const {
+        game,
+        isConnected,
+        isLobbyConnected,
+        playerColor,
+        makeMove,
+        fetchLegalMoves,
+        startNewGame,
+        resetChessState
     } = useChess();
 
     const loadDashboardData = useCallback(async () => {
@@ -90,10 +91,15 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) => {
                 <div className="w-full max-w-[1200px] flex justify-between items-center mb-4 bg-slate-900/50 p-4 rounded-2xl border border-white/5">
                     <div className="flex items-center gap-3">
                         <LayoutDashboard className="text-blue-500" size={20} />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Active Deployment</span>
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Active Deployment</span>
+                            <span className={`text-[8px] font-bold uppercase ${isConnected ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                {isConnected ? 'Link Stable' : 'Link Interrupted'}
+                            </span>
+                        </div>
                     </div>
-                    <select 
-                        value={theme} 
+                    <select
+                        value={theme}
                         onChange={(e) => setTheme(e.target.value as any)}
                         className="bg-slate-800 text-[10px] font-black uppercase px-3 py-1.5 rounded-lg border-none focus:ring-2 ring-blue-500 outline-none cursor-pointer"
                     >
@@ -134,13 +140,24 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) => {
         <div className="flex flex-col gap-4 p-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex justify-between items-center px-1">
                 <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div>
-                    <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Command Center</h2>
+                    <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${(isLobbyConnected || isConnected) ? 'bg-blue-500' : 'bg-rose-500'}`}></div>
+                    <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                        Command Center {!(isLobbyConnected || isConnected) && <span className="text-rose-500 ml-1 opacity-60">(Offline)</span>}
+                    </h2>
                 </div>
                 <button onClick={loadDashboardData} disabled={isLoading} className="p-2 hover:bg-white/5 rounded-xl transition-all">
                     <RefreshCw size={14} className={`${isLoading ? 'animate-spin text-blue-400' : 'text-slate-500 hover:text-white'}`} />
                 </button>
             </div>
+
+            {error && (
+                <div className="flex items-center gap-3 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 animate-in zoom-in-95 duration-300">
+                    <AlertCircle size={16} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">
+                        {error === "AUTH_DENIED" ? "Security Clearance Revoked" : "Neural Link Sync Failed"}
+                    </span>
+                </div>
+            )}
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {statsCards.map((card, idx) => (
@@ -161,14 +178,14 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) => {
                         <span className="text-[10px] font-black uppercase tracking-[0.25em]">Combat Logs</span>
                     </div>
                 </div>
-                
+
                 <div className="flex flex-col gap-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
                     {history.length > 0 ? (
                         history.map((match, i) => {
                             const isWhite = match.whitePlayerId === userId;
                             const opponentName = isWhite ? match.blackPlayerName : match.whitePlayerName;
-                            const result = match.result === 'DRAW' ? 'DRAW' : 
-                                         (match.result === (isWhite ? 'WHITE_WIN' : 'BLACK_WIN') ? 'WIN' : 'LOSS');
+                            const result = match.result === 'DRAW' ? 'DRAW' :
+                                (match.result === (isWhite ? 'WHITE_WIN' : 'BLACK_WIN') ? 'WIN' : 'LOSS');
 
                             return (
                                 <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-transparent hover:border-white/10 transition-all group">

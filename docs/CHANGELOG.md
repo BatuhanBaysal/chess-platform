@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-04-20
+
+### 🐳 Phase 10: Infrastructure, Containerization & DB Versioning
+> **Note:** This phase transitions the project from a local development setup to a production-ready, containerized ecosystem. It introduces professional database schema management and service orchestration to ensure "Zero-Configuration" deployments.
+
+- **2026-04-20:**
+    - **Infrastructure & Engineering Hardening (PR #23):**
+        - **Full Containerization (Docker):** Developed a multi-stage `Dockerfile` for both Backend (JRE 21) and Frontend (Nginx/Vite). Orchestrated the entire stack (Java, React, PostgreSQL, Redis) using `docker-compose`.
+        - **Database Migration Engine (Liquibase):** Integrated **Liquibase** for version-controlled database schema management. Replaced Hibernate's `ddl-auto: update` with professional SQL-based migrations, ensuring schema consistency across all environments.
+        - **Enterprise Configuration Management:** Optimized `application.yaml` to utilize environment variables for sensitive data, enabling seamless transitions between Development, Docker, and Production profiles.
+        - **Service Health & Resilience:** Implemented `healthcheck` protocols in Docker Compose to ensure the Backend only initializes after PostgreSQL and Redis are fully operational, preventing connection-refused failures.
+        - **Strategic Engineering Roadmap:** Authored a comprehensive **Engineering & Infrastructure Analysis Report**, defining the path for Full-Stack Observability (LGTM Stack) and Distributed System Reliability (Resilience4j).
+        - **Validation:**
+            - **Migration Integrity:** Verified successful schema generation and execution via Liquibase changelog locks.
+            - **Orchestration Stability:** Confirmed stable inter-service communication within the Docker network (Backend-to-DB and Backend-to-Redis connectivity).
+
+---
+
 ## [0.9.0] - 2026-04-17
 
 ### 🤝 Phase 9: Remote Multiplayer & Global Matchmaking

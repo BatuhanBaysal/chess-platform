@@ -1,0 +1,63 @@
+services:
+    db:
+        image: postgres:15-alpine
+        container_name: chess-postgres
+        restart: always
+        environment:
+            POSTGRES_DB: chess_db
+            POSTGRES_USER: ${CHESS_DB_USERNAME}
+            POSTGRES_PASSWORD: ${CHESS_DB_PASSWORD}
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${CHESS_DB_USERNAME} -d chess_db"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+    redis:
+        image: redis:7-alpine
+        container_name: chess-redis
+        restart: always
+        ports:
+            - "6379:6379"
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+    backend:
+        build: ./chess-backend
+        container_name: chess-server
+        restart: always
+        ports:
+            - "8080:8080"
+        environment:
+            CHESS_DB_URL: jdbc:postgresql://db:5432/chess_db
+            CHESS_DB_USERNAME: ${CHESS_DB_USERNAME}
+            CHESS_DB_PASSWORD: ${CHESS_DB_PASSWORD}
+            CHESS_REDIS_HOST: redis
+            CHESS_REDIS_PORT: 6379
+            CHESS_JWT_SECRET: ${CHESS_JWT_SECRET}
+            CHESS_JWT_EXPIRATION: ${CHESS_JWT_EXPIRATION}
+            SPRING_LIQUIBASE_ENABLED: "true"
+        depends_on:
+            db:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+
+    frontend:
+        build: ./chess-frontend
+        container_name: chess-ui
+        restart: always
+        ports:
+            - "80:80"
+        environment:
+            - VITE_API_URL=http://localhost:8080/api
+        depends_on:
+            - backend
+
+volumes:
+    postgres_data:

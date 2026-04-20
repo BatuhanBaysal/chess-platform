@@ -7,6 +7,9 @@ import com.batuhan.chess.domain.model.history.GameResult;
 import com.batuhan.chess.domain.model.user.UserEntity;
 import com.batuhan.chess.domain.repository.GameRepository;
 import com.batuhan.chess.domain.repository.UserRepository;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,10 +29,21 @@ public class GameService {
     private final GameRepository gameRepository;
     private final UserRepository userRepository;
     private final EloService eloService;
+    private final MeterRegistry meterRegistry;
 
     private final Map<String, Game> activeGames = new ConcurrentHashMap<>();
     private final Map<String, Set<Long>> readyPlayers = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+    private Counter moveCounter;
+
+    @PostConstruct
+    public void initMetrics() {
+        meterRegistry.gauge("chess.games.active", activeGames, Map::size);
+        moveCounter = Counter.builder("chess.moves.total")
+            .description("Total number of chess moves executed")
+            .register(meterRegistry);
+    }
 
     public String createGame(Long whiteId, Long blackId) {
         String gameId = UUID.randomUUID().toString().substring(0, 8);
@@ -85,6 +99,8 @@ public class GameService {
             if (moves.isEmpty()) {
                 return Collections.emptyList();
             }
+
+            moveCounter.increment();
 
             if (game.getStatus().isFinished() && game.getStatus() != GameStatus.CLOSING) {
                 processGameFinish(gameId, determineResult(game, game.getStatus()), game.getStatus());

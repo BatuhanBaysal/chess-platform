@@ -8,6 +8,13 @@ All notable changes to this project will be documented in this file. This projec
 > **Note:** This phase introduces real-time visibility into the system's internal state. By implementing the LGTM (Loki, Grafana, Tempo, Prometheus) stack, the project gains the ability to track business metrics, technical performance, and distributed logs through a centralized dashboard.
 
 - **2026-04-21:**
+    - **Grafana Dashboard Configuration & Export (PR #31 | Issue #27):**
+        - **Custom Business Dashboards:** Created dedicated Grafana dashboards for real-time business insights:
+            - `chess-active-games-dashboard.json`: Monitors concurrent active sessions.
+            - `chess-total-moves-dashboard.json`: Tracks cumulative move executions using Prometheus counters.
+        - **Observability Artifacts:** Exported dashboard configurations as version-controlled JSON files to `docs/assets/dashboards/` for environment portability.
+        - **Engineering Documentation:** Captured high-fidelity snapshots of JVM health (Memory, GC, Threads) and business metrics to provide visual proof of system stability.
+        - **Validation:** Verified the end-to-end metric pipeline from Spring Boot Micrometer to Grafana visualization under live game conditions.
     - **Infrastructure Orchestration & LGTM Stack Integration (PR #30 | Issue #26):**
         - **Full-Stack Monitoring Orchestration:** Developed a comprehensive `docker-compose` orchestration for the LGTM stack, integrating **Prometheus** (Metrics), **Loki** (Logging), **Tempo** (Tracing), and **Grafana** (Visualization).
         - **Distributed Tracing with Grafana Tempo:** - Configured **OpenTelemetry (OTLP)** in the Spring Boot backend to export traces to Tempo.

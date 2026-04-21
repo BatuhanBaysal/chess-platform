@@ -42,6 +42,8 @@ services:
             CHESS_JWT_SECRET: ${CHESS_JWT_SECRET}
             CHESS_JWT_EXPIRATION: ${CHESS_JWT_EXPIRATION}
             SPRING_LIQUIBASE_ENABLED: "true"
+            MANAGEMENT_OTLP_TRACING_ENDPOINT: http://tempo:4317
+            MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
         depends_on:
             db:
                 condition: service_healthy
@@ -59,5 +61,56 @@ services:
         depends_on:
             - backend
 
+    prometheus:
+        image: prom/prometheus:latest
+        container_name: chess-prometheus
+        restart: unless-stopped
+        volumes:
+            - ./prometheus.yml:/etc/prometheus/prometheus.yml
+            - prometheus_data:/prometheus
+        command:
+            - '--config.file=/etc/prometheus/prometheus.yml'
+            - '--storage.tsdb.path=/prometheus'
+        ports:
+            - "9090:9090"
+        depends_on:
+            - backend
+
+    loki:
+        image: grafana/loki:latest
+        container_name: chess-loki
+        ports:
+            - "3100:3100"
+        command: -config.file=/etc/loki/local-config.yaml
+        restart: unless-stopped
+
+    tempo:
+        image: grafana/tempo:latest
+        container_name: chess-tempo
+        command: [ "-config.file=/etc/tempo.yaml" ]
+        volumes:
+            - ./tempo.yml:/etc/tempo.yaml
+        ports:
+            - "3200:3200"
+            - "4317:4317"
+        restart: unless-stopped
+
+    grafana:
+        image: grafana/grafana:latest
+        container_name: chess-grafana
+        restart: unless-stopped
+        ports:
+            - "3000:3000"
+        volumes:
+            - grafana_data:/var/lib/grafana
+        environment:
+            - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+        depends_on:
+            - prometheus
+            - loki
+            - tempo
+
 volumes:
     postgres_data:
+    prometheus_data:
+    grafana_data:

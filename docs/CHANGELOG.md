@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2026-04-21
+
+### 📊 Phase 11: Full-Stack Observability & Monitoring
+> **Note:** This phase introduces real-time visibility into the system's internal state. By implementing the LGTM (Loki, Grafana, Tempo, Prometheus) stack, the project gains the ability to track business metrics, technical performance, and distributed logs through a centralized dashboard.
+
+- **2026-04-21:**
+    - **Infrastructure Orchestration & LGTM Stack Integration (PR #30 | Issue #26):**
+        - **Full-Stack Monitoring Orchestration:** Developed a comprehensive `docker-compose` orchestration for the LGTM stack, integrating **Prometheus** (Metrics), **Loki** (Logging), **Tempo** (Tracing), and **Grafana** (Visualization).
+        - **Distributed Tracing with Grafana Tempo:** - Configured **OpenTelemetry (OTLP)** in the Spring Boot backend to export traces to Tempo.
+            - Implemented a modern `tempo.yml` configuration using the new scoped overrides format (v2.10.4 compatibility).
+            - Enabled high-precision performance tracking for game move execution and WebSocket event propagation.
+        - **Centralized Logging with Grafana Loki:** Established a unified logging pipeline, allowing real-time correlation between application logs and distributed traces within the Grafana UI.
+        - **Observability Configuration (Application-Level):** - Updated `application.yaml` with dedicated profiles for tracing sampling and OTLP endpoints.
+            - Refined logging patterns to include `traceId` and `spanId` for improved request tracking.
+        - **Validation:** - **Service Health:** Verified all 11 infrastructure containers are operational and healthy.
+            - **Data Source Integrity:** Confirmed successful connection and data flow between Grafana and the underlying data stores (Prometheus, Loki, Tempo).
+            - **Tracing Verification:** Successfully visualized the lifecycle of a Move Execution request within Tempo, identifying latency bottlenecks.
+- **2026-04-20:**
+    - **Metrics Instrumentation & Actuator Integration (PR #29 | Issue #25):**
+        - **Spring Boot Actuator Setup:** Integrated Micrometer and Actuator to expose critical system health and performance data via the `/actuator/prometheus` endpoint.
+        - **Custom Chess Metrics:** Developed and registered domain-specific metrics using `MeterRegistry`:
+            - `chess.games.active`: A **Gauge** tracking the real-time count of concurrent game sessions.
+            - `chess.moves.total`: A **Counter** measuring the cumulative volume of move executions across the platform.
+        - **Security Gateway Configuration:** Updated `SecurityConfig` to permit unauthorized access to monitoring endpoints specifically for Prometheus scraping, while maintaining strict JWT-based security for business APIs.
+        - **Observability Refactoring:** Enhanced `GameService` to increment/decrement metrics atomically during game lifecycle events (creation, move execution, termination) without impacting core logic performance.
+        - **Validation:**
+            - **Local Scrape Verification:** Confirmed successful metric exposure and formatting in the Prometheus-compatible text format.
+            - **Metric Accuracy:** Verified that `chess.games.active` accurately reflects the state of the internal `ConcurrentHashMap`.
+
+---
+
 ## [0.10.0] - 2026-04-20
 
 ### 🐳 Phase 10: Infrastructure, Containerization & DB Versioning

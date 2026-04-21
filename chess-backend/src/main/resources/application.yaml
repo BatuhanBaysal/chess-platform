@@ -8,7 +8,6 @@ spring:
         password: ${CHESS_DB_PASSWORD}
         driver-class-name: org.postgresql.Driver
 
-    # Liquibase Configuration
     liquibase:
         change-log: classpath:db/changelog/db.changelog-master.xml
         enabled: true
@@ -27,18 +26,19 @@ spring:
                 order_inserts: true
                 order_updates: true
 
-# Logging Configuration for Liquibase & Hibernate
 logging:
     level:
         org.liquibase: INFO
         org.hibernate.SQL: DEBUG
         org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    pattern:
+        level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}]"
 
 management:
     endpoints:
         web:
             exposure:
-                include: "health,info,prometheus,metrics"
+                include: "health,info,prometheus,metrics,loki"
     endpoint:
         health:
             show-details: always
@@ -49,6 +49,12 @@ management:
         metrics:
             export:
                 enabled: true
+    tracing:
+        sampling:
+            probability: 1.0
+    otlp:
+        tracing:
+            endpoint: ${MANAGEMENT_OTLP_TRACING_ENDPOINT:-http://tempo:4317}
 
 chess:
     security:

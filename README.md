@@ -9,7 +9,7 @@
 >
 > **Latest Milestone:** Successfully completed **Phase 10**, migrating the entire ecosystem to a **Dockerized** environment with **Liquibase** for database versioning. The system is now production-ready with automated service orchestration and health-check verified connectivity.
 
-![Board Preview](docs/assets/screenshots/gameplay-features/chess-board.png)
+![Board Preview](docs/assets/screenshots/03-gameplay-features/chess-board.png)
 
 ---
 
@@ -75,13 +75,13 @@ The core chess logic is encapsulated in a **Pure Java** domain layer.
 * **Polymorphic Validation:** Each piece (`Rook`, `Bishop`, etc.) encapsulates its own logic, eliminating high-cyclomatic complexity from `switch-case` blocks.
 
 ### ⚡ Robust Rule Engine
-* **FIDE Compliance:** Full support for [Castling](docs/assets/screenshots/gameplay-features/castling.png), [En Passant](docs/assets/screenshots/gameplay-features/en-passant.png), and [Pawn Promotion](docs/assets/screenshots/gameplay-features/pawn-promotion.png).
-* **King Safety Simulation:** Dry-run execution to detect [Check](docs/assets/screenshots/gameplay-features/check.png), [Checkmate](docs/assets/screenshots/gameplay-features/checkmate.png), and Stalemate.
+* **FIDE Compliance:** Full support for [Castling](docs/assets/screenshots/03-gameplay-features/castling.png), [En Passant](docs/assets/screenshots/03-gameplay-features/en-passant.png), and [Pawn Promotion](docs/assets/screenshots/03-gameplay-features/pawn-promotion.png).
+* **King Safety Simulation:** Dry-run execution to detect [Check](docs/assets/screenshots/03-gameplay-features/check.png), [Checkmate](docs/assets/screenshots/03-gameplay-features/checkmate.png), and Stalemate.
 * **Efficient Pathfinding:** Optimized vector-based collision detection for sliding pieces to maintain high engine throughput.
 
 ### 🔄 State Synchronization & UX
-* **Modern React (v19):** Utilizing custom hooks and Tailwind CSS for a high-performance, responsive [Board UI](docs/assets/screenshots/gameplay-features/chess-board.png).
-* **Lobby & Social:** Sophisticated [Lobby System](docs/assets/screenshots/menu-page.png) and persistent [User Statistics](docs/assets/screenshots/ui-previews/checkmate-victory-screen.png) against players or the **Training Bot**.
+* **Modern React (v19):** Utilizing custom hooks and Tailwind CSS for a high-performance, responsive [Board UI](docs/assets/screenshots/03-gameplay-features/chess-board.png).
+* **Lobby & Social:** Sophisticated [Lobby System](docs/assets/screenshots/menu-page.png) and persistent [User Statistics](docs/assets/screenshots/02-ui-previews/checkmate-victory-screen.png) against players or the **Training Bot**.
 
 ---
 
@@ -102,14 +102,15 @@ The core chess logic is encapsulated in a **Pure Java** domain layer.
 - ⏳ **Phase 11: Full-Stack Observability (LGTM)** 📈 - Implementing **Grafana, Loki, and Prometheus** for real-time logs, metrics, and system health.
 - 📅 **Phase 12: Quality Assurance & Code Integrity** 🏆 - Expanding **JUnit 5/Mockito** coverage and integrating **SonarQube** for automated "Zero Technical Debt" reporting.
 - 📅 **Phase 13: Scalability & Resilience** ⚡ - Implementing **Resilience4j** (Circuit Breaker) and **Distributed Locking** with Redis.
-- 📅 **Phase 14: Advanced Analytics & AI** 🧠 - Integration of **Stockfish** via UCI protocol for move analysis and "Hint" system.
+- 📅 **Phase 14: Messaging & Async Logic** ✉️ - Integration of **RabbitMQ/Kafka** for background processing, notifications, and analytics.
+- 📅 **Phase 15: Advanced Analytics & AI** 🧠 - Integration of **Stockfish** via UCI protocol for move analysis and "Hint" system.
 
 ---
 
 ## 🐳 Infrastructure & Containerization
 The entire application ecosystem is managed using **Docker Compose** to ensure absolute consistency between development and production environments.
 
-![Docker Startup Assets](./docs/assets/screenshots/docker-startup.png)
+![Docker Startup Assets](./docs/assets/screenshots/01-infrastructure/docker-desktop-dashboard.png)
 
 > **Infrastructure Note:** All services (PostgreSQL, Redis, Spring Boot, and React) include health-check protocols to ensure reliable inter-service communication and deterministic container startup sequences.
 

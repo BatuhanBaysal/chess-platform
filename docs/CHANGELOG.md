@@ -8,6 +8,13 @@ All notable changes to this project will be documented in this file. This projec
 > **Note:** This phase introduces real-time visibility into the system's internal state. By implementing the LGTM (Loki, Grafana, Tempo, Prometheus) stack, the project gains the ability to track business metrics, technical performance, and distributed logs through a centralized dashboard.
 
 - **2026-04-21:**
+    - **Loki-Tempo Correlation & Distributed Tracing Verification (PR #32 | Issue #28):**
+        - **Log-to-Trace Correlation:** Established a seamless transition between Grafana Loki logs and Tempo traces using "Derived Fields." Users can now click a `traceId` in a log entry to instantly visualize the corresponding trace span.
+        - **Data Integrity & Filtering:** Optimized Loki queries to filter out null trace IDs (`{container="chess-server"} |~ "chess-backend,[a-zA-Z0-9]+"`), ensuring only actionable, high-value logs are analyzed.
+        - **Trace Analysis & Performance Profiling:** Successfully analyzed `/api/lobby/join` request lifecycles. Verified that a typical join operation takes ~41ms, with 26ms spent on security filter chains.
+        - **Technical Artifacts:** - Exported high-fidelity trace data as `trace-performance-sample.json` for performance benchmarking.
+            - Documented the full-stack observability view (split-screen Logs/Traces) to demonstrate end-to-end system transparency.
+        - **Validation:** Confirmed 100% ID matching between application logs and OpenTelemetry spans under real game traffic.
     - **Grafana Dashboard Configuration & Export (PR #31 | Issue #27):**
         - **Custom Business Dashboards:** Created dedicated Grafana dashboards for real-time business insights:
             - `chess-active-games-dashboard.json`: Monitors concurrent active sessions.

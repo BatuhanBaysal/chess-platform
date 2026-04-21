@@ -4,10 +4,10 @@
 
 ---
 
-### 📡 Project Status: Infrastructure & Containerization Finalized
+### 📡 Project Status: Full-Stack Observability Operational
 > **Operational Status:** The core chess engine is **100% operational**, strictly adhering to **FIDE rules**.
 >
-> **Latest Milestone:** Successfully completed **Phase 10**, migrating the entire ecosystem to a **Dockerized** environment with **Liquibase** for database versioning. The system is now production-ready with automated service orchestration and health-check verified connectivity.
+> **Latest Milestone:** Successfully completed **Phase 11**, implementing the **LGTM (Loki, Grafana, Tempo, Prometheus) Stack**. The system now features real-time performance monitoring, centralized logging, and distributed tracing, providing deep visibility into the system's internal state through **OpenTelemetry**.
 
 ![Board Preview](docs/assets/screenshots/03-gameplay-features/chess-board.png)
 
@@ -20,15 +20,22 @@
 ![Spring Boot 3.4.6](https://img.shields.io/badge/Spring_Boot-3.4.6-green?style=flat-square&logo=springboot&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
 ![Liquibase](https://img.shields.io/badge/Liquibase-DB_Migration-red?style=flat-square&logo=liquibase&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white)
+
+**Observability & Monitoring:**
+![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=flat-square&logo=prometheus&logoColor=white)
+![Grafana](https://img.shields.io/badge/Grafana-F46800?style=flat-square&logo=grafana&logoColor=white)
+![Loki](https://img.shields.io/badge/Loki-Logs-blue?style=flat-square&logo=grafana)
+![Tempo](https://img.shields.io/badge/Tempo-Tracing-green?style=flat-square&logo=grafana)
+![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-0052CC?style=flat-square&logo=opentelemetry&logoColor=white)
 
 **Frontend:**
 ![React 19](https://img.shields.io/badge/React-19-20232A?style=flat-square&logo=react&logoColor=61DAFB)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)
 ![WebSocket](https://img.shields.io/badge/WebSocket-STOMP-blue?style=flat-square)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)
 
 ---
 
@@ -87,7 +94,7 @@ The core chess logic is encapsulated in a **Pure Java** domain layer.
 
 ## 🚀 Development Roadmap
 
-*Current Status: 📈 **Phase 11: Full-Stack Observability (LGTM)***
+*Current Status: 📈 **Phase 12: Quality Assurance & Code Integrity***
 
 - ✅ **Phase 1: Foundation** 🏗️ - Monorepo scaffolding, environment setup, and Spring Boot/React initialization.
 - ✅ **Phase 2: Domain Modeling** ♟️ - Piece-specific logic, board initialization, and DDD-based movement rules.
@@ -99,8 +106,8 @@ The core chess logic is encapsulated in a **Pure Java** domain layer.
 - ✅ **Phase 8: Server-Side Authority** 🛡️ - Hardened backend validation for all moves and anti-cheat state management.
 - ✅ **Phase 9: Remote Multiplayer & Matchmaking** 🤝 - Global session management and real-time player pairing via WebSockets.
 - ✅ **Phase 10: Infrastructure & Containerization** 🐳 - Orchestrating services with **Docker & Docker Compose** and implementing **Liquibase** for DB versioning.
-- ⏳ **Phase 11: Full-Stack Observability (LGTM)** 📈 - Implementing **Grafana, Loki, and Prometheus** for real-time logs, metrics, and system health.
-- 📅 **Phase 12: Quality Assurance & Code Integrity** 🏆 - Expanding **JUnit 5/Mockito** coverage and integrating **SonarQube** for automated "Zero Technical Debt" reporting.
+- ✅ **Phase 11: Full-Stack Observability (LGTM)** 📈 - Implementing **Grafana, Loki, and Prometheus** for real-time logs, metrics, and system health.
+- ⏳ **Phase 12: Quality Assurance & Code Integrity** 🏆 - Expanding **JUnit 5/Mockito** coverage and integrating **SonarQube** for automated "Zero Technical Debt" reporting.
 - 📅 **Phase 13: Scalability & Resilience** ⚡ - Implementing **Resilience4j** (Circuit Breaker) and **Distributed Locking** with Redis.
 - 📅 **Phase 14: Messaging & Async Logic** ✉️ - Integration of **RabbitMQ/Kafka** for background processing, notifications, and analytics.
 - 📅 **Phase 15: Advanced Analytics & AI** 🧠 - Integration of **Stockfish** via UCI protocol for move analysis and "Hint" system.

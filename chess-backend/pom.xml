@@ -12,7 +12,7 @@
 
     <groupId>com.batuhan</groupId>
     <artifactId>chess-backend</artifactId>
-    <version>0.9.0-SNAPSHOT</version>
+    <version>0.10.0-SNAPSHOT</version>
     <name>chess-backend</name>
     <description>Hexagonal Architecture Chess Service with Spring Boot 3</description>
 
@@ -103,6 +103,11 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
 
         <dependency>

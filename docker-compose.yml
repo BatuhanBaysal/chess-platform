@@ -33,6 +33,8 @@ services:
         restart: always
         ports:
             - "8080:8080"
+        volumes:
+            - ./logs:/app/logs
         environment:
             CHESS_DB_URL: jdbc:postgresql://db:5432/chess_db
             CHESS_DB_USERNAME: ${CHESS_DB_USERNAME}
@@ -42,8 +44,9 @@ services:
             CHESS_JWT_SECRET: ${CHESS_JWT_SECRET}
             CHESS_JWT_EXPIRATION: ${CHESS_JWT_EXPIRATION}
             SPRING_LIQUIBASE_ENABLED: "true"
-            MANAGEMENT_OTLP_TRACING_ENDPOINT: http://tempo:4317
+            MANAGEMENT_OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
             MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+            LOGGING_FILE_NAME: /app/logs/chess-backend.log
         depends_on:
             db:
                 condition: service_healthy
@@ -93,7 +96,19 @@ services:
         ports:
             - "3200:3200"
             - "4317:4317"
+            - "4318:4318"
         restart: unless-stopped
+
+    promtail:
+        image: grafana/promtail:latest
+        container_name: chess-promtail
+        restart: unless-stopped
+        volumes:
+            - ./logs:/var/log
+            - ./promtail-config.yml:/etc/promtail/config.yml
+        command: -config.file=/etc/promtail/config.yml
+        depends_on:
+            - loki
 
     grafana:
         image: grafana/grafana:latest

@@ -1,0 +1,454 @@
+{
+  "batches": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "telemetry.sdk.language",
+            "value": {
+              "stringValue": "java"
+            }
+          },
+          {
+            "key": "telemetry.sdk.name",
+            "value": {
+              "stringValue": "opentelemetry"
+            }
+          },
+          {
+            "key": "telemetry.sdk.version",
+            "value": {
+              "stringValue": "1.43.0"
+            }
+          },
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "chess-backend"
+            }
+          }
+        ],
+        "droppedAttributesCount": 0
+      },
+      "instrumentationLibrarySpans": [
+        {
+          "spans": [
+            {
+              "traceId": "d6708369cce95f4821da37ba2f8219aa",
+              "spanId": "9d89704099a2a639",
+              "parentSpanId": "",
+              "traceState": "",
+              "name": "http post /api/lobby/join",
+              "kind": "SPAN_KIND_SERVER",
+              "startTimeUnixNano": 1776774156656847600,
+              "endTimeUnixNano": 1776774156698158800,
+              "attributes": [
+                {
+                  "key": "exception",
+                  "value": {
+                    "stringValue": "none"
+                  }
+                },
+                {
+                  "key": "method",
+                  "value": {
+                    "stringValue": "POST"
+                  }
+                },
+                {
+                  "key": "outcome",
+                  "value": {
+                    "stringValue": "SUCCESS"
+                  }
+                },
+                {
+                  "key": "status",
+                  "value": {
+                    "stringValue": "200"
+                  }
+                },
+                {
+                  "key": "uri",
+                  "value": {
+                    "stringValue": "/api/lobby/join"
+                  }
+                },
+                {
+                  "key": "http.url",
+                  "value": {
+                    "stringValue": "/api/lobby/join"
+                  }
+                }
+              ],
+              "droppedAttributesCount": 0,
+              "droppedEventsCount": 0,
+              "droppedLinksCount": 0,
+              "status": {
+                "code": 0,
+                "message": ""
+              }
+            }
+          ],
+          "instrumentationLibrary": {
+            "name": "org.springframework.boot",
+            "version": "3.4.6"
+          }
+        }
+      ]
+    },
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "telemetry.sdk.language",
+            "value": {
+              "stringValue": "java"
+            }
+          },
+          {
+            "key": "telemetry.sdk.name",
+            "value": {
+              "stringValue": "opentelemetry"
+            }
+          },
+          {
+            "key": "telemetry.sdk.version",
+            "value": {
+              "stringValue": "1.43.0"
+            }
+          },
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "chess-backend"
+            }
+          }
+        ],
+        "droppedAttributesCount": 0
+      },
+      "instrumentationLibrarySpans": [
+        {
+          "spans": [
+            {
+              "traceId": "d6708369cce95f4821da37ba2f8219aa",
+              "spanId": "8c69eb2026b4fba7",
+              "parentSpanId": "9d89704099a2a639",
+              "traceState": "",
+              "name": "security filterchain before",
+              "kind": "SPAN_KIND_INTERNAL",
+              "startTimeUnixNano": 1776774156658532400,
+              "endTimeUnixNano": 1776774156684916700,
+              "attributes": [
+                {
+                  "key": "security.security.reached.filter.section",
+                  "value": {
+                    "stringValue": "before"
+                  }
+                },
+                {
+                  "key": "spring.security.filterchain.position",
+                  "value": {
+                    "stringValue": "13"
+                  }
+                },
+                {
+                  "key": "spring.security.filterchain.size",
+                  "value": {
+                    "stringValue": "13"
+                  }
+                },
+                {
+                  "key": "spring.security.reached.filter.name",
+                  "value": {
+                    "stringValue": "AuthorizationFilter"
+                  }
+                }
+              ],
+              "droppedAttributesCount": 0,
+              "droppedEventsCount": 0,
+              "droppedLinksCount": 0,
+              "status": {
+                "code": 0,
+                "message": ""
+              },
+              "events": [
+                {
+                  "timeUnixNano": 1776774156658000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "before DisableEncodeUrlFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156659000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "before CorsFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156659000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "before HeaderWriterFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156659000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "before SecurityContextHolderFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156659000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "before WebAsyncManagerIntegrationFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156661000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "before LogoutFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156662000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "before JwtAuthenticationFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156683000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "before AnonymousAuthenticationFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156683000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "before AuthorizationFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156683000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "before ExceptionTranslationFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156683000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "before RequestCacheAwareFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156683000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "before SecurityContextHolderAwareRequestFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156683000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "before SessionManagementFilter"
+                }
+              ]
+            },
+            {
+              "traceId": "d6708369cce95f4821da37ba2f8219aa",
+              "spanId": "3b5b955a17af6701",
+              "parentSpanId": "8c69eb2026b4fba7",
+              "traceState": "",
+              "name": "authorize request",
+              "kind": "SPAN_KIND_INTERNAL",
+              "startTimeUnixNano": 1776774156683969300,
+              "endTimeUnixNano": 1776774156684736800,
+              "attributes": [
+                {
+                  "key": "spring.security.authentication.authorities",
+                  "value": {
+                    "stringValue": "n/a"
+                  }
+                },
+                {
+                  "key": "spring.security.authentication.type",
+                  "value": {
+                    "stringValue": "n/a"
+                  }
+                },
+                {
+                  "key": "spring.security.authorization.decision",
+                  "value": {
+                    "stringValue": "true"
+                  }
+                },
+                {
+                  "key": "spring.security.authorization.decision.details",
+                  "value": {
+                    "stringValue": "AuthorizationDecision [granted=true]"
+                  }
+                },
+                {
+                  "key": "spring.security.object",
+                  "value": {
+                    "stringValue": "request"
+                  }
+                }
+              ],
+              "droppedAttributesCount": 0,
+              "droppedEventsCount": 0,
+              "droppedLinksCount": 0,
+              "status": {
+                "code": 0,
+                "message": ""
+              }
+            },
+            {
+              "traceId": "d6708369cce95f4821da37ba2f8219aa",
+              "spanId": "46931b73832ab99b",
+              "parentSpanId": "9d89704099a2a639",
+              "traceState": "",
+              "name": "secured request",
+              "kind": "SPAN_KIND_INTERNAL",
+              "startTimeUnixNano": 1776774156684973300,
+              "endTimeUnixNano": 1776774156696609000,
+              "attributes": [],
+              "droppedAttributesCount": 0,
+              "droppedEventsCount": 0,
+              "droppedLinksCount": 0,
+              "status": {
+                "code": 0,
+                "message": ""
+              }
+            },
+            {
+              "traceId": "d6708369cce95f4821da37ba2f8219aa",
+              "spanId": "af4a4f23e38f6cb2",
+              "parentSpanId": "9d89704099a2a639",
+              "traceState": "",
+              "name": "security filterchain after",
+              "kind": "SPAN_KIND_INTERNAL",
+              "startTimeUnixNano": 1776774156696742400,
+              "endTimeUnixNano": 1776774156697581800,
+              "attributes": [
+                {
+                  "key": "security.security.reached.filter.section",
+                  "value": {
+                    "stringValue": "after"
+                  }
+                },
+                {
+                  "key": "spring.security.filterchain.position",
+                  "value": {
+                    "stringValue": "13"
+                  }
+                },
+                {
+                  "key": "spring.security.filterchain.size",
+                  "value": {
+                    "stringValue": "13"
+                  }
+                },
+                {
+                  "key": "spring.security.reached.filter.name",
+                  "value": {
+                    "stringValue": "DisableEncodeUrlFilter"
+                  }
+                }
+              ],
+              "droppedAttributesCount": 0,
+              "droppedEventsCount": 0,
+              "droppedLinksCount": 0,
+              "status": {
+                "code": 0,
+                "message": ""
+              },
+              "events": [
+                {
+                  "timeUnixNano": 1776774156696000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "after AuthorizationFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156697000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "after AnonymousAuthenticationFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156697000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "after CorsFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156697000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "after DisableEncodeUrlFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156697000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "after ExceptionTranslationFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156697000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "after HeaderWriterFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156697000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "after JwtAuthenticationFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156697000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "after LogoutFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156697000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "after RequestCacheAwareFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156697000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "after SecurityContextHolderAwareRequestFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156697000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "after SecurityContextHolderFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156697000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "after SessionManagementFilter"
+                },
+                {
+                  "timeUnixNano": 1776774156697000000,
+                  "attributes": [],
+                  "droppedAttributesCount": 0,
+                  "name": "after WebAsyncManagerIntegrationFilter"
+                }
+              ]
+            }
+          ],
+          "instrumentationLibrary": {
+            "name": "org.springframework.boot",
+            "version": "3.4.6"
+          }
+        }
+      ]
+    }
+  ]
+}

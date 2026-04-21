@@ -17,11 +17,11 @@ spring:
         open-in-view: false
         hibernate:
             ddl-auto: validate
-        show-sql: true
+        show-sql: false
         properties:
             hibernate:
                 dialect: org.hibernate.dialect.PostgreSQLDialect
-                generate_statistics: true
+                generate_statistics: false
                 jdbc.batch_size: 25
                 order_inserts: true
                 order_updates: true
@@ -29,8 +29,9 @@ spring:
 logging:
     level:
         org.liquibase: INFO
-        org.hibernate.SQL: DEBUG
-        org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+        org.hibernate.SQL: ERROR
+        org.hibernate.type.descriptor.sql.BasicBinder: ERROR
+        io.opentelemetry: DEBUG
     pattern:
         level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}]"
 
@@ -54,7 +55,7 @@ management:
             probability: 1.0
     otlp:
         tracing:
-            endpoint: ${MANAGEMENT_OTLP_TRACING_ENDPOINT:-http://tempo:4317}
+            endpoint: ${MANAGEMENT_OTLP_TRACING_ENDPOINT:-http://tempo:4318/v1/traces}
 
 chess:
     security:

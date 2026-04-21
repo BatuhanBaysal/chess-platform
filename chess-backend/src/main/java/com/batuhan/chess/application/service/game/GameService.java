@@ -9,6 +9,7 @@ import com.batuhan.chess.domain.repository.GameRepository;
 import com.batuhan.chess.domain.repository.UserRepository;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.observation.annotation.Observed;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -82,6 +83,7 @@ public class GameService {
     }
 
     @Transactional
+    @Observed(name = "chess.moves.metrics", contextualName = "chess.move.execution")
     public List<GameResponse.ExecutedMove> makeMove(String gameId, Position from, Position to, String promotionType) {
         Game game = activeGames.get(gameId);
         if (game == null) throw new IllegalArgumentException("Game not found");

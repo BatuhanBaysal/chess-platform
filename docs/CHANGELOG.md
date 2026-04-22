@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2026-04-22
+
+### 🏆 Phase 12: Quality Assurance & Code Integrity
+> **Note:** This phase elevates the project's sustainability and reliability to the highest level. By integrating **SonarQube**, technical debt has been made visible, test coverage has been mechanized via **JaCoCo**, and the coverage of critical code paths has been expanded using **JUnit 5** and **Mockito**.
+
+- **2026-04-22:**
+    - **SonarQube Static Analysis & Quality Gate Integration (PR #36 | Issue #33):**
+        - **Static Analysis Infrastructure:** Successfully integrated SonarQube into the project root. Initiated automated tracking for "Code Smells," "Vulnerabilities," and "Technical Debt."
+        - **Quality Gate Baseline:** Identified and documented 26 "Code Smells" and 4.5 hours of technical debt in the initial analysis. Established a baseline security score to improve "Security Hotspots" from grade "E."
+        - **JaCoCo Test Coverage Reporting:** Configured JaCoCo as the primary test reporting engine. Measured the current test coverage at **58.1%**, setting a target for increase in issue `#34`.
+        - **Professional Engineering Standards:** Enforced automated control mechanisms for "Clean Code" and "SOLID" principles. Solidified "Software Engineer" standards across the codebase.
+        - **Technical Artifacts & Documentation:**
+            - Archived high-fidelity snapshots of the SonarQube dashboard, coverage lists, and security hotspots in `docs/assets/screenshots/01-infrastructure/sonarqube-initial/`.
+            - Verified and documented the database schema via DBeaver and ensured container health via Docker Desktop logs.
+        - **Validation:**
+            - **Metrics Accuracy:** Confirmed the integrity of all code metrics (LoC, Complexity, Duplications) via the `02-initial-metrics-summary.png` report.
+            - **Infrastructure Stability:** Verified that all 11 infrastructure containers (App, DB, Redis, LGTM Stack, SonarQube) are operational and correctly orchestrated.
+
+---
+
 ## [0.11.0] - 2026-04-21
 
 ### 📊 Phase 11: Full-Stack Observability & Monitoring

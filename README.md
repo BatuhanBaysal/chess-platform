@@ -16,7 +16,7 @@
 ### 🛠️ Technology Stack & Engineering Standards
 
 **Backend & Infrastructure:**
-![Java 21](https://img.shields.io/badge/Java-21-orange?style=flat-square&logo=openjdk&logoColor=white)
+![Java 17](https://img.shields.io/badge/Java-17-orange?style=flat-square&logo=openjdk&logoColor=white)
 ![Spring Boot 3.4.6](https://img.shields.io/badge/Spring_Boot-3.4.6-green?style=flat-square&logo=springboot&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
 ![Liquibase](https://img.shields.io/badge/Liquibase-DB_Migration-red?style=flat-square&logo=liquibase&logoColor=white)
@@ -117,7 +117,7 @@ The core chess logic is encapsulated in a **Pure Java** domain layer.
 ## 🐳 Infrastructure & Containerization
 The entire application ecosystem is managed using **Docker Compose** to ensure absolute consistency between development and production environments.
 
-![Docker Startup Assets](./docs/assets/screenshots/01-infrastructure/docker-desktop-dashboard.png)
+![Docker Startup Assets](docs/assets/screenshots/01-infrastructure/docker-setup/01-docker-desktop-dashboard.png)
 
 > **Infrastructure Note:** All services (PostgreSQL, Redis, Spring Boot, and React) include health-check protocols to ensure reliable inter-service communication and deterministic container startup sequences.
 

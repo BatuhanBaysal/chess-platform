@@ -18,6 +18,7 @@ Thumbs.db
 .env.development
 .env.production
 *.log
+logs/
 
 # --- Build & Temporary Files ---
 # To prevent any global temporary files from being tracked

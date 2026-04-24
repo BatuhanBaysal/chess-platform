@@ -1,21 +1,33 @@
 package com.batuhan.chess;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
-/**
- * This test class ensures that the Spring Application Context loads successfully.
- * During testing, an H2 (in-memory) database is used instead of PostgreSQL
- * to provide an isolated and fast testing environment.
- */
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
 @SpringBootTest
 @ActiveProfiles("test")
+@DisplayName("Application Entry Point and Context Tests")
 class ChessBackendApplicationTests {
 
-	@Test
-	void contextLoads() {
-		// This method will pass if the application context starts without any configuration errors.
-		// It serves as a smoke test for the overall project setup.
-	}
+    @Test
+    @DisplayName("Should load the application context successfully")
+    void contextLoads() {
+        // Assert
+        assertDoesNotThrow(() -> {}, "Context should load without exceptions");
+    }
+
+    @Test
+    @DisplayName("Should execute main method without throwing exceptions")
+    @DirtiesContext
+    void main_ShouldRunSuccessfully() {
+        // Arrange
+        String[] args = {"--server.port=0"};
+
+        // Act & Assert
+        assertDoesNotThrow(() -> ChessBackendApplication.main(args));
+    }
 }

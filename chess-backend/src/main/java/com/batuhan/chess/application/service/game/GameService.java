@@ -13,6 +13,8 @@ import io.micrometer.observation.annotation.Observed;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,11 +34,18 @@ public class GameService {
     private final EloService eloService;
     private final MeterRegistry meterRegistry;
 
+    private GameService self;
+
     private final Map<String, Game> activeGames = new ConcurrentHashMap<>();
     private final Map<String, Set<Long>> readyPlayers = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     private Counter moveCounter;
+
+    @Autowired
+    public void setSelf(@Lazy GameService self) {
+        this.self = self;
+    }
 
     @PostConstruct
     public void initMetrics() {
@@ -67,12 +76,19 @@ public class GameService {
     }
 
     public boolean setPlayerReady(String gameId, Long userId) {
+        if (gameId == null || userId == null) {
+            log.warn("setPlayerReady called with null gameId or userId");
+            return false;
+        }
+
         readyPlayers.computeIfAbsent(gameId, k -> ConcurrentHashMap.newKeySet()).add(userId);
         Game game = activeGames.get(gameId);
         if (game == null) return false;
 
-        return readyPlayers.get(gameId).contains(game.getWhitePlayerId()) &&
-            readyPlayers.get(gameId).contains(game.getBlackPlayerId());
+        Set<Long> playersInRoom = readyPlayers.get(gameId);
+        return playersInRoom != null &&
+            playersInRoom.contains(game.getWhitePlayerId()) &&
+            playersInRoom.contains(game.getBlackPlayerId());
     }
 
     public boolean isGameStarted(String gameId) {
@@ -105,7 +121,7 @@ public class GameService {
             moveCounter.increment();
 
             if (game.getStatus().isFinished() && game.getStatus() != GameStatus.CLOSING) {
-                processGameFinish(gameId, determineResult(game, game.getStatus()), game.getStatus());
+                self.processGameFinish(gameId, determineResult(game, game.getStatus()), game.getStatus());
             }
             return moves;
         }
@@ -154,16 +170,26 @@ public class GameService {
 
     private void applyEloChanges(UserEntity white, UserEntity black, GameResult result, GameEntity history) {
         if (white != null && black != null) {
-            double whiteScore = (result == GameResult.WHITE_WIN) ? 1.0 : (result == GameResult.DRAW ? 0.5 : 0.0);
+            double whiteScore = switch (result) {
+                case WHITE_WIN -> 1.0;
+                case DRAW -> 0.5;
+                default -> 0.0;
+            };
+
             double blackScore = 1.0 - whiteScore;
+
             int whiteGain = eloService.calculateGain(white.getEloRating(), black.getEloRating(), whiteScore);
             int blackGain = eloService.calculateGain(black.getEloRating(), white.getEloRating(), blackScore);
+
             updateUserStats(white, result == GameResult.WHITE_WIN, result == GameResult.DRAW);
             updateUserStats(black, result == GameResult.BLACK_WIN, result == GameResult.DRAW);
+
             white.setEloRating(white.getEloRating() + whiteGain);
             black.setEloRating(black.getEloRating() + blackGain);
+
             history.setWhiteEloGain(whiteGain);
             history.setBlackEloGain(blackGain);
+
             userRepository.save(white);
             userRepository.save(black);
         }
@@ -185,6 +211,9 @@ public class GameService {
 
     @Transactional(readOnly = true)
     public List<GameEntity> getGameHistory(Long userId) {
+        if (userId == null || userId <= 0) {
+            return Collections.emptyList();
+        }
         return gameRepository.findByWhitePlayerIdOrBlackPlayerIdOrderByPlayedAtDesc(userId, userId);
     }
 }

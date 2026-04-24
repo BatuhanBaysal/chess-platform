@@ -47,22 +47,19 @@ public class Game {
         }
 
         Piece piece = board.getPiece(start).orElseThrow();
-        Piece capturedPiece = board.getPiece(end).orElse(null);
-
-        boolean isEnPassant = validator.isEnPassantAttempt(piece, end, board, this.lastMove);
-        boolean isCapture = capturedPiece != null || isEnPassant;
+        boolean isEnPassant = validator.isEnPassantAttempt(piece, end, board);
+        boolean isCapture = board.getPiece(end).isPresent() || isEnPassant;
 
         List<GameResponse.ExecutedMove> executedMoves = prepareExecutedMoves(start, end, piece, promotionType);
-        executor.execute(start, end, piece, promotionType, board, validator, this.lastMove);
+        executor.execute(start, end, piece, promotionType, board, validator);
 
         updateDrawMetrics(piece, isCapture);
-        recordMove(start, end, piece, isCapture, capturedPiece, promotionType);
+        recordMove(start, end, piece, isCapture);
 
         this.lastMove = new Move(start, end, piece);
         this.currentTurn = currentTurn.opposite();
         this.status = evaluator.evaluateStatus(board, currentTurn, validator, halfMoveClock, boardHistory, this.lastMove);
-        this.lastMoveMessage = generateMoveMessage(piece, end, isCapture, capturedPiece, promotionType);
-
+        this.lastMoveMessage = generateMoveMessage(piece, end, isCapture);
         return executedMoves;
     }
 
@@ -93,7 +90,7 @@ public class Game {
             moves.add(new GameResponse.ExecutedMove(rookStartFile, start.rank(), rookEndFile, start.rank(), "ROOK"));
         }
 
-        if (validator.isEnPassantAttempt(piece, end, board, lastMove)) {
+        if (validator.isEnPassantAttempt(piece, end, board)) {
             moves.add(new GameResponse.ExecutedMove(end.file(), start.rank(), -1, -1, "NONE"));
         }
         return moves;
@@ -109,13 +106,13 @@ public class Game {
         boardHistory.add(board.toString() + "|" + currentTurn.opposite().name());
     }
 
-    private void recordMove(Position s, Position e, Piece p, boolean isCap, Piece cap, String promo) {
+    private void recordMove(Position s, Position e, Piece p, boolean isCap) {
         String notation = String.format("%s%s%s%s", p.getType().getSymbol(), s, isCap ? "x" : "→", e);
         moveHistory.add(s.toString() + e.toString());
         humanReadableHistory.add(notation);
     }
 
-    private String generateMoveMessage(Piece p, Position end, boolean isCap, Piece cap, String promo) {
+    private String generateMoveMessage(Piece p, Position end, boolean isCap) {
         if (status == GameStatus.CHECKMATE) return "CHECKMATE!";
         if (status == GameStatus.STALEMATE || status == GameStatus.DRAW) return "DRAW!";
         if (status == GameStatus.CHECK) return "CHECK!";

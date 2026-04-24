@@ -15,6 +15,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class LobbyService {
 
+    private static final String STATUS_WAITING = "WAITING";
+    private static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
+    private static final String STATUS_START_GAME = "START_GAME";
+
     private final Map<String, GameRoom> activeRooms = new ConcurrentHashMap<>();
     private final GameService gameService;
     private final SimpMessagingTemplate messagingTemplate;
@@ -47,7 +51,7 @@ public class LobbyService {
         room.setHostId(userId);
         room.setHostName(username);
         room.setTimeControl(time);
-        room.setStatus("WAITING");
+        room.setStatus(STATUS_WAITING);
 
         activeRooms.put(roomId, room);
         log.info("Room created: {} by user: {}", roomId, username);
@@ -57,7 +61,7 @@ public class LobbyService {
     public boolean joinRoom(String roomId, Long userId, String username) {
         GameRoom room = activeRooms.get(roomId);
 
-        if (room != null && "WAITING".equals(room.getStatus())) {
+        if (room != null && STATUS_WAITING.equals(room.getStatus())) {
             if (room.getHostId().equals(userId)) {
                 log.warn("User {} tried to join their own room {}", userId, roomId);
                 return false;
@@ -65,7 +69,7 @@ public class LobbyService {
 
             room.setBlackPlayerId(userId);
             room.setBlackPlayerName(username);
-            room.setStatus("IN_PROGRESS");
+            room.setStatus(STATUS_IN_PROGRESS);
 
             gameService.createNewGameWithPlayers(roomId, room.getHostId(), userId);
             notifyPlayers(room, username);
@@ -79,7 +83,7 @@ public class LobbyService {
     private void notifyPlayers(GameRoom room, String joinerName) {
         MatchFoundMessage whiteMsg = MatchFoundMessage.builder()
             .gameId(room.getRoomId())
-            .status("START_GAME")
+            .status(STATUS_START_GAME)
             .color("WHITE")
             .opponentId(room.getBlackPlayerId())
             .opponentName(joinerName)
@@ -87,7 +91,7 @@ public class LobbyService {
 
         MatchFoundMessage blackMsg = MatchFoundMessage.builder()
             .gameId(room.getRoomId())
-            .status("START_GAME")
+            .status(STATUS_START_GAME)
             .color("BLACK")
             .opponentId(room.getHostId())
             .opponentName(room.getHostName())
@@ -99,7 +103,7 @@ public class LobbyService {
 
     public Collection<GameRoom> getAllActiveRooms() {
         return activeRooms.values().stream()
-            .filter(room -> "WAITING".equals(room.getStatus()))
+            .filter(room -> STATUS_WAITING.equals(room.getStatus()))
             .toList();
     }
 

@@ -9,51 +9,47 @@ This document details the architectural foundation, monitoring stack, and code q
 
 ### 🐳 Docker Orchestration
 The entire ecosystem is orchestrated via Docker Compose, ensuring consistency across development and production environments.
-* **Containers Status:** ![Docker Status](./assets/screenshots/01-infrastructure/docker-setup/02-docker-containers-status.png)
-* **Engine Dashboard:** [View Docker Desktop Metrics](./assets/screenshots/01-infrastructure/docker-setup/01-docker-desktop-dashboard.png)
+* **Containers Status:** ![Docker Status](./docs/assets/screenshots/01-infrastructure/docker-setup/02-docker-containers-status.png)
+* **Engine Dashboard:** [View Docker Desktop Metrics](./docs/assets/screenshots/01-infrastructure/docker-setup/01-docker-desktop-dashboard.png)
 
 ### 🗄️ Persistence Layer
 Database schemas are managed via Liquibase. The following confirms the successful migration and connection to the PostgreSQL instance.
-* **Schema Verification:** ![DB Connection](./assets/screenshots/01-infrastructure/docker-setup/03-database-schema-connection.png)
+* **Schema Verification:** ![DB Connection](./docs/assets/screenshots/01-infrastructure/docker-setup/03-database-schema-connection.png)
 
 ---
 
 ## 2. Observability & Monitoring Stack (Phase 11)
-> **Goal:** Implement the LGTM stack (Loki, Grafana, Tempo, Mimir) for real-time system transparency.
+> **Goal:** Implement the LGTM stack (Loki, Grafana, Tempo, Prometheus) for real-time system transparency.
 
 ### 📊 System Health & Metrics
 We monitor JVM runtime and infrastructure health through centralized Grafana dashboards.
-* **Infrastructure Overview:** [LGTM Stack Connection Map](./assets/screenshots/01-infrastructure/observability-stack/08-lgtm-stack-connection.png)
-* **JVM Performance:** * [Runtime & CPU](./assets/screenshots/01-infrastructure/observability-stack/02a-jvm-runtime-metrics.png)
-    * [Memory Usage](./assets/screenshots/01-infrastructure/observability-stack/02b-jvm-memory-usage.png)
-    * [Garbage Collection](./assets/screenshots/01-infrastructure/observability-stack/02c-jvm-garbage-collection.png)
+* **Infrastructure Overview:** [LGTM Stack Connection Map](./docs/assets/screenshots/01-infrastructure/observability-stack/08-lgtm-stack-connection.png)
+* **JVM Performance:** * [Runtime & CPU](./docs/assets/screenshots/01-infrastructure/observability-stack/02b-jvm-runtime-metrics.png)
+    * [Memory Usage](./docs/assets/screenshots/01-infrastructure/observability-stack/02c-jvm-memory-usage.png)
+    * [Garbage Collection](./docs/assets/screenshots/01-infrastructure/observability-stack/02d-jvm-garbage-collection.png)
 
 ### 📈 Business Metrics & Quick Facts
 Real-time tracking of active games and move executions.
-* **Quick Facts Panel:** ![Quick Facts](./assets/screenshots/01-infrastructure/observability-stack/02d-infrastructure-quick-facts.png)
-
-### 🔧 Dashboard Configurations
-All Grafana dashboards are exported as version-controlled JSON files to ensure environment portability and rapid recovery.
-* **Location:** `docs/assets/dashboards/`
-* **Included Dashboards:**
-    * `chess-active-games-dashboard.json`: Real-time session monitoring.
-    * `chess-total-moves-dashboard.json`: Cumulative business logic metrics.
+* **Quick Facts Panel:** ![Quick Facts](./docs/assets/screenshots/01-infrastructure/observability-stack/02a-infrastructure-quick-facts.png)
 
 ---
 
 ## 3. Quality Assurance & Static Analysis (Phase 12)
-> **Goal:** Maintain high engineering standards through SonarQube and JaCoCo.
+> **Goal:** Reach "Gold Standard" technical quality through comprehensive testing and refactoring.
 
-### 🛡️ SonarQube Quality Gate
-This section documents the initial technical debt and baseline code quality metrics.
-* **Quality Dashboard (Baseline):** ![Sonar Dashboard](./assets/screenshots/01-infrastructure/sonarqube-initial/01-initial-dashboard.png)
+### 🛡️ SonarQube Quality Gate: PASSED 🏆
+The project has officially cleared the Quality Gate with "A" ratings across all major categories.
+* **Final Quality Dashboard:** ![Final Dashboard](./docs/assets/screenshots/01-infrastructure/sonarqube/final/01-final-sonarqube-dashboard.png)
+* **Quality Trend:** [Analysis History](./docs/assets/screenshots/01-infrastructure/sonarqube/final/05-final-quality-trend-analysis.png)
 
-### 🧪 Code Coverage & Smells
-Detailed breakdown of test coverage and identified areas for improvement.
-* **Metric Summary:** [Detailed Metrics](./assets/screenshots/01-infrastructure/sonarqube-initial/02-initial-metrics-summary.png)
-* **Coverage Details (58.1%):** [Coverage Map](./assets/screenshots/01-infrastructure/sonarqube-initial/03-initial-coverage-list.png)
-* **Code Smells:** [Technical Debt List](./assets/screenshots/01-infrastructure/sonarqube-initial/04-initial-code-smells-list.png)
-* **Security Hotspots:** ![Security Risk](./assets/screenshots/01-infrastructure/sonarqube-initial/05-initial-security-hotspots.png)
+### 🧪 Code Coverage (Phase 12 | Issue #34)
+Significant expansion of the test suite to ensure the integrity of FIDE chess logic.
+* **Final Coverage (91.5%):** [Coverage List](./docs/assets/screenshots/01-infrastructure/sonarqube/final/03-final-coverage-list.png)
+* **Test Suite Verification:** Proof of **222 successful test executions** passing with zero errors.
+* **Verified Artifact:** ![Test Results](./docs/assets/screenshots/01-infrastructure/sonarqube/test-suite-pass.png)
 
----
-*Last Updated: 2026-04-22*
+### 🧹 Clean Code & Debt Elimination (Phase 12 | Issue #35)
+Rigorous refactoring to eliminate technical debt and code smells.
+* **Zero-Issue Baseline:** Successfully reached **0 Code Smells** and **0 Technical Debt**.
+* **Debt Risk Map:** [Technical Debt Breakdown](./docs/assets/screenshots/01-infrastructure/sonarqube/final/04-final-technical-debt-risk-map.png)
+* **IDE-Level Guardrails:** [SonarLint Analysis Results](./docs/assets/screenshots/01-infrastructure/sonarqube/sonarqube-ide-analysis.png)

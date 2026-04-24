@@ -6,12 +6,12 @@ public class MoveValidator {
         return board.getPiece(start)
             .filter(piece -> piece.getColor() == currentTurn)
             .filter(piece -> isBaseMoveValid(piece, end, board, lastMove))
-            .filter(piece -> isMoveSafe(start, end, piece, board, currentTurn, lastMove))
+            .filter(piece -> isMoveSafe(start, end, piece, board, currentTurn))
             .isPresent();
     }
 
     private boolean isBaseMoveValid(Piece piece, Position end, Board board, Game.Move lastMove) {
-        if (isEnPassantAttempt(piece, end, board, lastMove)) {
+        if (isEnPassantAttempt(piece, end, board)) {
             return canEnPassant(piece.getPosition(), end, lastMove, piece.getColor());
         }
         if (isCastlingAttempt(piece, piece.getPosition(), end)) {
@@ -20,13 +20,13 @@ public class MoveValidator {
         return piece.isPseudoLegalMove(end, board);
     }
 
-    public boolean isMoveSafe(Position start, Position end, Piece piece, Board board, Color turn, Game.Move lastMove) {
+    public boolean isMoveSafe(Position start, Position end, Piece piece, Board board, Color turn) {
         if (isCastlingAttempt(piece, start, end)) {
             return true;
         }
 
         Board tempBoard = board.copy();
-        if (isEnPassantAttempt(piece, end, board, lastMove)) {
+        if (isEnPassantAttempt(piece, end, board)) {
             tempBoard.removePiece(new Position(end.file(), start.rank()));
         }
 
@@ -75,7 +75,7 @@ public class MoveValidator {
             Math.abs(start.file() - end.file()) == 1;
     }
 
-    public boolean isEnPassantAttempt(Piece piece, Position end, Board board, Game.Move lastMove) {
+    public boolean isEnPassantAttempt(Piece piece, Position end, Board board) {
         if (piece == null || piece.getType() != PieceType.PAWN) return false;
         return Math.abs(end.file() - piece.getPosition().file()) == 1 && board.getPiece(end).isEmpty();
     }

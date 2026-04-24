@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class Bishop extends Piece {
-
     public Bishop(Color color, Position position) {
         super(color, PieceType.BISHOP, position);
     }
@@ -14,15 +13,9 @@ public final class Bishop extends Piece {
         int fileDiff = Math.abs(target.file() - position.file());
         int rankDiff = Math.abs(target.rank() - position.rank());
 
-        if (fileDiff != rankDiff || fileDiff == 0) {
-            return false;
-        }
-
-        if (!isPathClear(target, board)) {
-            return false;
-        }
-
-        return canCaptureOrMoveTo(target, board);
+        return fileDiff == rankDiff
+            && isPathClear(target, board)
+            && canCaptureOrMoveTo(target, board);
     }
 
     @Override
@@ -31,20 +24,7 @@ public final class Bishop extends Piece {
         int[][] directions = {{1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
 
         for (int[] d : directions) {
-            for (int i = 1; i < 8; i++) {
-                int newFile = position.file() + (d[0] * i);
-                int newRank = position.rank() + (d[1] * i);
-
-                if (newFile < 0 || newFile > 7 || newRank < 0 || newRank > 7) break;
-
-                Position target = new Position(newFile, newRank);
-                if (isPseudoLegalMove(target, board)) {
-                    moves.add(target);
-                    if (board.getPiece(target).isPresent()) break;
-                } else {
-                    break;
-                }
-            }
+            addMovesInDirection(moves, d, board);
         }
         return moves;
     }

@@ -3,6 +3,8 @@ package com.batuhan.chess.application.service.auth;
 import com.batuhan.chess.api.dto.auth.AuthResponse;
 import com.batuhan.chess.api.dto.auth.LoginRequest;
 import com.batuhan.chess.api.dto.auth.RegisterRequest;
+import com.batuhan.chess.api.exception.EmailAlreadyExistsException;
+import com.batuhan.chess.api.exception.UserAlreadyExistsException;
 import com.batuhan.chess.domain.model.user.UserEntity;
 import com.batuhan.chess.domain.model.user.UserRole;
 import com.batuhan.chess.domain.repository.UserRepository;
@@ -25,11 +27,11 @@ public class AuthService {
 
     public void register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.username())) {
-            throw new RuntimeException("Username already exists");
+            throw new UserAlreadyExistsException("Username already exists");
         }
 
         if (userRepository.existsByEmail(request.email())) {
-            throw new RuntimeException("Email already exists");
+            throw new EmailAlreadyExistsException("Email already exists");
         }
 
         UserEntity user = UserEntity.builder()

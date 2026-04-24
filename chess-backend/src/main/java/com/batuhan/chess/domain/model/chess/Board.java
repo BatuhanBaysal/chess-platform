@@ -1,11 +1,13 @@
 package com.batuhan.chess.domain.model.chess;
 
+import lombok.Getter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class Board {
 
+    @Getter
     private final Piece[][] squares;
 
     public Board() {
@@ -75,10 +77,6 @@ public class Board {
         return newBoard;
     }
 
-    public Piece[][] getSquares() {
-        return squares;
-    }
-
     public void clearBoard() {
         for (int r = 0; r < 8; r++) {
             for (int f = 0; f < 8; f++) {
@@ -95,6 +93,7 @@ public class Board {
             case ROOK -> new Rook(p.getColor(), pos);
             case QUEEN -> new Queen(p.getColor(), pos);
             case KING -> new King(p.getColor(), pos);
+            default -> throw new IllegalArgumentException("Unexpected piece type: " + p.getType());
         };
     }
 

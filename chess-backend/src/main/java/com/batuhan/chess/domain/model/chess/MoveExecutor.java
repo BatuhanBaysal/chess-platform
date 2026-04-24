@@ -2,10 +2,10 @@ package com.batuhan.chess.domain.model.chess;
 
 public class MoveExecutor {
 
-    public void execute(Position start, Position end, Piece piece, String promotionType, Board board, MoveValidator validator, Game.Move lastMove) {
+    public void execute(Position start, Position end, Piece piece, String promotionType, Board board, MoveValidator validator) {
         if (validator.isCastlingAttempt(piece, start, end)) {
             handleCastling(start, end, board);
-        } else if (validator.isEnPassantAttempt(piece, end, board, lastMove)) {
+        } else if (validator.isEnPassantAttempt(piece, end, board)) {
             handleEnPassant(start, end, board);
         }
 

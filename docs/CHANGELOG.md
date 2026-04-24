@@ -2,11 +2,23 @@
 
 All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.12.0] - 2026-04-22
+## [0.12.0] - 2026-04-24
 
 ### 🏆 Phase 12: Quality Assurance & Code Integrity
 > **Note:** This phase elevates the project's sustainability and reliability to the highest level. By integrating **SonarQube**, technical debt has been made visible, test coverage has been mechanized via **JaCoCo**, and the coverage of critical code paths has been expanded using **JUnit 5** and **Mockito**.
 
+- **2026-04-24:**
+    - **Quality Excellence: Boosted Coverage & Zero-Smell Refactoring (PR #37 | Issues #34, #35):**
+        - **Coverage Breakthrough (#34):** Significantly increased test coverage from 58.1% to a robust **91.5%**, ensuring the integrity of critical domain logic such as `MoveValidator` and `MoveExecutor`.
+        - **Refactoring & Test Compression:** Streamlined the test suite by reducing 500+ lines of redundant code to 187 concise, high-impact lines using **JUnit 5 @Nested** classes and **@ParameterizedTest**.
+        - **Edge-Case Validation:** Implemented advanced test scenarios for complex FIDE rules, including En Passant, Castling constraints, and "Pinned Piece" logic to prevent illegal move exposures.
+        - **Zero-Smell & Technical Debt Elimination (#35):** Successfully eliminated all 26 initial "Code Smells" and 4.5 hours of technical debt, achieving a **0-issue baseline** and **0.0% duplication** through SonarQube-guided refactoring.
+        - **Documentation & Artifacts:**
+            - Established a clear progression history by organizing snapshots into `initial` and `final` directories within `docs/assets/screenshots/01-infrastructure/sonarqube/`.
+            - Archived proof of **222 successful test executions** and IDE-level SonarLint analysis results.
+        - **Validation:**
+            - **JUnit 5 & AssertJ:** Verified that all tests use fluent assertions for better readability and semantic accuracy.
+            - **Quality Gate Completion:** Confirmed that the project officially meets the **"Passed"** status for all SonarQube Quality Gate metrics (Reliability: A, Security: A, Coverage: 91.5%).
 - **2026-04-22:**
     - **SonarQube Static Analysis & Quality Gate Integration (PR #36 | Issue #33):**
         - **Static Analysis Infrastructure:** Successfully integrated SonarQube into the project root. Initiated automated tracking for "Code Smells," "Vulnerabilities," and "Technical Debt."

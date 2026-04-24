@@ -14,49 +14,56 @@ public final class King extends Piece {
         int fileDiff = Math.abs(target.file() - position.file());
         int rankDiff = Math.abs(target.rank() - position.rank());
 
-        if (fileDiff <= 1 && rankDiff <= 1 && (fileDiff != 0 || rankDiff != 0)) {
-            return canCaptureOrMoveTo(target, board);
-        }
-        if (!hasMoved() && rankDiff == 0 && fileDiff == 2) {
-            return true;
-        }
+        boolean isStandardMove = fileDiff <= 1 && rankDiff <= 1 && (fileDiff != 0 || rankDiff != 0);
+        boolean isCastlingAttempt = !hasMoved() && rankDiff == 0 && fileDiff == 2;
 
-        return false;
+        return (isStandardMove && canCaptureOrMoveTo(target, board)) || isCastlingAttempt;
     }
 
     @Override
     public List<Position> getPseudoLegalMoves(Board board) {
         List<Position> moves = new ArrayList<>();
-
-        int[] offsets = {-1, 0, 1};
-        for (int fOff : offsets) {
-            for (int rOff : offsets) {
-                if (fOff == 0 && rOff == 0) continue;
-
-                int newFile = position.file() + fOff;
-                int newRank = position.rank() + rOff;
-
-                if (newFile >= 0 && newFile < 8 && newRank >= 0 && newRank < 8) {
-                    Position target = new Position(newFile, newRank);
-                    if (isPseudoLegalMove(target, board)) {
-                        moves.add(target);
-                    }
-                }
-            }
-        }
+        addStandardMoves(moves, board);
 
         if (!hasMoved()) {
-            int currentFile = position.file();
-            int currentRank = position.rank();
-
-            if (currentFile + 2 < 8) {
-                moves.add(new Position(currentFile + 2, currentRank));
-            }
-            if (currentFile - 2 >= 0) {
-                moves.add(new Position(currentFile - 2, currentRank));
-            }
+            addCastlingPositions(moves);
         }
 
         return moves;
+    }
+
+    private void addStandardMoves(List<Position> moves, Board board) {
+        int[] offsets = {-1, 0, 1};
+        for (int fOff : offsets) {
+            for (int rOff : offsets) {
+                processOffset(moves, board, fOff, rOff);
+            }
+        }
+    }
+
+    private void processOffset(List<Position> moves, Board board, int fOff, int rOff) {
+        if (fOff == 0 && rOff == 0) return;
+
+        int newFile = position.file() + fOff;
+        int newRank = position.rank() + rOff;
+
+        if (Position.isValidPosition(newFile, newRank)) {
+            Position target = new Position(newFile, newRank);
+            if (isPseudoLegalMove(target, board)) {
+                moves.add(target);
+            }
+        }
+    }
+
+    private void addCastlingPositions(List<Position> moves) {
+        int currentFile = position.file();
+        int currentRank = position.rank();
+
+        if (Position.isValidPosition(currentFile + 2, currentRank)) {
+            moves.add(new Position(currentFile + 2, currentRank));
+        }
+        if (Position.isValidPosition(currentFile - 2, currentRank)) {
+            moves.add(new Position(currentFile - 2, currentRank));
+        }
     }
 }

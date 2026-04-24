@@ -1,8 +1,7 @@
 package com.batuhan.chess.domain.model.chess;
 
-/**
- * Immutable coordinate on an 8x8 board (0-7 indexing).
- */
+import jakarta.validation.constraints.NotNull;
+
 public record Position(int file, int rank) {
 
     public Position {
@@ -18,6 +17,7 @@ public record Position(int file, int rank) {
     }
 
     @Override
+    @NotNull
     public String toString() {
         return String.format("%c%d", (char) ('a' + file), rank + 1);
     }

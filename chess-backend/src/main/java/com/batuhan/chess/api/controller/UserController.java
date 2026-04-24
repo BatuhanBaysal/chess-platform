@@ -17,7 +17,7 @@ public class UserController {
     private final UserRepository userRepository;
 
     @GetMapping("/{id}/stats")
-    public ResponseEntity<?> getUserStats(@PathVariable Long id) {
+    public ResponseEntity<Map<String, Object>> getUserStats(@PathVariable Long id) {
         return userRepository.findById(id)
             .map(user -> {
                 Map<String, Object> stats = new HashMap<>();

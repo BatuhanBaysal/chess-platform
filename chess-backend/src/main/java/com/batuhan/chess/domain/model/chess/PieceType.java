@@ -1,5 +1,8 @@
 package com.batuhan.chess.domain.model.chess;
 
+import lombok.Getter;
+
+@Getter
 public enum PieceType {
     PAWN('P'),
     KNIGHT('N'),
@@ -12,9 +15,5 @@ public enum PieceType {
 
     PieceType(char symbol) {
         this.symbol = symbol;
-    }
-
-    public char getSymbol() {
-        return symbol;
     }
 }

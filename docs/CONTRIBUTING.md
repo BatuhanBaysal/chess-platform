@@ -22,7 +22,7 @@ To maintain our **Hexagonal Architecture** and **DDD** principles, please follow
 2. **Standard Alignment:** * **Backend:** Adhere to **Sealed Classes** hierarchy and **Domain Purity**.
     * **Frontend:** Use **Atomic Components** and ensure **Type-Safety**.
     * **General:** Follow the [`.editorconfig`](../.editorconfig) rules for code styling.
-3. **Commit Standards:** We follow strict commit naming. Please refer to our [**Git Guide**](../.github/GIT_GUIDE.md) before committing.
+3. **Commit Standards:** We follow strict commit naming. Please refer to our [**Git Guide**](GIT_GUIDE.md) before committing.
 4. **Validation:**
     * Backend: Run `./mvnw test` (Must pass 100%).
     * Frontend: Run `npm run lint` and ensure the build succeeds.

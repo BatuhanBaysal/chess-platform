@@ -1,6 +1,7 @@
 package com.batuhan.chess.application.service.game;
 
 import com.batuhan.chess.api.dto.game.GameResponse;
+import com.batuhan.chess.api.exception.GameOperationException;
 import com.batuhan.chess.domain.model.chess.*;
 import com.batuhan.chess.domain.model.history.GameEntity;
 import com.batuhan.chess.domain.model.history.GameResult;
@@ -17,6 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +37,7 @@ public class GameService {
     private final UserRepository userRepository;
     private final EloService eloService;
     private final MeterRegistry meterRegistry;
+    private final RedissonClient redissonClient;
 
     private GameService self;
 
@@ -100,30 +105,47 @@ public class GameService {
 
     @Transactional
     @Observed(name = "chess.moves.metrics", contextualName = "chess.move.execution")
+    @CircuitBreaker(name = "chessService")
     public List<GameResponse.ExecutedMove> makeMove(String gameId, Position from, Position to, String promotionType) {
-        Game game = activeGames.get(gameId);
-        if (game == null) throw new IllegalArgumentException("Game not found");
+        final RLock lock = redissonClient.getLock("lock:game:" + gameId);
 
-        if (!isGameStarted(gameId)) {
-            throw new IllegalStateException("Game has not started yet.");
-        }
+        try {
+            if (lock.tryLock(5, 10, TimeUnit.SECONDS)) {
+                try {
+                    Game game = activeGames.get(gameId);
+                    if (game == null) {
+                        throw new GameOperationException("Game not found: " + gameId);
+                    }
 
-        synchronized (game) {
-            if (game.getStatus().isFinished()) {
-                throw new IllegalStateException("Cannot make a move in a finished game.");
+                    if (!isGameStarted(gameId)) {
+                        throw new GameOperationException("Game has not started yet.");
+                    }
+
+                    if (game.getStatus().isFinished()) {
+                        throw new GameOperationException("Cannot make a move in a finished game.");
+                    }
+
+                    List<GameResponse.ExecutedMove> moves = game.makeMove(from, to, promotionType);
+                    if (moves.isEmpty()) {
+                        return Collections.emptyList();
+                    }
+
+                    moveCounter.increment();
+
+                    if (game.getStatus().isFinished() && game.getStatus() != GameStatus.CLOSING) {
+                        self.processGameFinish(gameId, determineResult(game, game.getStatus()), game.getStatus());
+                    }
+                    return moves;
+                } finally {
+                    lock.unlock();
+                }
+            } else {
+                throw new GameOperationException("Could not acquire lock for game: " + gameId);
             }
-
-            List<GameResponse.ExecutedMove> moves = game.makeMove(from, to, promotionType);
-            if (moves.isEmpty()) {
-                return Collections.emptyList();
-            }
-
-            moveCounter.increment();
-
-            if (game.getStatus().isFinished() && game.getStatus() != GameStatus.CLOSING) {
-                self.processGameFinish(gameId, determineResult(game, game.getStatus()), game.getStatus());
-            }
-            return moves;
+        } catch (InterruptedException e) {
+            log.error("Lock acquisition interrupted for game: {}", gameId);
+            Thread.currentThread().interrupt();
+            throw new GameOperationException("Move execution was interrupted", e);
         }
     }
 
@@ -135,27 +157,40 @@ public class GameService {
     @Transactional
     public void processGameFinish(String gameId, GameResult result, GameStatus finishMethod) {
         Game game = activeGames.get(gameId);
-        if (game == null || game.getStatus() == GameStatus.CLOSING) return;
+        if (game == null) return;
 
-        synchronized (game) {
-            if (game.getStatus() == GameStatus.CLOSING) return;
-            game.setStatus(finishMethod);
+        final RLock lock = redissonClient.getLock("lock:game:finish:" + gameId);
 
-            UserEntity white = findUserSafe(game.getWhitePlayerId());
-            UserEntity black = findUserSafe(game.getBlackPlayerId());
+        try {
+            if (lock.tryLock(5, 10, TimeUnit.SECONDS)) {
+                try {
+                    if (game.getStatus() == GameStatus.CLOSING) return;
+                    game.setStatus(finishMethod);
 
-            GameEntity history = buildGameEntity(game, white, black, result, finishMethod);
-            applyEloChanges(white, black, result, history);
+                    UserEntity white = findUserSafe(game.getWhitePlayerId());
+                    UserEntity black = findUserSafe(game.getBlackPlayerId());
 
-            gameRepository.save(history);
-            scheduler.schedule(() -> {
-                Game g = activeGames.get(gameId);
-                if (g != null) g.setStatus(GameStatus.CLOSING);
-                activeGames.remove(gameId);
-                readyPlayers.remove(gameId);
-                log.info("Game session {} cleanup completed.", gameId);
-            }, 30, TimeUnit.SECONDS);
+                    GameEntity history = buildGameEntity(game, white, black, result, finishMethod);
+                    applyEloChanges(white, black, result, history);
+
+                    gameRepository.save(history);
+                    scheduler.schedule(() -> cleanupSession(gameId), 30, TimeUnit.SECONDS);
+                } finally {
+                    lock.unlock();
+                }
+            }
+        } catch (InterruptedException e) {
+            log.error("Game finish processing interrupted for game: {}", gameId);
+            Thread.currentThread().interrupt();
         }
+    }
+
+    private void cleanupSession(String gameId) {
+        Game g = activeGames.get(gameId);
+        if (g != null) g.setStatus(GameStatus.CLOSING);
+        activeGames.remove(gameId);
+        readyPlayers.remove(gameId);
+        log.info("Game session {} cleanup completed.", gameId);
     }
 
     private GameEntity buildGameEntity(Game game, UserEntity white, UserEntity black, GameResult result, GameStatus method) {
@@ -170,12 +205,7 @@ public class GameService {
 
     private void applyEloChanges(UserEntity white, UserEntity black, GameResult result, GameEntity history) {
         if (white != null && black != null) {
-            double whiteScore = switch (result) {
-                case WHITE_WIN -> 1.0;
-                case DRAW -> 0.5;
-                default -> 0.0;
-            };
-
+            double whiteScore = getScoreFromResult(result);
             double blackScore = 1.0 - whiteScore;
 
             int whiteGain = eloService.calculateGain(white.getEloRating(), black.getEloRating(), whiteScore);
@@ -193,6 +223,14 @@ public class GameService {
             userRepository.save(white);
             userRepository.save(black);
         }
+    }
+
+    private double getScoreFromResult(GameResult result) {
+        return switch (result) {
+            case WHITE_WIN -> 1.0;
+            case DRAW -> 0.5;
+            default -> 0.0;
+        };
     }
 
     private UserEntity findUserSafe(Long id) {

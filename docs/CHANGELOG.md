@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] - 2026-04-30
+
+### ⚡ Phase 13: Scalability & Resilience
+> **Note:** This phase hardens the system against high-load scenarios and potential service failures. By integrating **Resilience4j** for fault tolerance and **Redisson** for distributed concurrency control, the platform ensures transactional integrity and system stability even under adverse conditions.
+
+- **2026-04-30:**
+    - **Enterprise Reliability & Concurrency Hardening (PR #39 | Issue #38):**
+        - **Resilience4j Fault Tolerance:**
+            - Implemented **Circuit Breaker** in `GameService` (10-call sliding window, 50% threshold) to prevent cascading failures.
+            - Established **Rate Limiter** in `AuthService` (5 requests/sec) to mitigate brute-force and resource exhaustion.
+            - Developed professional **Fallback Mechanisms** for graceful degradation and user feedback.
+        - **Redisson Distributed Locking:**
+            - Replaced local locks with **Redis-based Distributed Locks** (`RLock`) to ensure atomicity across multiple backend nodes.
+            - Secured critical sections: Move execution, game-finish processing, and ELO updates.
+        - **Full-Stack Observability Integration:**
+            - Linked Resilience4j states to **Spring Boot Actuator** for real-time health monitoring.
+            - Enhanced **Micrometer/Tempo** tracing to capture fallback events and latency spikes.
+        - **Validation:**
+            - Verified Rate Limiter effectiveness via high-concurrency load simulations.
+            - Confirmed distributed lock integrity during simultaneous move requests.
+
+---
+
 ## [0.12.0] - 2026-04-24
 
 ### 🏆 Phase 12: Quality Assurance & Code Integrity
@@ -289,7 +312,7 @@ All notable changes to this project will be documented in this file. This projec
 
 ### ⚙️ Strategic Planning & Engineering Standards
 - **SDLC & Architecture:** Defined the **Domain-Driven Design (DDD)** and **Clean Architecture** roadmap.
-- **Workflow Governance:** Established strict **Gitflow** and **Conventional Commits** (refer to [**Git Guide**](../.github/GIT_GUIDE.md)).
+- **Workflow Governance:** Established strict **Gitflow** and **Conventional Commits** (refer to [**Git Guide**](GIT_GUIDE.md)).
 - **Quality Assurance:** Formulated a "Test-First" approach for domain-level logic.
 
 ---

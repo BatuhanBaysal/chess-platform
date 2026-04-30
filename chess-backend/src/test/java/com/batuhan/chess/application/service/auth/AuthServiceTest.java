@@ -153,7 +153,7 @@ class AuthServiceTest {
             // Act & Assert
             assertThatThrownBy(() -> authService.login(loginRequest))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessage("User not found");
+                .hasMessage("User not found: " + loginRequest.username());
 
             verify(jwtService, never()).generateToken(any());
         }

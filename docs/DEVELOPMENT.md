@@ -158,7 +158,7 @@ Every time a commit is pushed or a Pull Request is opened, the project’s digit
 
 * **Testing Strategy:** Run `./mvnw test` for the Backend. We utilize an **H2 In-memory database** for automated testing to ensure a "side-effect free" environment that does not interfere with your local PostgreSQL data.
 * **Java Standards:** We strictly utilize **Sealed Classes** for the piece hierarchy and **Records** for immutable Data Transfer Objects (DTOs), ensuring modern, type-safe, and clean code.
-* **Workflow:** Refer to the [**Git Guide**](../.github/GIT_GUIDE.md) for detailed information on branching strategy and commit conventions before pushing any changes.
+* **Workflow:** Refer to the [**Git Guide**](GIT_GUIDE.md) for detailed information on branching strategy and commit conventions before pushing any changes.
 
 ---
 *Maintained with a focus on Engineering Discipline and Scalable Design.*

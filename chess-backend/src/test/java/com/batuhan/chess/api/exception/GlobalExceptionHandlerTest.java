@@ -19,9 +19,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Technical test suite for GlobalExceptionHandler.
- * Ensures cross-cutting exception mapping to appropriate HTTP statuses
- * and validates the structure of the ErrorResponse DTO.
+ * Updated technical test suite for GlobalExceptionHandler.
+ * Validates the mapping of domain-specific exceptions (GameOperation, Conflicts)
+ * and generic fallback handlers.
  */
 @DisplayName("Global Exception Handler Technical Tests")
 class GlobalExceptionHandlerTest {
@@ -34,28 +34,41 @@ class GlobalExceptionHandlerTest {
     }
 
     @Nested
-    @DisplayName("Runtime Exception Management")
-    class RuntimeExceptionTests {
+    @DisplayName("Domain and Game Logic Exceptions")
+    class GameExceptionTests {
 
         @Test
-        @DisplayName("Should map generic runtime exceptions to 400 Bad Request with original message")
-        void shouldHandleRuntimeExceptionWithBadRequest() {
+        @DisplayName("Should map GameOperationException to 400 Bad Request")
+        void shouldHandleGameOperationException() {
             // Arrange
-            String message = "Unexpected error occurred";
-            RuntimeException ex = new RuntimeException(message);
+            String message = "Chess service is currently unavailable";
+            GameOperationException ex = new GameOperationException(message);
 
             // Act
-            ResponseEntity<ErrorResponse> response = handler.handleRuntimeException(ex);
+            ResponseEntity<ErrorResponse> response = handler.handleGameOperation(ex);
 
             // Assert
-            assertThat(response)
-                .isNotNull()
-                .satisfies(res -> {
-                    assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-                    assertThat(res.getBody()).isNotNull();
-                    assertThat(res.getBody().message()).isEqualTo(message);
-                    assertThat(res.getBody().status()).isEqualTo(400);
-                });
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody()).isNotNull().satisfies(body -> {
+                assertThat(body.message()).isEqualTo(message);
+                assertThat(body.status()).isEqualTo(400);
+            });
+        }
+
+        @Test
+        @DisplayName("Should map UserAlreadyExistsException to 409 Conflict")
+        void shouldHandleUserAlreadyExistsConflict() {
+            // Arrange
+            UserAlreadyExistsException ex = new UserAlreadyExistsException("User already exists");
+
+            // Act
+            ResponseEntity<ErrorResponse> response = handler.handleConflict(ex);
+            ErrorResponse body = response.getBody();
+
+            // Assert
+            assertThat(body).isNotNull();
+            assertThat(body.status()).isEqualTo(409);
+            assertThat(body.message()).isEqualTo("User already exists");
         }
     }
 
@@ -110,25 +123,23 @@ class GlobalExceptionHandlerTest {
     }
 
     @Nested
-    @DisplayName("Domain Logic and Resource Integrity")
-    class IllegalArgumentTests {
+    @DisplayName("System and Generic Fallbacks")
+    class GeneralExceptionTests {
 
         @Test
-        @DisplayName("Should return 404 Not Found for domain-driven illegal argument exceptions")
-        void shouldHandleIllegalArgumentWithNotFound() {
+        @DisplayName("Should map any unhandled Exception to 500 Internal Server Error")
+        void shouldHandleGeneralException() {
             // Arrange
-            String message = "Game session not found";
-            IllegalArgumentException ex = new IllegalArgumentException(message);
+            Exception ex = new Exception("Unexpected system failure");
 
             // Act
-            ResponseEntity<ErrorResponse> response = handler.handleIllegalArgument(ex);
+            ResponseEntity<ErrorResponse> response = handler.handleGeneralException(ex);
 
             // Assert
-            assertThat(response).satisfies(res -> {
-                assertThat(res.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-                assertThat(res.getBody()).isNotNull();
-                assertThat(res.getBody().message()).isEqualTo(message);
-                assertThat(res.getBody().status()).isEqualTo(404);
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+            assertThat(response.getBody()).isNotNull().satisfies(body -> {
+                assertThat(body.message()).contains("An unexpected error occurred");
+                assertThat(body.status()).isEqualTo(500);
             });
         }
     }

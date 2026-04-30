@@ -26,11 +26,15 @@ spring:
                 order_inserts: true
                 order_updates: true
 
+    data:
+        redis:
+            host: ${CHESS_REDIS_HOST:localhost}
+            port: ${CHESS_REDIS_PORT:6379}
+
 logging:
     level:
         org.liquibase: INFO
         org.hibernate.SQL: ERROR
-        org.hibernate.type.descriptor.sql.BasicBinder: ERROR
         io.opentelemetry: DEBUG
     pattern:
         level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}]"
@@ -39,16 +43,25 @@ management:
     endpoints:
         web:
             exposure:
-                include: "health,info,prometheus,metrics,loki"
+                include: "health,info,prometheus,metrics"
     endpoint:
         health:
             show-details: always
+            show-components: always
+            probes:
+                enabled: true
+    health:
+        circuitbreakers:
+            enabled: true
+        ratelimiters:
+            enabled: true
+        redis:
+            enabled: true
     metrics:
         tags:
             application: ${spring.application.name}
-    prometheus:
-        metrics:
-            export:
+        export:
+            prometheus:
                 enabled: true
     tracing:
         sampling:
@@ -62,3 +75,28 @@ chess:
         jwt:
             secret-key: ${CHESS_JWT_SECRET}
             expiration: ${CHESS_JWT_EXPIRATION}
+
+resilience4j:
+    circuitbreaker:
+        configs:
+            default:
+                registerHealthIndicator: true
+                slidingWindowSize: 10
+                minimumNumberOfCalls: 5
+                permittedNumberOfCallsInHalfOpenState: 3
+                waitDurationInOpenState: 10s
+                failureRateThreshold: 50
+                eventConsumerBufferSize: 10
+        instances:
+            chessService:
+                baseConfig: default
+    ratelimiter:
+        configs:
+            default:
+                registerHealthIndicator: true
+                limitForPeriod: 5
+                limitRefreshPeriod: 1s
+                timeoutDuration: 0
+        instances:
+            authService:
+                baseConfig: default

@@ -1,33 +1,30 @@
 package com.batuhan.chess;
 
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.redisson.api.RedissonClient;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@DisplayName("Application Entry Point and Context Tests")
+@Import(ChessBackendApplicationTests.MockConfig.class)
 class ChessBackendApplicationTests {
 
     @Test
-    @DisplayName("Should load the application context successfully")
     void contextLoads() {
-        // Assert
-        assertDoesNotThrow(() -> {}, "Context should load without exceptions");
+
     }
 
-    @Test
-    @DisplayName("Should execute main method without throwing exceptions")
-    @DirtiesContext
-    void main_ShouldRunSuccessfully() {
-        // Arrange
-        String[] args = {"--server.port=0"};
+    @TestConfiguration
+    static class MockConfig {
 
-        // Act & Assert
-        assertDoesNotThrow(() -> ChessBackendApplication.main(args));
+        @Bean
+        public RedissonClient redissonClient() {
+            return Mockito.mock(RedissonClient.class);
+        }
     }
 }

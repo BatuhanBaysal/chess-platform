@@ -19,6 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.redisson.api.RedissonClient;
 
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +36,8 @@ class GameServiceTest {
     @Mock private GameRepository gameRepository;
     @Mock private UserRepository userRepository;
     @Mock private EloService eloService;
+    @Mock private RedissonClient redissonClient;
+    @Mock private org.redisson.api.RLock rLock;
 
     @Spy
     private MeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -47,7 +50,10 @@ class GameServiceTest {
     private String gameId;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws InterruptedException {
+        lenient().when(redissonClient.getLock(anyString())).thenReturn(rLock);
+        lenient().when(rLock.tryLock(anyLong(), anyLong(), any())).thenReturn(true);
+
         gameService.initMetrics();
         gameId = gameService.createGame(whiteId, blackId);
         gameService.setSelf(gameService);
@@ -111,7 +117,7 @@ class GameServiceTest {
         }
 
         @Test
-        @DisplayName("Should throw IllegalStateException when moving in a finished game")
+        @DisplayName("Should throw GameOperationException when moving in a finished game")
         void shouldPreventMoveInFinishedGame() {
             // Arrange
             gameService.setPlayerReady(gameId, whiteId);
@@ -121,8 +127,8 @@ class GameServiceTest {
 
             // Act & Assert
             assertThatThrownBy(() -> gameService.makeMove(gameId, pos, pos, null))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("finished game");
+                .isInstanceOf(com.batuhan.chess.api.exception.GameOperationException.class)
+                .hasMessageContaining("Cannot make a move in a finished game");
         }
     }
 

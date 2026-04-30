@@ -1,35 +1,50 @@
 package com.batuhan.chess.api.config;
 
+import com.batuhan.chess.api.dto.auth.AuthResponse;
+import com.batuhan.chess.api.dto.auth.LoginRequest;
+import com.batuhan.chess.application.service.auth.AuthService;
 import com.batuhan.chess.application.service.auth.JwtService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Integration test suite for Security Configuration.
- * Validates HTTP security filter chain, CORS policies, and endpoint authorization
- * levels within a full Spring Boot application context.
+ * Integration test suite for SecurityConfig.
+ * Validates endpoint authorization rules, CORS configurations,
+ * and public access permissions using MockMvc.
  */
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @DisplayName("Security Configuration Integration Tests")
+@Import({SecurityConfig.class})
 class SecurityConfigTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @MockitoBean
     private JwtService jwtService;
@@ -40,6 +55,18 @@ class SecurityConfigTest {
     @MockitoBean
     private AuthenticationProvider authenticationProvider;
 
+    @MockitoBean
+    private RedissonClient redissonClient;
+
+    @MockitoBean
+    private RedisConnectionFactory redisConnectionFactory;
+
+    @MockitoBean
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @MockitoBean
+    private AuthService authService;
+
     @Nested
     @DisplayName("Endpoint Authorization Access")
     class AuthorizationTests {
@@ -48,33 +75,42 @@ class SecurityConfigTest {
         @DisplayName("Should permit access to public authentication endpoints")
         void shouldPermitAccessToPublicAuthEndpoints() throws Exception {
             // Arrange
-            String loginUrl = "/api/auth/login";
+            LoginRequest loginRequest = new LoginRequest("testuser", "password123");
+            AuthResponse mockResponse = AuthResponse.builder()
+                .token("mock-token")
+                .username("testuser")
+                .build();
 
-            // Act & Assert
-            mockMvc.perform(post(loginUrl))
-                .andExpect(status().isBadRequest());
+            doReturn(mockResponse)
+                .when(authService).login(any(LoginRequest.class));
+
+            // Act
+            var result = mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(loginRequest)));
+
+            // Assert
+            result.andExpect(status().isOk());
         }
 
         @Test
         @DisplayName("Should deny access to protected endpoints without authentication")
         void shouldDenyUnauthenticatedAccessToProtectedResource() throws Exception {
-            // Arrange
-            String protectedUrl = "/api/v1/secure/resource";
+            // Act
+            var result = mockMvc.perform(get("/api/v1/secure/resource"));
 
-            // Act & Assert
-            mockMvc.perform(get(protectedUrl))
-                .andExpect(status().isForbidden());
+            // Assert
+            result.andExpect(status().isForbidden());
         }
 
         @Test
         @DisplayName("Should allow anonymous access to Actuator health checks")
         void shouldPermitAccessToActuatorEndpoints() throws Exception {
-            // Arrange
-            String healthUrl = "/actuator/health";
+            // Act
+            var result = mockMvc.perform(get("/actuator/health"));
 
-            // Act & Assert
-            mockMvc.perform(get(healthUrl))
-                .andExpect(status().isOk());
+            // Assert
+            result.andExpect(status().isOk());
         }
     }
 
@@ -87,14 +123,15 @@ class SecurityConfigTest {
         void shouldHandleCorsConfigurationForPreflight() throws Exception {
             // Arrange
             String origin = "http://localhost:5173";
-            String loginUrl = "/api/auth/login";
 
-            // Act & Assert
-            mockMvc.perform(options(loginUrl)
-                    .header("Origin", origin)
-                    .header("Access-Control-Request-Method", "POST")
-                    .header("Access-Control-Request-Headers", "Authorization"))
-                .andExpect(status().isOk())
+            // Act
+            var result = mockMvc.perform(options("/api/auth/login")
+                .header("Origin", origin)
+                .header("Access-Control-Request-Method", "POST")
+                .header("Access-Control-Request-Headers", "Authorization"));
+
+            // Assert
+            result.andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", origin))
                 .andExpect(header().string("Access-Control-Allow-Credentials", "true"));
         }

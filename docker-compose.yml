@@ -9,6 +9,8 @@ services:
             POSTGRES_PASSWORD: ${CHESS_DB_PASSWORD}
         volumes:
             - postgres_data:/var/lib/postgresql/data
+        networks:
+            - chess-network
         healthcheck:
             test: ["CMD-SHELL", "pg_isready -U ${CHESS_DB_USERNAME} -d chess_db"]
             interval: 5s
@@ -21,6 +23,8 @@ services:
         restart: always
         ports:
             - "6379:6379"
+        networks:
+            - chess-network
         healthcheck:
             test: ["CMD", "redis-cli", "ping"]
             interval: 5s
@@ -35,6 +39,8 @@ services:
             - "8080:8080"
         volumes:
             - ./logs:/app/logs
+        networks:
+            - chess-network
         environment:
             CHESS_DB_URL: jdbc:postgresql://db:5432/chess_db
             CHESS_DB_USERNAME: ${CHESS_DB_USERNAME}
@@ -52,6 +58,12 @@ services:
                 condition: service_healthy
             redis:
                 condition: service_healthy
+        healthcheck:
+            test: [ "CMD-SHELL", "nc -z localhost 8080 || exit 1" ]
+            interval: 10s
+            timeout: 5s
+            retries: 10
+            start_period: 60s
 
     frontend:
         build: ./chess-frontend
@@ -59,10 +71,13 @@ services:
         restart: always
         ports:
             - "80:80"
+        networks:
+            - chess-network
         environment:
-            - VITE_API_URL=http://localhost:8080/api
+            - VITE_API_URL=http://localhost:8080
         depends_on:
-            - backend
+            backend:
+                condition: service_healthy
 
     # --- QUALITY ASSURANCE ---
     sonarqube-db:
@@ -75,6 +90,8 @@ services:
             - POSTGRES_DB=${SONAR_DB_NAME}
         volumes:
             - sonarqube_db_data:/var/lib/postgresql/data
+        networks:
+            - chess-network
         healthcheck:
             test: ["CMD-SHELL", "pg_isready -U ${SONAR_DB_USER} -d ${SONAR_DB_NAME}"]
             interval: 10s
@@ -87,6 +104,8 @@ services:
         restart: always
         ports:
             - "9000:9000"
+        networks:
+            - chess-network
         environment:
             - SONAR_JDBC_URL=jdbc:postgresql://sonarqube-db:5432/${SONAR_DB_NAME}
             - SONAR_JDBC_USERNAME=${SONAR_DB_USER}
@@ -108,6 +127,8 @@ services:
             - '--storage.tsdb.path=/prometheus'
         ports:
             - "9090:9090"
+        networks:
+            - chess-network
         depends_on:
             - backend
 
@@ -116,12 +137,16 @@ services:
         container_name: chess-loki
         ports:
             - "3100:3100"
+        networks:
+            - chess-network
         command: -config.file=/etc/loki/local-config.yaml
         restart: unless-stopped
 
     tempo:
         image: grafana/tempo:latest
         container_name: chess-tempo
+        networks:
+            - chess-network
         command: [ "-config.file=/etc/tempo.yaml" ]
         volumes:
             - ./tempo.yml:/etc/tempo.yaml
@@ -135,6 +160,8 @@ services:
         image: grafana/promtail:latest
         container_name: chess-promtail
         restart: unless-stopped
+        networks:
+            - chess-network
         volumes:
             - ./logs:/var/log
             - ./promtail-config.yml:/etc/promtail/config.yml
@@ -148,6 +175,8 @@ services:
         restart: unless-stopped
         ports:
             - "3000:3000"
+        networks:
+            - chess-network
         volumes:
             - grafana_data:/var/lib/grafana
         environment:
@@ -156,6 +185,10 @@ services:
             - prometheus
             - loki
             - tempo
+
+networks:
+    chess-network:
+        driver: bridge
 
 volumes:
     postgres_data:

@@ -4,18 +4,24 @@ import com.batuhan.chess.api.dto.auth.AuthResponse;
 import com.batuhan.chess.api.dto.auth.LoginRequest;
 import com.batuhan.chess.api.dto.auth.RegisterRequest;
 import com.batuhan.chess.api.exception.EmailAlreadyExistsException;
+import com.batuhan.chess.api.exception.GameOperationException;
 import com.batuhan.chess.api.exception.UserAlreadyExistsException;
 import com.batuhan.chess.domain.model.user.UserEntity;
 import com.batuhan.chess.domain.model.user.UserRole;
 import com.batuhan.chess.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -25,6 +31,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
+    @Transactional
     public void register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.username())) {
             throw new UserAlreadyExistsException("Username already exists");
@@ -45,6 +52,7 @@ public class AuthService {
         userRepository.save(user);
     }
 
+    @RateLimiter(name = "authService", fallbackMethod = "loginFallback")
     public AuthResponse login(LoginRequest request) {
         authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(
@@ -54,7 +62,7 @@ public class AuthService {
         );
 
         var user = userRepository.findByUsername(request.username())
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + request.username()));
 
         var userDetails = org.springframework.security.core.userdetails.User.builder()
             .username(user.getUsername())
@@ -74,6 +82,8 @@ public class AuthService {
             .build();
     }
 
+    @Transactional
+    @RateLimiter(name = "authService", fallbackMethod = "guestFallback")
     public AuthResponse loginAsGuest() {
         String guestUsername = "guest_" + UUID.randomUUID().toString().substring(0, 8);
 
@@ -104,5 +114,17 @@ public class AuthService {
             .eloRating(savedUser.getEloRating())
             .isGuest(true)
             .build();
+    }
+
+    @SuppressWarnings("unused")
+    public AuthResponse loginFallback(LoginRequest request, Throwable t) {
+        log.warn("Login rate limit exceeded for user {}: {}", request.username(), t.getMessage());
+        throw new GameOperationException("Too many login attempts. Please try again later.");
+    }
+
+    @SuppressWarnings("unused")
+    public AuthResponse guestFallback(Throwable t) {
+        log.warn("Guest login rate limit exceeded: {}", t.getMessage());
+        throw new GameOperationException("Too many guest login attempts. Please try again later.");
     }
 }

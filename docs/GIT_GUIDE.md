@@ -130,7 +130,7 @@ We follow a strict **Feature Branch Workflow** to ensure the stability of the `m
 
 ### Commits & Squashing
 * **Maintain a Clean History:** If you have multiple "fix typo" or "WIP" (Work In Progress) commits in your feature branch, it is highly recommended to **squash** them into a single, meaningful commit before merging.
-* **Traceability:** Ensure your branch name and commit messages align with the evolution steps documented in the [**CHANGELOG.md**](../docs/CHANGELOG.md).
+* **Traceability:** Ensure your branch name and commit messages align with the evolution steps documented in the [**CHANGELOG.md**](CHANGELOG.md).
 
 ---
 
@@ -144,4 +144,4 @@ Before sending your code to the remote repository, perform this "Flight Check" t
 * [ ] **Convention Check:** Does your commit message strictly follow the `type: description` format?
 
 ---
-*This document serves as a supplementary guide to [**CONTRIBUTING.md**](../docs/CONTRIBUTING.md) and [**DEVELOPMENT.md**](../docs/DEVELOPMENT.md).*
+*This document serves as a supplementary guide to [**CONTRIBUTING.md**](CONTRIBUTING.md) and [**DEVELOPMENT.md**](DEVELOPMENT.md).*

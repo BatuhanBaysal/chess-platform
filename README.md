@@ -4,10 +4,11 @@
 
 ---
 
-### 📡 Project Status: Full-Stack Observability Operational
-> **Operational Status:** The core chess engine is **100% operational**, strictly adhering to **FIDE rules**.
+### 📡 Project Status: Enterprise Resilience & Distributed Stability Operational
+
+> **Operational Status:** The core chess engine is **100% operational**, strictly adhering to **FIDE rules**, and now hardened for **distributed high-load scenarios**.
 >
-> **Latest Milestone:** Successfully completed **Phase 12: Quality Assurance & Code Integrity** 🏆. The project has reached a **Gold Standard** in software engineering with **91.5% test coverage**, **Zero Code Smells**, and **Zero Technical Debt**. All critical domain logic is verified through a professional suite of 222 automated tests.
+> **Latest Milestone:** Successfully completed **Phase 13: Scalability & Resilience** ⚡. The project has achieved a **High-Availability Standard** by integrating **Resilience4j** for fault tolerance (Circuit Breaker & Rate Limiter) and **Redisson** for distributed locking. Systematic integrity is now guaranteed across multiple instances, with real-time health monitoring via **Spring Boot Actuator** and the **LGTM stack**.
 
 ![Board Preview](docs/assets/screenshots/03-gameplay-features/chess-board.png)
 
@@ -47,8 +48,9 @@ This project is architected as a **high-cohesion monorepo**. Operational process
 | **⚙️ Backend** | Core Chess Engine, API endpoints & Move validation logic | [`./chess-backend`](./chess-backend/README.md) |
 | **🎨 Frontend** | Reactive UI components & Real-time board state management | [`./chess-frontend`](./chess-frontend/README.md) |
 | **🏗️ Architecture** | High-level design choices (Hexagonal, DDD) & Tech patterns | [`./docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) |
+| **🧪 Infrastructure** | **Observability (LGTM), SonarQube results & Resilience metrics** | [`./docs/INFRASTRUCTURE.md`](./docs/INFRASTRUCTURE.md) |
 | **🚀 Setup Guide** | Comprehensive local environment & Dependency installation | [`./docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md) |
-| **📝 Git Flow** | Contribution workflow, Branching strategy & Commit standards | [`./.github/GIT_GUIDE.md`](./.github/GIT_GUIDE.md) |
+| **📝 Git Flow** | Contribution workflow, Branching strategy & Commit standards | [`./.github/GIT_GUIDE.md`](docs/GIT_GUIDE.md) |
 | **📜 Changelog** | Daily Evolution, version tracking & project milestones | [`./docs/CHANGELOG.md`](./docs/CHANGELOG.md) |
 | **🛡️ Security** | Security policies, safety disclosure & best practices | [`./docs/SECURITY.md`](./docs/SECURITY.md) |
 | **🤝 Contributing** | Coding standards, PR guidelines & collaboration rules | [`./docs/CONTRIBUTING.md`](./docs/CONTRIBUTING.md) |
@@ -108,8 +110,8 @@ The core chess logic is encapsulated in a **Pure Java** domain layer.
 - ✅ **Phase 10: Infrastructure & Containerization** 🐳 - Orchestrating services with **Docker & Docker Compose** and implementing **Liquibase** for DB versioning.
 - ✅ **Phase 11: Full-Stack Observability (LGTM)** 📈 - Implementing **Grafana, Loki, and Prometheus** for real-time logs, metrics, and system health.
 - ✅ **Phase 12: Quality Assurance & Code Integrity** 🏆 - Expanding **JUnit 5/Mockito** coverage and integrating **SonarQube** for automated "Zero Technical Debt" reporting.
-- ⏳ **Phase 13: Scalability & Resilience** ⚡ - Implementing **Resilience4j** (Circuit Breaker) and **Distributed Locking** with Redis.
-- 📅 **Phase 14: Messaging & Async Logic** ✉️ - Integration of **RabbitMQ/Kafka** for background processing, notifications, and analytics.
+- ✅ **Phase 13: Scalability & Resilience** ⚡ - Implementing **Resilience4j** (Circuit Breaker) and **Distributed Locking** with Redis.
+- ⏳ **Phase 14: Messaging & Async Logic** ✉️ - Integration of **RabbitMQ/Kafka** for background processing, notifications, and analytics.
 - 📅 **Phase 15: Advanced Analytics & AI** 🧠 - Integration of **Stockfish** via UCI protocol for move analysis and "Hint" system.
 
 ---

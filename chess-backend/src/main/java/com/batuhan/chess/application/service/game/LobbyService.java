@@ -2,8 +2,8 @@ package com.batuhan.chess.application.service.game;
 
 import lombok.Builder;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -11,7 +11,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class LobbyService {
 
@@ -23,6 +22,11 @@ public class LobbyService {
     private final GameService gameService;
     private final SimpMessagingTemplate messagingTemplate;
 
+    public LobbyService(@Lazy GameService gameService, SimpMessagingTemplate messagingTemplate) {
+        this.gameService = gameService;
+        this.messagingTemplate = messagingTemplate;
+    }
+
     @Data
     public static class GameRoom {
         private String roomId;
@@ -31,7 +35,7 @@ public class LobbyService {
         private Long blackPlayerId;
         private String blackPlayerName;
         private String status;
-        private int timeControl;
+        private int timeLimit;
     }
 
     @Data
@@ -50,32 +54,34 @@ public class LobbyService {
         room.setRoomId(roomId);
         room.setHostId(userId);
         room.setHostName(username);
-        room.setTimeControl(time);
+        room.setTimeLimit(time);
         room.setStatus(STATUS_WAITING);
 
         activeRooms.put(roomId, room);
-        log.info("Room created: {} by user: {}", roomId, username);
+        log.info("Room created: {} by user: {}, Time Limit: {}m", roomId, username, time);
         return roomId;
     }
 
     public boolean joinRoom(String roomId, Long userId, String username) {
-        GameRoom room = activeRooms.get(roomId);
+        synchronized (activeRooms) {
+            GameRoom room = activeRooms.get(roomId);
 
-        if (room != null && STATUS_WAITING.equals(room.getStatus())) {
-            if (room.getHostId().equals(userId)) {
-                log.warn("User {} tried to join their own room {}", userId, roomId);
-                return false;
+            if (room != null && STATUS_WAITING.equals(room.getStatus())) {
+                if (room.getHostId().equals(userId)) {
+                    log.warn("User {} tried to join their own room {}", userId, roomId);
+                    return false;
+                }
+
+                room.setBlackPlayerId(userId);
+                room.setBlackPlayerName(username);
+                room.setStatus(STATUS_IN_PROGRESS);
+
+                gameService.createNewGameWithPlayers(roomId, room.getHostId(), userId);
+                notifyPlayers(room, username);
+
+                log.info("Match started in room: {}. White: {}, Black: {}", roomId, room.getHostId(), userId);
+                return true;
             }
-
-            room.setBlackPlayerId(userId);
-            room.setBlackPlayerName(username);
-            room.setStatus(STATUS_IN_PROGRESS);
-
-            gameService.createNewGameWithPlayers(roomId, room.getHostId(), userId);
-            notifyPlayers(room, username);
-
-            log.info("Match started in room: {}. White: {}, Black: {}", roomId, room.getHostId(), userId);
-            return true;
         }
         return false;
     }

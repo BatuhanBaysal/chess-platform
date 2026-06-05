@@ -1,5 +1,6 @@
 package com.batuhan.chess.api.config;
 
+import com.batuhan.chess.api.config.JwtAuthenticationFilter;
 import com.batuhan.chess.application.service.auth.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

@@ -4,7 +4,7 @@ import { useAuth } from './hooks/useAuth';
 import AuthCard from './components/AuthCard';
 import ChessBoard from './components/ChessBoard';
 import LandingPage from './components/LandingPage';
-import { Sun, Moon, LogOut, Hash, LayoutDashboard, Terminal } from 'lucide-react';
+import { Sun, Moon, LogOut, Hash, LayoutDashboard, Terminal, Activity, Shield } from 'lucide-react';
 
 export type ChessTheme = 'classic' | 'modern' | 'emerald';
 export type TimeControl = 3 | 10 | 30;
@@ -81,7 +81,7 @@ function App() {
 
   const handleRestart = () => {
     if (window.confirm("Initialize new deployment cycle? All current progress will be purged.")) {
-      resetChessState(); 
+      resetChessState();
       setGameConfig(prev => ({ ...prev, roomId: '' }));
       startNewGame(undefined); 
     }
@@ -128,7 +128,7 @@ function App() {
         <div className="flex flex-col items-center gap-2">
           <div className="text-blue-500 font-black uppercase text-[11px] tracking-[0.5em] animate-pulse">Initializing Board Engine</div>
           <div className="px-4 py-1 bg-slate-100 dark:bg-slate-800/50 rounded-full border border-slate-200 dark:border-slate-700">
-             <span className="opacity-40 font-bold text-[9px] uppercase tracking-widest">Sector: {gameConfig.roomId || 'Auto-Generating'}</span>
+             <span className="opacity-40 font-bold text-[9px] uppercase tracking-widest">AO: {gameConfig.roomId || 'Auto-Generating'}</span>
           </div>
         </div>
         <button 
@@ -164,26 +164,38 @@ function App() {
               CHESS PLATFORM
             </h1>
             {(game?.gameId || gameConfig.roomId) && (
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/5 border border-blue-500/20 backdrop-blur-sm">
-                <Hash size={12} className="text-blue-500" />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500/80">Sector: {game?.gameId || gameConfig.roomId}</span>
+              <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border backdrop-blur-sm ${playerColor === 'WHITE' ? 'bg-blue-500/5 border-blue-500/20' : 'bg-rose-500/5 border-rose-500/20'}`}>
+                <Hash size={12} className={playerColor === 'WHITE' ? 'text-blue-500' : 'text-rose-500'} />
+                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${playerColor === 'WHITE' ? 'text-blue-500/80' : 'text-rose-500/80'}`}>
+                  DYNAMICS: {game?.gameId || gameConfig.roomId}
+                </span>
               </div>
             )}
           </header>
 
-          <nav className="w-full max-w-[1550px] mb-8 px-6 flex justify-between items-center bg-white/80 dark:bg-slate-900/80 p-4 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-2xl backdrop-blur-xl transition-all">
-            <button 
-              onClick={handleBackToMenu} 
-              className="group flex items-center gap-2.5 px-6 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 text-[10px] font-black uppercase tracking-widest hover:bg-rose-500 hover:border-rose-500 hover:text-white transition-all shadow-sm"
-            >
-              <LayoutDashboard size={14} className="group-hover:rotate-12 transition-transform" />
-              Menu
-            </button>
+          <nav className="w-full max-w-[1550px] mb-8 px-8 flex justify-between items-center bg-white/80 dark:bg-slate-900/80 p-5 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-2xl backdrop-blur-xl transition-all">
+            <div className="flex items-center gap-6">
+                <button 
+                onClick={handleBackToMenu} 
+                className="group flex items-center gap-2.5 px-6 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 text-[10px] font-black uppercase tracking-widest hover:bg-rose-500 hover:border-rose-500 hover:text-white transition-all shadow-sm"
+                >
+                <LayoutDashboard size={14} className="group-hover:rotate-12 transition-transform" />
+                Menu
+                </button>
+
+                <div className={`flex items-center gap-3 px-6 py-3 rounded-2xl border transition-all shadow-sm ${playerColor === 'BLACK' ? 'bg-rose-500/5 border-rose-500/20' : 'bg-blue-500/5 border-blue-500/20'}`}>
+                    <Shield size={16} className={playerColor === 'WHITE' ? 'text-blue-500' : 'text-rose-500'} />
+                    <span className={`text-[11px] font-black uppercase tracking-widest ${playerColor === 'WHITE' ? 'text-blue-600' : 'text-rose-600'}`}>
+                        LINKED: {playerColor} ALLIANCE
+                    </span>
+                </div>
+            </div>
             
             <div className="flex gap-10 items-center">
               <div className="flex flex-col items-center">
                 <span className="text-[9px] font-black opacity-30 uppercase tracking-[0.2em] mb-0.5">Tactical Turn</span>
-                <span className={`text-[12px] font-black uppercase tracking-widest transition-colors flex items-center gap-2 ${game?.currentTurn === 'WHITE' ? 'text-slate-900 dark:text-white' : 'text-blue-500'}`}>
+                <span className={`text-[14px] font-black uppercase tracking-widest transition-colors flex items-center gap-2 ${game?.currentTurn === 'WHITE' ? 'text-blue-600' : 'text-rose-600'}`}>
+                  <Activity size={16} className={game?.currentTurn === 'WHITE' ? 'animate-pulse' : 'animate-bounce'} />
                   {game?.currentTurn || "WHITE"}
                   {isCheck && <span className="text-red-500 animate-bounce text-[10px]">! CHECK</span>}
                   {isCheckmate && <span className="text-red-600 text-[10px]"># MATE</span>}
@@ -202,9 +214,11 @@ function App() {
             <div className="flex items-center gap-5">
               <div className="text-right hidden sm:block">
                 <p className="text-[9px] font-black opacity-30 uppercase tracking-[0.2em]">Commander</p>
-                <p className="text-[12px] font-black uppercase italic tracking-tight text-blue-500 dark:text-blue-400">{gameConfig.playerName}</p>
+                <p className={`text-[12px] font-black uppercase italic tracking-tight ${playerColor === 'WHITE' ? 'text-blue-500 dark:text-blue-400' : 'text-rose-500 dark:text-rose-400'}`}>
+                  {gameConfig.playerName}
+                </p>
                 {playerColor && (
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] mt-0.5">
+                  <p className={`text-[8px] font-black uppercase tracking-[0.3em] mt-0.5 ${playerColor === 'WHITE' ? 'text-blue-400' : 'text-rose-400'}`}>
                     {playerColor} ALLIANCE
                   </p>
                 )}
@@ -212,7 +226,7 @@ function App() {
               <button 
                 onClick={logout} 
                 title="Terminate Session"
-                className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700 hover:bg-rose-500 hover:text-white transition-all group"
+                className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700 hover:bg-rose-500 hover:text-white transition-all group shadow-sm"
               >
                 <LogOut size={18} className="group-hover:-translate-x-0.5 transition-transform" />
               </button>
@@ -233,6 +247,8 @@ function App() {
             theme={gameConfig.theme}
             timeLimit={gameConfig.timeControl}
             orientation={playerColor || 'WHITE'}
+            whiteRemainingTimeMs={game?.whiteRemainingTimeMs ?? (gameConfig.timeControl * 60 * 1000)}
+            blackRemainingTimeMs={game?.blackRemainingTimeMs ?? (gameConfig.timeControl * 60 * 1000)}
           />
         </main>
       )}

@@ -1,13 +1,13 @@
-import api from './axios'; 
+import api from './axios';
 
-export type GameStatus = 
-    | 'ACTIVE' 
-    | 'CHECK' 
-    | 'CHECKMATE' 
-    | 'STALEMATE' 
-    | 'RESIGNED' 
-    | 'DRAW' 
-    | 'TIMEOUT'   
+export type GameStatus =
+    | 'ACTIVE'
+    | 'CHECK'
+    | 'CHECKMATE'
+    | 'STALEMATE'
+    | 'RESIGNED'
+    | 'DRAW'
+    | 'TIMEOUT'
     | 'CLOSING';
 
 export interface ExecutedMove {
@@ -16,21 +16,22 @@ export interface ExecutedMove {
     toFile: number;
     toRank: number;
     pieceType: string;
-    moveType: string; 
-    capturedPiece?: string;
 }
 
 export interface GameResponse {
     gameId: string;
     boardRepresentation: string;
-    currentTurn: 'WHITE' | 'BLACK'; 
-    status: GameStatus; 
-    whitePlayerId: number; 
-    blackPlayerId: number;
-    isStarted: boolean; 
-    humanReadableHistory: string[]; 
+    currentTurn: 'WHITE' | 'BLACK';
+    status: GameStatus;
+    whiteId: number; 
+    blackId: number; 
+    isStarted: boolean;
+    moveHistory: string[]; 
     lastMoveMessage: string;
-    executedMoves: ExecutedMove[];
+    lastMoves: ExecutedMove[]; 
+    whiteRemainingTimeMs: number;
+    blackRemainingTimeMs: number;
+    timeLimit: number;
 }
 
 export interface LegalMove {
@@ -43,12 +44,7 @@ export const loginAsGuest = async () => {
 };
 
 export const getUserStats = async (userId: number) => {
-    const response = await api.get(`/api/users/${userId}/stats`); 
-    return response.data;
-};
-
-export const getPlayerHistory = async (userId: number) => {
-    const response = await api.get(`/api/games/history/${userId}`);
+    const response = await api.get(`/api/users/${userId}/stats`);
     return response.data;
 };
 
@@ -56,20 +52,20 @@ export const createLobby = async (userId: number, username: string, timeControl:
     const response = await api.post(`/api/lobby/create`, null, {
         params: { userId, username, time: timeControl }
     });
-    return response.data; 
+    return response.data;
 };
 
 export const joinRoom = async (roomId: string, userId: number, username: string) => {
     const response = await api.post(`/api/lobby/join`, null, {
-        params: { roomId, userId, username } 
+        params: { roomId, userId, username }
     });
     return response.data;
 };
 
 export const getActiveRooms = async () => {
     try {
-        const response = await api.get(`/api/lobby/rooms`); 
-        return response.data || []; 
+        const response = await api.get(`/api/lobby/rooms`);
+        return response.data || [];
     } catch (error) {
         console.error("Lobby fetch error:", error);
         return [];
@@ -79,18 +75,25 @@ export const getActiveRooms = async () => {
 export const getLobbyStatus = async (roomId: string) => {
     try {
         const response = await api.get(`/api/lobby/status/${roomId}`);
-        return response.data; 
+        return response.data;
     } catch (error) {
         console.error("Error fetching lobby status:", error);
         return null;
     }
 };
 
-export const getGameContext = async (gameId: string, userId: number) => {
-    const response = await api.get(`/api/games/${gameId}`, {
-        params: { userId }
-    });
-    return response.data as GameResponse;
+export const getActiveGame = async (userId: number): Promise<GameResponse | null> => {
+    try {
+        const response = await api.get(`/api/games/active/${userId}`);
+        return response.data;
+    } catch (error) {
+        return null;
+    }
+};
+
+export const getGameContext = async (gameId: string): Promise<GameResponse> => {
+    const response = await api.get(`/api/games/${gameId}`);
+    return response.data;
 };
 
 export const getLegalMoves = async (gameId: string, file: number, rank: number): Promise<LegalMove[]> => {
@@ -103,6 +106,11 @@ export const getLegalMoves = async (gameId: string, file: number, rank: number):
         console.error("Legal moves fetch error:", error);
         return [];
     }
+};
+
+export const getPlayerHistory = async (userId: number) => {
+    const response = await api.get(`/api/games/history/${userId}`);
+    return response.data;
 };
 
 export const resignGame = async (gameId: string, userId: number) => {

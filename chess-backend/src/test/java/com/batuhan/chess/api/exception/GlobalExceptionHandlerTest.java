@@ -1,6 +1,9 @@
 package com.batuhan.chess.api.exception;
 
 import com.batuhan.chess.api.dto.error.ErrorResponse;
+import com.batuhan.chess.api.exception.GameOperationException;
+import com.batuhan.chess.api.exception.GlobalExceptionHandler;
+import com.batuhan.chess.api.exception.UserAlreadyExistsException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

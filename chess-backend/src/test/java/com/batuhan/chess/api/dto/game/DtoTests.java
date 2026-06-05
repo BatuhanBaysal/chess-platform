@@ -1,5 +1,7 @@
 package com.batuhan.chess.api.dto.game;
 
+import com.batuhan.chess.api.dto.game.GameHistory;
+import com.batuhan.chess.api.dto.game.MoveRequest;
 import com.batuhan.chess.domain.model.chess.GameStatus;
 import com.batuhan.chess.domain.model.history.GameResult;
 import org.junit.jupiter.api.DisplayName;

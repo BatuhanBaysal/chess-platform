@@ -1,5 +1,6 @@
 package com.batuhan.chess.api.controller;
 
+import com.batuhan.chess.api.controller.UserController;
 import com.batuhan.chess.application.service.auth.JwtService;
 import com.batuhan.chess.domain.model.user.UserEntity;
 import com.batuhan.chess.domain.repository.UserRepository;

@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { LogOut, Plus, Users, Loader2, Sword, Shield, Clock, LayoutDashboard } from 'lucide-react';
+import { LogOut, Plus, Users, Loader2, Sword, Shield, Clock, LayoutDashboard, RefreshCw } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import Dashboard from './Dashboard';
 import MatchHistory from './MatchHistory';
 import ChessBoard from './ChessBoard';
 import { useChess } from '../hooks/useChess';
 import api from '../api/axios';
+import { getActiveGame } from '../api/gameService';
+import type { GameResponse } from '../api/gameService';
 
 type ChessTheme = 'classic' | 'modern' | 'emerald';
 type TimeControl = 3 | 10 | 30;
@@ -14,6 +16,7 @@ interface GameRoom {
   roomId: string;
   hostName: string;
   timeControl: number;
+  theme?: ChessTheme;
 }
 
 interface LandingPageProps {
@@ -34,6 +37,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [waitingRoomId, setWaitingRoomId] = useState<string | null>(null);
   const [activeGameId, setActiveGameId] = useState<string | null>(null);
+  const [reconnectGame, setReconnectGame] = useState<GameResponse | null>(null);
 
   const { 
     game, 
@@ -45,6 +49,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
     resetChessState 
   } = useChess();
 
+  useEffect(() => {
+    const checkActiveGame = async () => {
+      if (user?.id) {
+        const activeGame = await getActiveGame(user.id);
+        if (activeGame && activeGame.status !== 'CLOSING') {
+          setReconnectGame(activeGame);
+        }
+      }
+    };
+    checkActiveGame();
+  }, [user]);
+
   const fetchRooms = async () => {
     try {
       const res = await api.get('/api/lobby/rooms');
@@ -54,11 +70,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
     }
   };
 
-  const handleStartGame = useCallback((roomId: string, time?: number) => {
+  const handleStartGame = useCallback((roomId: string, time?: number, theme?: ChessTheme) => {
     setWaitingRoomId(null);
+    setReconnectGame(null);
     setActiveGameId(roomId);
     startNewGame(roomId);
-    onStart(selectedTheme, (time as TimeControl) || selectedTime, roomId);
+    onStart(theme || selectedTheme, (time as TimeControl) || selectedTime, roomId);
   }, [onStart, selectedTheme, selectedTime, startNewGame]);
 
   const checkMatchStatus = async (roomId: string) => {
@@ -91,7 +108,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
       let currentUser = user || await loginAsGuest();
       if (currentUser?.id) {
         const res = await api.post('/api/lobby/create', null, {
-          params: { userId: currentUser.id, username: currentUser.username, time: selectedTime }
+          params: { userId: currentUser.id, username: currentUser.username, time: selectedTime, theme: selectedTheme }
         });
         const roomId = typeof res.data === 'string' ? res.data : (res.data.roomId || res.data.id);
         if (roomId) setWaitingRoomId(roomId); 
@@ -110,7 +127,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         await api.post('/api/lobby/join', null, {
           params: { roomId: room.roomId, userId: currentUser.id, username: currentUser.username }
         });
-        handleStartGame(room.roomId, room.timeControl);
+        if (room.theme) setSelectedTheme(room.theme);
+        setSelectedTime(room.timeControl as TimeControl);
+        handleStartGame(room.roomId, room.timeControl, room.theme);
       }
     } catch (e) {
       alert("Room is full or no longer exists.");
@@ -150,8 +169,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
           onMove={(f, r, tf, tr, prom) => makeMove(activeGameId, f, r, tf, tr, prom)}
           fetchLegalMoves={fetchLegalMoves}
           theme={selectedTheme}
-          timeLimit={selectedTime}
+          timeLimit={game.timeLimit || selectedTime} 
           orientation={playerColor || 'WHITE'}
+          whiteRemainingTimeMs={game.whiteRemainingTimeMs}
+          blackRemainingTimeMs={game.blackRemainingTimeMs}
           onBackToMenu={() => { setActiveGameId(null); resetChessState(); }}
         />
       </div>
@@ -160,6 +181,34 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
 
   return (
     <div className="flex flex-col items-center min-h-screen p-4 relative bg-slate-50 dark:bg-slate-950 overflow-x-hidden text-slate-900 dark:text-white">
+      {reconnectGame && (
+        <div className="fixed bottom-10 right-10 z-[110] animate-in slide-in-from-right-10 duration-500">
+          <div className="bg-blue-600 p-6 rounded-3xl shadow-2xl shadow-blue-500/40 border border-white/10 flex flex-col gap-4 max-w-xs">
+            <div className="flex items-center gap-3">
+              <RefreshCw className="text-white animate-spin-slow" size={20} />
+              <span className="text-xs font-black uppercase tracking-widest text-white">Active Signal Found</span>
+            </div>
+            <p className="text-[10px] font-bold text-blue-100 uppercase opacity-80 leading-relaxed">
+              You have a match in progress. Re-establish neural link to Sector {reconnectGame.gameId.substring(0,4)}?
+            </p>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => handleStartGame(reconnectGame.gameId, reconnectGame.timeLimit)}
+                className="flex-1 py-3 bg-white text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-50 transition-all"
+              >
+                Reconnect
+              </button>
+              <button 
+                onClick={() => setReconnectGame(null)}
+                className="px-4 py-3 bg-blue-700 text-blue-200 rounded-xl text-[10px] font-black uppercase hover:bg-blue-800 transition-all"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {waitingRoomId && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-blue-500/30 shadow-2xl shadow-blue-500/10 text-center max-w-sm w-full mx-4">
@@ -264,7 +313,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                     activeLobbyId={waitingRoomId} 
                 />
             )}
-        </div>
+          </div>
         </div>
         <div className="lg:col-span-7 space-y-6">
           <div className="p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800/60 bg-white dark:bg-slate-900/40 backdrop-blur-3xl shadow-xl min-h-[400px]">
@@ -285,8 +334,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                       <p className="text-[10px] font-black opacity-40 uppercase tracking-widest">Host</p>
                       <p className="font-bold text-slate-900 dark:text-white">{room.hostName}</p>
                       <div className="flex items-center gap-2 mt-1">
-                         <Shield size={10} className="text-blue-500" />
-                         <p className="text-[10px] text-blue-600 dark:text-blue-400 font-bold">{room.timeControl} MIN</p>
+                          <Shield size={10} className="text-blue-500" />
+                          <p className="text-[10px] text-blue-600 dark:text-blue-400 font-bold">{room.timeControl} MIN</p>
                       </div>
                     </div>
                     <button onClick={() => handleJoinRoom(room)} className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 shadow-md transition-all active:scale-95">

@@ -1,5 +1,7 @@
 package com.batuhan.chess.domain.model.user;
 
+import com.batuhan.chess.domain.model.user.UserEntity;
+import com.batuhan.chess.domain.model.user.UserRole;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

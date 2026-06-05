@@ -15,7 +15,10 @@ public record GameResponse(
     String lastMoveMessage,
     Long whiteId,
     Long blackId,
-    boolean isStarted
+    boolean isStarted,
+    long whiteRemainingTimeMs,
+    long blackRemainingTimeMs,
+    Integer timeLimit
 ) {
     public record ExecutedMove(int fromFile, int fromRank, int toFile, int toRank, String pieceType) {}
 }

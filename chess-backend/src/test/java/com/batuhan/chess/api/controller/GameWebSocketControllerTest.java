@@ -4,6 +4,7 @@ import com.batuhan.chess.api.dto.game.GameResponse;
 import com.batuhan.chess.api.dto.game.MoveRequest;
 import com.batuhan.chess.application.service.game.GameService;
 import com.batuhan.chess.domain.model.chess.Board;
+import com.batuhan.chess.domain.model.chess.Color;
 import com.batuhan.chess.domain.model.chess.Game;
 import com.batuhan.chess.domain.model.chess.GameStatus;
 import org.junit.jupiter.api.DisplayName;
@@ -13,6 +14,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.List;
@@ -29,6 +32,7 @@ import static org.mockito.Mockito.*;
  * move processing, timeout handling, and STOMP message broadcasting.
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Game WebSocket Controller Technical Tests")
 class GameWebSocketControllerTest {
 
@@ -56,15 +60,21 @@ class GameWebSocketControllerTest {
             request.setUserId(userId);
 
             Game game = new Game(new Board());
+            GameResponse mockResponse = new GameResponse(
+                gameId, "rnbqkbnr...", Color.WHITE, GameStatus.ACTIVE,
+                List.of(), List.of(), "", 1L, 2L, true, 60000L, 60000L, 300
+            );
+
             when(gameService.setPlayerReady(gameId, userId)).thenReturn(true);
             when(gameService.getGame(gameId)).thenReturn(game);
             when(gameService.isGameStarted(gameId)).thenReturn(true);
+            when(gameService.convertToResponse(gameId, game)).thenReturn(mockResponse);
 
             // Act
             webSocketController.processReady(request);
 
             // Assert
-            verify(messagingTemplate).convertAndSend(eq("/topic/game/" + gameId), any(GameResponse.class));
+            verify(messagingTemplate).convertAndSend("/topic/game/" + gameId, mockResponse);
         }
 
         @Test
@@ -96,53 +106,21 @@ class GameWebSocketControllerTest {
             String gameId = "game-123";
             var request = new MoveRequest(gameId, 0, 1, 0, 2, null);
             Game game = new Game(new Board());
+            GameResponse mockResponse = new GameResponse(
+                gameId, "rnbqkbnr...", Color.WHITE, GameStatus.ACTIVE,
+                List.of(), List.of(), "Nf3", 1L, 2L, true, 60000L, 60000L, 300
+            );
 
             when(gameService.makeMove(eq(gameId), any(), any(), any())).thenReturn(List.of());
             when(gameService.getGame(gameId)).thenReturn(game);
+            when(gameService.convertToResponse(gameId, game)).thenReturn(mockResponse);
 
             // Act
             webSocketController.processMove(request);
 
             // Assert
             verify(gameService).makeMove(eq(gameId), any(), any(), any());
-            verify(messagingTemplate).convertAndSend(eq("/topic/game/" + gameId), any(GameResponse.class));
-        }
-
-        @Test
-        @DisplayName("Should finish game and broadcast result when a player times out")
-        void shouldProcessTimeoutAndBroadcastFinish() {
-            // Arrange
-            String gameId = "game-123";
-            var request = new MoveRequest(gameId, 0, 0, 0, 0, null);
-            Game game = new Game(new Board());
-
-            when(gameService.getGame(gameId)).thenReturn(game);
-
-            // Act
-            webSocketController.processTimeout(request);
-
-            // Assert
-            verify(gameService).processGameFinish(eq(gameId), any(), eq(GameStatus.TIMEOUT));
-            verify(messagingTemplate).convertAndSend(eq("/topic/game/" + gameId), any(GameResponse.class));
-        }
-
-        @Test
-        @DisplayName("Should ignore timeout requests if the game is already in a terminal state")
-        void shouldIgnoreTimeoutIfGameIsAlreadyFinished() {
-            // Arrange
-            String gameId = "game-123";
-            var request = new MoveRequest(gameId, 0, 0, 0, 0, null);
-            Game game = new Game(new Board());
-            game.setStatus(GameStatus.CHECKMATE);
-
-            when(gameService.getGame(gameId)).thenReturn(game);
-
-            // Act
-            webSocketController.processTimeout(request);
-
-            // Assert
-            verify(gameService, never()).processGameFinish(anyString(), any(), any());
-            verify(messagingTemplate, never()).convertAndSend(anyString(), any(GameResponse.class));
+            verify(messagingTemplate).convertAndSend("/topic/game/" + gameId, mockResponse);
         }
     }
 

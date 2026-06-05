@@ -1,6 +1,8 @@
 package com.batuhan.chess.domain.model.history;
 
 import com.batuhan.chess.domain.model.chess.GameStatus;
+import com.batuhan.chess.domain.model.history.GameEntity;
+import com.batuhan.chess.domain.model.history.GameResult;
 import com.batuhan.chess.domain.model.user.UserEntity;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] - 2026-06-05
+
+### ⚡ Phase 14: Core Engine Refactoring & UX Optimization
+> **Note:** This phase transitions the game engine to a server-authoritative timer model, ensuring absolute synchronization across clients. It further enhances the user interface by improving real-time responsiveness and visual feedback loops.
+
+- **2026-06-05:**
+    - **Core Engine Refactoring & Synchronization (PR #42 | Issue #40):**
+        - **Server-Authoritative Clock:** Migrated game-time tracking logic from the frontend to `GameService` and backend entities, eliminating client-side latency discrepancies.
+        - **WebSocket Broadcast Optimization:** Refined the event pipeline to ensure low-latency, atomic state synchronization of game clocks.
+        - **Telemetry & Observability:** Integrated clock heartbeat tracking into the existing LGTM stack to monitor timer stability and synchronization accuracy in real-time.
+        - **Validation:**
+            - Verified timer accuracy against high-precision server-side timestamps.
+            - Confirmed cross-session synchronization during simulated high-traffic scenarios.
+            - Validated heartbeat visualization within the Grafana monitoring dashboard.
+
+---
+
 ## [0.13.0] - 2026-04-30
 
 ### ⚡ Phase 13: Scalability & Resilience

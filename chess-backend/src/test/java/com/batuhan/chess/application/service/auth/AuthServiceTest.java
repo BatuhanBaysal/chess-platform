@@ -3,6 +3,8 @@ package com.batuhan.chess.application.service.auth;
 import com.batuhan.chess.api.dto.auth.AuthResponse;
 import com.batuhan.chess.api.dto.auth.LoginRequest;
 import com.batuhan.chess.api.dto.auth.RegisterRequest;
+import com.batuhan.chess.application.service.auth.AuthService;
+import com.batuhan.chess.application.service.auth.JwtService;
 import com.batuhan.chess.domain.model.user.UserEntity;
 import com.batuhan.chess.domain.model.user.UserRole;
 import com.batuhan.chess.domain.repository.UserRepository;

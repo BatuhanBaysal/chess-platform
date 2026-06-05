@@ -1,5 +1,6 @@
 package com.batuhan.chess.domain.model.chess;
 
+import com.batuhan.chess.domain.model.chess.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

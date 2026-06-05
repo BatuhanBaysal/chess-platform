@@ -29,6 +29,10 @@ public class Game {
     private int halfMoveClock = 0;
     private String lastMoveMessage = "Game started. White to move.";
 
+    private long whiteRemainingTimeMs;
+    private long blackRemainingTimeMs;
+    private Long lastMoveTimestamp;
+
     public Game(Board board) {
         this.board = board;
         this.currentTurn = Color.WHITE;
@@ -38,6 +42,14 @@ public class Game {
 
     public synchronized List<GameResponse.ExecutedMove> makeMove(Position start, Position end, String promotionType) {
         if (status.isFinished()) {
+            return List.of();
+        }
+
+        updateTime();
+
+        if (whiteRemainingTimeMs <= 0 || blackRemainingTimeMs <= 0) {
+            this.status = GameStatus.TIMEOUT;
+            this.lastMoveMessage = "Game Over: Time out!";
             return List.of();
         }
 
@@ -58,8 +70,16 @@ public class Game {
 
         this.lastMove = new Move(start, end, piece);
         this.currentTurn = currentTurn.opposite();
+        this.lastMoveTimestamp = System.currentTimeMillis();
+
         this.status = evaluator.evaluateStatus(board, currentTurn, validator, halfMoveClock, boardHistory, this.lastMove);
+
+        if (whiteRemainingTimeMs <= 0 || blackRemainingTimeMs <= 0) {
+            this.status = GameStatus.TIMEOUT;
+        }
+
         this.lastMoveMessage = generateMoveMessage(piece, end, isCapture);
+
         return executedMoves;
     }
 
@@ -74,6 +94,26 @@ public class Game {
                 .filter(target -> validator.isMoveLegal(start, target, board, currentTurn, lastMove))
                 .toList())
             .orElse(List.of());
+    }
+
+    public void updateTime() {
+        if (lastMoveTimestamp == null) return;
+        long now = System.currentTimeMillis();
+        long elapsed = now - lastMoveTimestamp;
+
+        if (currentTurn == Color.WHITE) {
+            whiteRemainingTimeMs = Math.max(0, whiteRemainingTimeMs - elapsed);
+        } else {
+            blackRemainingTimeMs = Math.max(0, blackRemainingTimeMs - elapsed);
+        }
+        this.lastMoveTimestamp = now;
+    }
+
+    public void startClock(int timeLimitMinutes) {
+        long timeLimitMs = (long) timeLimitMinutes * 60 * 1000;
+        this.whiteRemainingTimeMs = timeLimitMs;
+        this.blackRemainingTimeMs = timeLimitMs;
+        this.lastMoveTimestamp = System.currentTimeMillis();
     }
 
     private List<GameResponse.ExecutedMove> prepareExecutedMoves(Position start, Position end, Piece piece, String promotionType) {
@@ -114,6 +154,7 @@ public class Game {
 
     private String generateMoveMessage(Piece p, Position end, boolean isCap) {
         if (status == GameStatus.CHECKMATE) return "CHECKMATE!";
+        if (status == GameStatus.TIMEOUT) return "TIME OUT!";
         if (status == GameStatus.STALEMATE || status == GameStatus.DRAW) return "DRAW!";
         if (status == GameStatus.CHECK) return "CHECK!";
         return p.getColor() + " " + p.getType().name() + (isCap ? " captured at " : " moved to ") + end;

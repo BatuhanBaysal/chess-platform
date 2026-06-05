@@ -1,11 +1,9 @@
 package com.batuhan.chess.api.controller;
 
+import com.batuhan.chess.api.dto.game.GameResponse;
 import com.batuhan.chess.application.service.auth.JwtService;
 import com.batuhan.chess.application.service.game.GameService;
-import com.batuhan.chess.domain.model.chess.Board;
-import com.batuhan.chess.domain.model.chess.Game;
-import com.batuhan.chess.domain.model.chess.GameStatus;
-import com.batuhan.chess.domain.model.chess.Position;
+import com.batuhan.chess.domain.model.chess.*;
 import com.batuhan.chess.domain.model.history.GameEntity;
 import com.batuhan.chess.domain.model.history.GameResult;
 import com.batuhan.chess.domain.model.user.UserEntity;
@@ -28,11 +26,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Web layer unit tests for GameRestController.
- * Validates the game management endpoints, including game creation,
- * state retrieval, legal move calculations, and player match history.
- */
 @WebMvcTest(GameRestController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("Game REST Controller Web Layer Tests")
@@ -56,13 +49,13 @@ class GameRestControllerTest {
         void shouldReturnCurrentGameStateSuccessfully() throws Exception {
             // Arrange
             String gameId = "test-123";
-            Board board = new Board();
-            Game game = new Game(board);
-            game.setWhitePlayerId(1L);
-            game.setBlackPlayerId(2L);
-
+            Game game = new Game(new Board());
+            GameResponse response = new GameResponse(
+                gameId, "rnbqkbnr", Color.WHITE, GameStatus.ACTIVE,
+                List.of(), List.of(), "", 1L, 2L, true, 300000L, 300000L, 300
+            );
             when(gameService.getGame(gameId)).thenReturn(game);
-            when(gameService.isGameStarted(gameId)).thenReturn(true);
+            when(gameService.convertToResponse(gameId, game)).thenReturn(response);
 
             // Act & Assert
             mockMvc.perform(get("/api/games/{gameId}", gameId))
@@ -78,13 +71,14 @@ class GameRestControllerTest {
         void shouldCreateNewGameSuccessfully() throws Exception {
             // Arrange
             String gameId = "new-game";
-            Board board = new Board();
-            Game game = new Game(board);
-            game.setWhitePlayerId(1L);
-            game.setBlackPlayerId(2L);
-
-            when(gameService.createGame(anyLong(), anyLong())).thenReturn(gameId);
+            Game game = new Game(new Board());
+            GameResponse response = new GameResponse(
+                gameId, "rnbqkbnr", Color.WHITE, GameStatus.ACTIVE,
+                List.of(), List.of(), "", 1L, 2L, false, 300000L, 300000L, 300
+            );
+            when(gameService.createGame(1L, 2L)).thenReturn(gameId);
             when(gameService.getGame(gameId)).thenReturn(game);
+            when(gameService.convertToResponse(gameId, game)).thenReturn(response);
 
             // Act & Assert
             mockMvc.perform(post("/api/games")
@@ -102,8 +96,13 @@ class GameRestControllerTest {
             // Arrange
             String gameId = "guest-game";
             Game game = new Game(new Board());
+            GameResponse response = new GameResponse(
+                gameId, "rnbqkbnr", Color.WHITE, GameStatus.ACTIVE,
+                List.of(), List.of(), "", null, null, false, 300000L, 300000L, 300
+            );
             when(gameService.createGame(null, null)).thenReturn(gameId);
             when(gameService.getGame(gameId)).thenReturn(game);
+            when(gameService.convertToResponse(gameId, game)).thenReturn(response);
 
             // Act & Assert
             mockMvc.perform(post("/api/games"))
@@ -124,7 +123,6 @@ class GameRestControllerTest {
             String gameId = "started-game";
             List<Position> expectedMoves = List.of(new Position(4, 2), new Position(4, 3));
             Game mockedGame = mock(Game.class);
-
             when(gameService.isGameStarted(gameId)).thenReturn(true);
             when(gameService.getGame(gameId)).thenReturn(mockedGame);
             when(mockedGame.getLegalMovesForSquare(any(Position.class))).thenReturn(expectedMoves);
@@ -144,6 +142,7 @@ class GameRestControllerTest {
         void shouldReturnEmptyListIfGameNotStarted() throws Exception {
             // Arrange
             String gameId = "not-started";
+            when(gameService.getGame(gameId)).thenReturn(new Game(new Board()));
             when(gameService.isGameStarted(gameId)).thenReturn(false);
 
             // Act & Assert
@@ -166,15 +165,12 @@ class GameRestControllerTest {
             Long userId = 1L;
             UserEntity white = UserEntity.builder().id(1L).username("batuhan").build();
             UserEntity black = UserEntity.builder().id(2L).username("opponent").build();
-
             GameEntity history = GameEntity.builder()
                 .id(100L)
                 .whitePlayer(white)
                 .blackPlayer(black)
                 .result(GameResult.WHITE_WIN)
-                .finishMethod(GameStatus.CHECKMATE)
                 .build();
-
             when(gameService.getGameHistory(userId)).thenReturn(List.of(history));
 
             // Act & Assert
@@ -196,7 +192,6 @@ class GameRestControllerTest {
                 .blackPlayer(null)
                 .result(GameResult.DRAW)
                 .build();
-
             when(gameService.getGameHistory(userId)).thenReturn(List.of(history));
 
             // Act & Assert

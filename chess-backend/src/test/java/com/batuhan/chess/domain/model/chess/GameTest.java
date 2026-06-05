@@ -10,10 +10,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Integrated Unit Tests for the Game Orchestrator.
- * Covers turn management, move execution, special rules, and game state transitions.
- */
 @DisplayName("Game Domain Orchestrator Tests")
 class GameTest {
 
@@ -22,6 +18,7 @@ class GameTest {
     @BeforeEach
     void setUp() {
         game = new Game(new Board(true));
+        game.startClock(10);
     }
 
     @Nested
@@ -31,6 +28,7 @@ class GameTest {
         @Test
         @DisplayName("Should initialize with White turn and ACTIVE status")
         void shouldInitializeCorrectly() {
+            // Act & Assert
             assertThat(game.getCurrentTurn()).isEqualTo(Color.WHITE);
             assertThat(game.getStatus()).isEqualTo(GameStatus.ACTIVE);
         }
@@ -47,7 +45,7 @@ class GameTest {
 
             // Assert
             assertThat(moves).isNotEmpty();
-            assertThat(game.getCurrentTurn()).as("Turn must switch to Black").isEqualTo(Color.BLACK);
+            assertThat(game.getCurrentTurn()).isEqualTo(Color.BLACK);
         }
 
         @Test
@@ -85,19 +83,19 @@ class GameTest {
             List<GameResponse.ExecutedMove> moves = game.makeMove(kingStart, new Position(6, 0), null);
 
             // Assert
-            assertThat(moves).as("Castling involves two pieces moving").hasSize(2);
-            assertThat(game.getBoard().getPiece(new Position(6, 0))).isPresent(); // King
-            assertThat(game.getBoard().getPiece(new Position(5, 0))).isPresent(); // Rook
+            assertThat(moves).hasSize(2);
+            assertThat(game.getBoard().getPiece(new Position(6, 0))).isPresent();
+            assertThat(game.getBoard().getPiece(new Position(5, 0))).isPresent();
         }
 
         @Test
         @DisplayName("Should execute En Passant and remove the captured pawn")
         void shouldExecuteEnPassant() {
             // Arrange
-            game.makeMove(new Position(4, 1), new Position(4, 3), null); // White e4
-            game.makeMove(new Position(0, 6), new Position(0, 5), null); // Black a6
-            game.makeMove(new Position(4, 3), new Position(4, 4), null); // White e5
-            game.makeMove(new Position(3, 6), new Position(3, 4), null); // Black d5 (Two square jump)
+            game.makeMove(new Position(4, 1), new Position(4, 3), null);
+            game.makeMove(new Position(0, 6), new Position(0, 5), null);
+            game.makeMove(new Position(4, 3), new Position(4, 4), null);
+            game.makeMove(new Position(3, 6), new Position(3, 4), null);
 
             // Act
             List<GameResponse.ExecutedMove> moves = game.makeMove(new Position(4, 4), new Position(3, 5), null);
@@ -115,10 +113,13 @@ class GameTest {
         @Test
         @DisplayName("Should detect Checkmate (Fool's Mate)")
         void shouldDetectCheckmate() {
-            game.makeMove(new Position(5, 1), new Position(5, 2), null); // f3
-            game.makeMove(new Position(4, 6), new Position(4, 4), null); // e5
-            game.makeMove(new Position(6, 1), new Position(6, 3), null); // g4
-            game.makeMove(new Position(3, 7), new Position(7, 3), null); // Qh4#
+            // Arrange (sequence of moves)
+            game.makeMove(new Position(5, 1), new Position(5, 2), null);
+            game.makeMove(new Position(4, 6), new Position(4, 4), null);
+            game.makeMove(new Position(6, 1), new Position(6, 3), null);
+
+            // Act
+            game.makeMove(new Position(3, 7), new Position(7, 3), null);
 
             // Assert
             assertThat(game.getStatus()).isEqualTo(GameStatus.CHECKMATE);
@@ -133,6 +134,7 @@ class GameTest {
             Position whiteKingPos = new Position(0, 0);
             game.getBoard().setPieceAt(whiteKingPos, new King(Color.WHITE, whiteKingPos));
             game.getBoard().setPieceAt(new Position(1, 2), new Queen(Color.BLACK, new Position(1, 2)));
+            game.getBoard().setPieceAt(new Position(2, 2), new King(Color.BLACK, new Position(2, 2)));
 
             // Act
             GameStatus status = game.getEvaluator().evaluateStatus(
@@ -168,14 +170,15 @@ class GameTest {
         @Test
         @DisplayName("Should detect Draw by Threefold Repetition")
         void shouldDetectThreefoldRepetition() {
-            // Act
-            for(int i = 0; i < 2; i++) {
-                game.makeMove(new Position(1, 0), new Position(2, 2), null); // b1-c3
-                game.makeMove(new Position(1, 7), new Position(2, 5), null); // b8-c6
-                game.makeMove(new Position(2, 2), new Position(1, 0), null); // c3-b1
-                game.makeMove(new Position(2, 5), new Position(1, 7), null); // c6-b8
+            // Arrange
+            for(int i = 0; i < 3; i++) {
+                game.makeMove(new Position(1, 0), new Position(2, 2), null);
+                game.makeMove(new Position(1, 7), new Position(2, 5), null);
+                game.makeMove(new Position(2, 2), new Position(1, 0), null);
+                game.makeMove(new Position(2, 5), new Position(1, 7), null);
             }
-            game.makeMove(new Position(1, 0), new Position(2, 2), null);
+
+            // Act
 
             // Assert
             assertThat(game.getStatus()).isEqualTo(GameStatus.DRAW);

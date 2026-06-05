@@ -1,5 +1,6 @@
 package com.batuhan.chess.api.config;
 
+import com.batuhan.chess.api.config.ApplicationConfig;
 import com.batuhan.chess.domain.model.user.UserEntity;
 import com.batuhan.chess.domain.model.user.UserRole;
 import com.batuhan.chess.domain.repository.UserRepository;

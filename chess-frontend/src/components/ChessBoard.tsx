@@ -8,10 +8,10 @@ import {
   useSensors,
   DragOverlay,
   defaultDropAnimationSideEffects
-} from '@dnd-kit/core'; 
+} from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'; 
 import { CSS } from '@dnd-kit/utilities';
-import { Trophy, ArrowLeft, Loader2 } from 'lucide-react';
+import { Trophy, ArrowLeft, Loader2, History as HistoryIcon, Activity, Timer, ChevronUp, AlertCircle } from 'lucide-react';
 
 interface ChessBoardProps {
   boardRepresentation: string;
@@ -26,7 +26,9 @@ interface ChessBoardProps {
   onBackToMenu?: () => void;
   theme: 'classic' | 'modern' | 'emerald';
   timeLimit: number;
-  orientation: 'WHITE' | 'BLACK'; 
+  orientation: 'WHITE' | 'BLACK';
+  whiteRemainingTimeMs?: number;
+  blackRemainingTimeMs?: number;
 }
 
 const PIECE_IMAGES: { [key: string]: string } = {
@@ -51,7 +53,7 @@ const PIECE_VALUES: { [key: string]: number } = {
 
 const BOARD_THEMES = {
   classic: { dark: 'bg-[#b58863]', light: 'bg-[#f0d9b5]', textDark: 'text-[#b58863]', textLight: 'text-[#f0d9b5]' },
-  modern: { dark: 'bg-[#4b7399]', light: 'bg-[#eae9d2]', textDark: 'text-[#4b7399]', textLight: 'text-[#eae9d2]' },
+  modern: { dark: 'bg-[#4b7399]', light: 'bg-[#eae9d2]', textDark: 'bg-[#4b7399]', textLight: 'bg-[#eae9d2]' },
   emerald: { dark: 'bg-[#6a8d5c]', light: 'bg-[#eceed1]', textDark: 'text-[#6a8d5c]', textLight: 'text-[#eceed1]' }
 };
 
@@ -60,27 +62,22 @@ const INITIAL_PIECES = {
   black: ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'n', 'n', 'b', 'b', 'r', 'r', 'q', 'k']
 };
 
+const formatTime = (ms: number) => {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
+
 const DraggablePiece: React.FC<{ char: string; index: number; isSelected: boolean; disabled: boolean }> = ({ char, index, isSelected, disabled }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `piece-${index}`,
     data: { index, char },
     disabled: disabled
   });
-
-  const style = {
-    transform: CSS.Translate.toString(transform),
-    zIndex: isDragging ? 1000 : 10,
-    opacity: isDragging ? 0.6 : 1,
-  };
-
+  const style = { transform: CSS.Translate.toString(transform), zIndex: isDragging ? 1000 : 10, opacity: isDragging ? 0.6 : 1 };
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...(disabled ? {} : listeners)}
-      {...(disabled ? {} : attributes)}
-      className={`w-full h-full flex items-center justify-center transition-transform ${disabled ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'} ${isSelected ? 'scale-110' : ''}`}
-    >
+    <div ref={setNodeRef} style={style} {...(disabled ? {} : listeners)} {...(disabled ? {} : attributes)} className={`w-full h-full flex items-center justify-center transition-transform ${disabled ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'} ${isSelected ? 'scale-110' : ''}`}>
       <img src={PIECE_IMAGES[char]} alt={char} className="w-[85%] h-[85%] pointer-events-none drop-shadow-md" />
     </div>
   );
@@ -97,7 +94,8 @@ const DroppableSquare: React.FC<{ index: number; children: React.ReactNode; clas
 
 const ChessBoard: React.FC<ChessBoardProps> = ({ 
   boardRepresentation, isStarted, gameStatus, currentTurn, moveHistory, lastMoveMessage,
-  onMove, fetchLegalMoves, onBackToMenu, theme, timeLimit, orientation
+  onMove, fetchLegalMoves, onBackToMenu, theme, orientation,
+  whiteRemainingTimeMs, blackRemainingTimeMs
 }) => {
   const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
   const [promotionPending, setPromotionPending] = useState<{ from: number, to: number } | null>(null);
@@ -105,52 +103,45 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
   const [logs, setLogs] = useState<{text: string, turn: string, time: string}[]>([]);
   const [activePiece, setActivePiece] = useState<{char: string, index: number} | null>(null);
   const [showGameOverModal, setShowGameOverModal] = useState(false);
-  const [whiteTime, setWhiteTime] = useState(timeLimit * 60);
-  const [blackTime, setBlackTime] = useState(timeLimit * 60);
 
   const lastProcessedMessage = useRef<string | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-
+  
   const squares = useMemo(() => {
     if (!boardRepresentation) return Array(64).fill('.');
     return boardRepresentation.split('|')[0].slice(0, 64).split('');
   }, [boardRepresentation]);
 
   const upperStatus = (gameStatus || "").toUpperCase();
-  const isGameOver = ['WON', 'LOST', 'DRAW', 'CHECKMATE', 'STALEMATE', 'RESIGNED', 'TIMEOUT'].some(s => upperStatus.includes(s));
+  const isGameOver = isStarted && ['WON', 'LOST', 'DRAW', 'CHECKMATE', 'STALEMATE', 'RESIGNED', 'TIMEOUT'].some(s => upperStatus.includes(s));
   const isCheck = upperStatus.includes('CHECK') && !isGameOver;
   const isMyTurn = currentTurn?.toUpperCase() === orientation.toUpperCase();
   const currentTheme = BOARD_THEMES[theme] || BOARD_THEMES.classic;
+  const getActualIndex = (visualIndex: number) => orientation === 'WHITE' ? visualIndex : 63 - visualIndex;
+  const getCoordsFromIndex = (index: number) => ({ file: index % 8, rank: 7 - Math.floor(index / 8) });
+  
+  const pairedMoves = useMemo(() => {
+    const pairs = [];
+    const history = moveHistory || [];
+    for (let i = 0; i < history.length; i += 2) {
+      pairs.push({ index: Math.floor(i / 2) + 1, white: history[i], black: history[i + 1] || null });
+    }
+    return pairs.reverse(); 
+  }, [moveHistory]);
 
-  const getActualIndex = (visualIndex: number) => {
-    return orientation === 'WHITE' ? visualIndex : 63 - visualIndex;
-  };
-
-  const getCoordsFromIndex = (index: number) => {
-    const file = index % 8;
-    const rank = 7 - Math.floor(index / 8);
-    return { file, rank };
+  const getEndGameReason = () => {
+    if (upperStatus.includes('TIMEOUT')) {
+      const loser = upperStatus.split('_')[1];
+      return loser === orientation.toUpperCase() ? "You timed out!" : "Opponent timed out!";
+    }
+    if (upperStatus.includes('WON')) return "You won!";
+    if (upperStatus.includes('LOST')) return "You lost.";
+    return "Game Over";
   };
 
   useEffect(() => {
-    if (isGameOver) {
-      const timer = setTimeout(() => setShowGameOverModal(true), 600);
-      return () => clearTimeout(timer);
-    } else {
-      setShowGameOverModal(false);
-    }
+    if (isGameOver) setShowGameOverModal(true);
   }, [isGameOver]);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (!isGameOver && isStarted) {
-      interval = setInterval(() => {
-        if (currentTurn.toUpperCase() === 'WHITE') setWhiteTime(prev => Math.max(0, prev - 1));
-        else setBlackTime(prev => Math.max(0, prev - 1));
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [currentTurn, isStarted, isGameOver]);
 
   useEffect(() => {
     if (lastMoveMessage && lastMoveMessage !== lastProcessedMessage.current) {
@@ -158,15 +149,10 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
       setLogs(prev => [{
         text: lastMoveMessage,
         turn: isError ? currentTurn.toUpperCase() : (currentTurn.toUpperCase() === 'WHITE' ? 'BLACK' : 'WHITE'),
-        time: new Date().toLocaleTimeString([], { hour12: false, minute: '2-digit', second: '2-digit' })
+        time: new Date().toLocaleTimeString('en-GB', { hour12: false }) 
       }, ...prev].slice(0, 50));
-      
       lastProcessedMessage.current = lastMoveMessage;
-      
-      if (!isError) {
-        setSelectedSquare(null);
-        setLegalMoves([]);
-      }
+      if (!isError) { setSelectedSquare(null); setLegalMoves([]); }
     }
   }, [lastMoveMessage, currentTurn]);
 
@@ -189,25 +175,19 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
     const movingPiece = squares[fromIndex];
     const isPawn = movingPiece.toLowerCase() === 'p';
     const isPromotion = isPawn && (to.rank === 7 || to.rank === 0);
-    
     setSelectedSquare(null);
     setLegalMoves([]);
-    
-    if (isPromotion) {
-      setPromotionPending({ from: fromIndex, to: toIndex });
-    } else {
-      onMove(from.file, from.rank, to.file, to.rank);
-    }
+    if (isPromotion) setPromotionPending({ from: fromIndex, to: toIndex });
+    else onMove(from.file, from.rank, to.file, to.rank);
   };
 
   const handleSquareClick = async (actualIndex: number) => {
     if (isGameOver || !isMyTurn || !isStarted) return;
     const { file, rank } = getCoordsFromIndex(actualIndex);
     const pieceAtTarget = squares[actualIndex];
-
     if (selectedSquare === null) {
       const isOwnPiece = (orientation === 'WHITE' && pieceAtTarget !== '.' && pieceAtTarget === pieceAtTarget.toUpperCase()) ||
-                         (orientation === 'BLACK' && pieceAtTarget !== '.' && pieceAtTarget === pieceAtTarget.toLowerCase());
+      (orientation === 'BLACK' && pieceAtTarget !== '.' && pieceAtTarget === pieceAtTarget.toLowerCase());
       if (isOwnPiece) {
         setSelectedSquare(actualIndex);
         if (fetchLegalMoves) {
@@ -217,21 +197,17 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
       }
     } else {
       const isLegal = legalMoves.some(m => m.file === file && m.rank === rank);
-      if (isLegal) {
-        executeMove(selectedSquare, actualIndex);
-      } else {
+      if (isLegal) executeMove(selectedSquare, actualIndex);
+      else {
         const isOwnPiece = (orientation === 'WHITE' && pieceAtTarget !== '.' && pieceAtTarget === pieceAtTarget.toUpperCase()) ||
-                           (orientation === 'BLACK' && pieceAtTarget !== '.' && pieceAtTarget === pieceAtTarget.toLowerCase());
+        (orientation === 'BLACK' && pieceAtTarget !== '.' && pieceAtTarget === pieceAtTarget.toLowerCase());
         if (isOwnPiece) {
           setSelectedSquare(actualIndex);
           if (fetchLegalMoves) {
             const moves = await fetchLegalMoves(file, rank);
             setLegalMoves(moves);
           }
-        } else {
-          setSelectedSquare(null);
-          setLegalMoves([]);
-        }
+        } else { setSelectedSquare(null); setLegalMoves([]); }
       }
     }
   };
@@ -248,12 +224,10 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
     setActivePiece(null);
     const { active, over } = event;
     if (!over || isGameOver || !isMyTurn || !isStarted) return;
-    
     const visualFrom = parseInt((active.id as string).split('-')[1]);
     const visualTo = parseInt((over.id as string).split('-')[1]);
     const fromIndex = getActualIndex(visualFrom);
     const toIndex = getActualIndex(visualTo);
-    
     if (fromIndex !== toIndex) {
       const to = getCoordsFromIndex(toIndex);
       const isLegal = legalMoves.some(m => m.file === to.file && m.rank === to.rank);
@@ -263,59 +237,98 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
   };
 
   return (
-    <div className="flex flex-col xl:flex-row items-stretch justify-center gap-6 p-8 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-[1550px] transition-all relative">
-      <style>{`.custom-scroll::-webkit-scrollbar { width: 5px; } .custom-scroll::-webkit-scrollbar-track { background: transparent; } .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }`}</style>
-
+    <div className="flex flex-col xl:flex-row items-stretch justify-center gap-6 p-8 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-[1850px] transition-all relative">
+      <style>{`.custom-scroll::-webkit-scrollbar { width: 5px; } .custom-scroll::-webkit-scrollbar-track { background: transparent; } .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; } .dark .custom-scroll::-webkit-scrollbar-thumb { background: #334155; }`}</style>
       <div className={`fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-xl transition-all duration-500 ${showGameOverModal ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
         <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-12 rounded-[3rem] shadow-2xl flex flex-col items-center text-center transition-transform duration-500 ${showGameOverModal ? 'scale-100' : 'scale-90'}`}>
-          <div className="w-24 h-24 bg-yellow-500/10 rounded-full flex items-center justify-center mb-8 border border-yellow-500/20 ring-8 ring-yellow-500/5"><Trophy size={48} className="text-yellow-500 animate-bounce" /></div>
-          <h2 className="text-4xl font-black text-slate-900 dark:text-white mb-3 uppercase tracking-tighter italic">{upperStatus || "GAME OVER"}</h2>
-          <p className="text-slate-500 mb-8 font-medium">{lastMoveMessage}</p>
-          <button onClick={onBackToMenu} className="group flex items-center justify-center gap-3 px-10 py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black rounded-2xl uppercase text-[11px] tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-2xl"><ArrowLeft size={16} /> Exit to Menu</button>
+          <div className="w-24 h-24 bg-yellow-500/10 rounded-full flex items-center justify-center mb-8 border border-yellow-500/20 ring-8 ring-yellow-500/5">
+            {upperStatus.includes('TIMEOUT') ? <AlertCircle size={48} className="text-yellow-500 animate-bounce" /> : <Trophy size={48} className="text-yellow-500 animate-bounce" />}
+          </div>
+          <h2 className="text-4xl font-black text-slate-900 dark:text-white mb-3 uppercase tracking-tighter italic">{getEndGameReason()}</h2>
+          <button onClick={onBackToMenu} className="group flex items-center justify-center gap-3 px-10 py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black rounded-2xl uppercase text-[11px] tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-2xl"><ArrowLeft size={16} /> Menu</button>
         </div>
       </div>
-
       {!isStarted && !isGameOver && (
         <div className="absolute inset-0 z-[250] bg-slate-900/70 backdrop-blur-md rounded-2xl flex items-center justify-center">
           <div className="bg-slate-900 border border-blue-500/40 p-10 rounded-3xl flex items-center gap-6"><Loader2 className="text-blue-500 animate-spin" size={40} /><span className="text-[12px] font-black uppercase tracking-[0.4em] text-blue-400">Syncing...</span></div>
         </div>
       )}
-
       {promotionPending && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-950/80 backdrop-blur-md">
-          <div className="bg-slate-900 p-10 rounded-[2.5rem] border border-slate-700 shadow-2xl flex gap-4">
-            {['QUEEN', 'ROOK', 'BISHOP', 'KNIGHT'].map((type) => {
-              const char = type === 'KNIGHT' ? 'N' : type[0];
-              const iconKey = orientation === 'WHITE' ? char : char.toLowerCase();
-              return (
-                <button key={type} onClick={() => {
-                  const from = getCoordsFromIndex(promotionPending!.from);
-                  const to = getCoordsFromIndex(promotionPending!.to);
-                  onMove(from.file, from.rank, to.file, to.rank, type);
-                  setPromotionPending(null);
-                }} className="flex flex-col items-center p-6 bg-slate-800/50 border border-slate-700 rounded-3xl hover:bg-blue-600/20 transition-all">
-                  <img src={PIECE_IMAGES[iconKey]} className="w-16 h-16" alt={type} />
-                </button>
-              );
-            })}
+        <div className="fixed inset-0 z-[600] flex items-center justify-center bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-300">
+          <div className={`bg-white dark:bg-slate-900 p-12 rounded-[3.5rem] border ${orientation === 'WHITE' ? 'border-blue-500/30' : 'border-rose-500/30'} shadow-2xl flex flex-col items-center gap-8 max-w-2xl w-full mx-4 relative overflow-hidden`}>
+            <div className={`absolute top-0 left-0 w-full h-2 bg-gradient-to-r ${orientation === 'WHITE' ? 'from-blue-600 to-cyan-400' : 'from-rose-600 to-orange-400'}`} />
+            <div className="text-center">
+              <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full ${orientation === 'WHITE' ? 'bg-blue-500/10 text-blue-500' : 'bg-rose-500/10 text-rose-500'} mb-4`}>
+                <ChevronUp size={16} className="animate-bounce" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Promotion</span>
+              </div>
+              <h2 className={`text-3xl font-black uppercase tracking-tighter italic ${orientation === 'WHITE' ? 'text-blue-600 dark:text-blue-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                {orientation === 'WHITE' ? 'White Pawn Promotion' : 'Black Pawn Promotion'}
+              </h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full">
+              {['QUEEN', 'ROOK', 'BISHOP', 'KNIGHT'].map((type) => {
+                const char = type === 'KNIGHT' ? 'N' : type[0];
+                const iconKey = orientation === 'WHITE' ? char : char.toLowerCase();
+                return (
+                  <button key={type} onClick={() => {
+                      const from = getCoordsFromIndex(promotionPending!.from);
+                      const to = getCoordsFromIndex(promotionPending!.to);
+                      onMove(from.file, from.rank, to.file, to.rank, type);
+                      setPromotionPending(null);
+                    }} 
+                    className={`group flex flex-col items-center p-6 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-[2rem] transition-all hover:scale-105 active:scale-95 ${orientation === 'WHITE' ? 'hover:border-blue-500/50 hover:bg-blue-500/5' : 'hover:border-rose-500/50 hover:bg-rose-500/5'}`}>
+                    <div className="w-20 h-20 mb-4 transition-transform group-hover:rotate-6">
+                      <img src={PIECE_IMAGES[iconKey]} className="w-full h-full drop-shadow-xl" alt={type} />
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">{type === 'ROOK' ? 'Rook' : type}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
 
-      <div className={`w-full xl:w-28 bg-slate-900/40 border border-slate-700/50 rounded-2xl flex ${orientation === 'BLACK' ? 'flex-col-reverse' : 'flex-col'} justify-between p-4 h-auto xl:h-[600px]`}>
-        <div className="flex flex-col items-center gap-4">
-          <div className={`text-sm font-black font-mono px-3 py-1.5 rounded-lg border ${isStarted && currentTurn?.toUpperCase() === 'BLACK' && !isGameOver ? 'text-rose-400 bg-rose-500/10 border-rose-500 animate-pulse' : 'text-slate-500 bg-slate-800'}`}>{Math.floor(blackTime / 60)}:{(blackTime % 60).toString().padStart(2, '0')}</div>
-          <div className="grid grid-cols-4 xl:grid-cols-2 gap-1.5 opacity-60">{blackCaptured.map((p, i) => (<img key={i} src={PIECE_IMAGES[p]} className="w-5 h-5 grayscale" alt="cap" />))}</div>
+      <div className="w-48 bg-slate-100 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700/50 rounded-2xl flex flex-col overflow-hidden transition-all shadow-inner h-[600px]">
+        <div className="w-full bg-slate-200/50 dark:bg-slate-800/50 p-2.5 border-b border-slate-200 dark:border-slate-700/50 flex items-center justify-center gap-2">
+            <Timer size={14} className="text-amber-500" />
+            <span className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">Clock</span>
         </div>
-        <div className="flex flex-col items-center gap-4">
-          <div className="grid grid-cols-4 xl:grid-cols-2 gap-1.5 opacity-60">{whiteCaptured.map((p, i) => (<img key={i} src={PIECE_IMAGES[p]} className="w-5 h-5 grayscale" alt="cap" />))}</div>
-          <div className={`text-sm font-black font-mono px-3 py-1.5 rounded-lg border ${isStarted && currentTurn?.toUpperCase() === 'WHITE' && !isGameOver ? 'text-blue-400 bg-blue-500/10 border-blue-500 animate-pulse' : 'text-slate-500 bg-slate-800'}`}>{Math.floor(whiteTime / 60)}:{(whiteTime % 60).toString().padStart(2, '0')}</div>
+
+        <div className="flex-1 w-full flex flex-col justify-between p-4">
+            <div className="flex flex-col items-center">
+                <div className={`text-[13px] font-black font-mono px-3 py-1.5 rounded-lg border transition-all ${currentTurn?.toUpperCase() === (orientation === 'WHITE' ? 'BLACK' : 'WHITE') ? (orientation === 'WHITE' ? 'text-rose-600 border-rose-500 bg-rose-500/10 animate-pulse' : 'text-blue-600 border-blue-500 bg-blue-500/10 animate-pulse') : 'text-slate-400 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm'}`}>
+                    {formatTime(orientation === 'WHITE' ? (blackRemainingTimeMs || 0) : (whiteRemainingTimeMs || 0))}
+                </div>
+                <span className="text-[8px] font-black uppercase mt-1 tracking-widest text-center" style={{ color: orientation === 'WHITE' ? '#f43f5e' : '#3b82f6' }}>
+                    {orientation === 'WHITE' ? 'BLACK' : 'WHITE'}
+                </span>
+            </div>
+
+            <div className="flex-1 w-full flex flex-col justify-center py-4 border-y border-slate-200 dark:border-slate-800/50 overflow-y-auto custom-scroll my-4 px-2 gap-4">
+                <div className="grid grid-cols-4 gap-1 opacity-60">
+                    {(orientation === 'WHITE' ? blackCaptured : whiteCaptured).map((p, i) => (<img key={i} src={PIECE_IMAGES[p]} className="w-7 h-7 grayscale" alt="cap" />))}
+                </div>
+                <div className="grid grid-cols-4 gap-1 opacity-60">
+                    {(orientation === 'WHITE' ? whiteCaptured : blackCaptured).map((p, i) => (<img key={i} src={PIECE_IMAGES[p]} className="w-7 h-7 grayscale" alt="cap" />))}
+                </div>
+            </div>
+
+            <div className={`flex flex-col items-center`}>
+              <div className={`text-[13px] font-black font-mono px-3 py-1.5 rounded-lg border transition-all ${currentTurn?.toUpperCase() === (orientation === 'WHITE' ? 'WHITE' : 'BLACK') ? (orientation === 'WHITE' ? 'text-blue-600 border-blue-500 bg-blue-500/10 animate-pulse' : 'text-rose-600 border-rose-500 bg-rose-500/10 animate-pulse') : 'text-slate-400 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm'}`}>
+                  {formatTime(orientation === 'WHITE' ? (whiteRemainingTimeMs || 0) : (blackRemainingTimeMs || 0))}
+              </div>
+              <span className="text-[8px] font-black uppercase mt-1 tracking-widest text-center" style={{ color: orientation === 'WHITE' ? '#3b82f6' : '#f43f5e' }}>
+                  {orientation === 'WHITE' ? 'WHITE' : 'BLACK'}
+              </span>
+            </div>
         </div>
       </div>
 
       <div className="relative">
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div className="grid grid-cols-8 grid-rows-8 border-[12px] border-slate-900 bg-slate-900 rounded-xl overflow-hidden shadow-2xl" style={{ width: '600px', height: '600px' }}>
+          <div className="grid grid-cols-8 grid-rows-8 border-[12px] border-slate-200 dark:border-slate-900 bg-slate-200 dark:bg-slate-900 rounded-xl overflow-hidden shadow-2xl transition-colors" style={{ width: '600px', height: '600px' }}>
             {Array.from({ length: 64 }).map((_, visualIndex) => {
               const actualIndex = getActualIndex(visualIndex);
               const char = squares[actualIndex];
@@ -324,17 +337,13 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
               const isSelected = selectedSquare === actualIndex;
               const isLegalTarget = legalMoves.some(m => m.file === col && m.rank === displayRank);
               const isKingInDanger = isCheck && ((currentTurn?.toUpperCase() === 'WHITE' && char === 'K') || (currentTurn?.toUpperCase() === 'BLACK' && char === 'k'));
-
               return (
                 <DroppableSquare key={visualIndex} index={visualIndex} onClick={() => handleSquareClick(actualIndex)} className={`relative flex items-center justify-center aspect-square ${isDark ? currentTheme.dark : currentTheme.light} ${isSelected ? 'ring-4 ring-blue-500/50 z-30' : ''} ${isKingInDanger ? 'bg-red-600/90 animate-pulse' : ''}`}>
                   {col === (orientation === 'WHITE' ? 0 : 7) && <span className={`absolute left-1 top-0.5 text-[9px] font-black opacity-30 ${isDark ? currentTheme.textLight : currentTheme.textDark}`}>{displayRank + 1}</span>}
                   {displayRank === (orientation === 'WHITE' ? 0 : 7) && <span className={`absolute right-1 bottom-0.5 text-[9px] font-black opacity-30 ${isDark ? currentTheme.textLight : currentTheme.textDark}`}>{String.fromCharCode(97 + col)}</span>}
                   {isLegalTarget && <div className="absolute inset-0 flex items-center justify-center z-20"><div className="w-4 h-4 bg-black/10 rounded-full" /></div>}
                   {char !== '.' && (
-                    <DraggablePiece 
-                      char={char} index={visualIndex} isSelected={isSelected} 
-                      disabled={!isStarted || !isMyTurn || isGameOver || ((orientation === 'WHITE' && char === char.toLowerCase()) || (orientation === 'BLACK' && char === char.toUpperCase()))} 
-                    />
+                    <DraggablePiece char={char} index={visualIndex} isSelected={isSelected} disabled={Boolean(!isStarted || !isMyTurn || isGameOver || ((orientation === 'WHITE' && char === char.toLowerCase()) || (orientation === 'BLACK' && char === char.toUpperCase())))} />
                   )}
                 </DroppableSquare>
               );
@@ -350,25 +359,46 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
         </DndContext>
       </div>
 
-      <div className="flex flex-col gap-4 h-[600px] w-full xl:w-[420px]">
-        <div className="flex-1 bg-slate-900/50 border border-slate-700/50 rounded-2xl flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scroll">
+      <div className="flex flex-row gap-4 h-[600px] w-full xl:w-[660px]">
+        <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl flex flex-col overflow-hidden transition-colors shadow-inner">
+          <div className="bg-slate-200/50 dark:bg-slate-800/50 p-3 border-b border-slate-200 dark:border-slate-700/50 flex items-center gap-2">
+            <Activity size={14} className="text-blue-500 animate-pulse" />
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 dark:border-slate-400">Telemetry</span>
+          </div>
+          <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scroll">
             {logs.map((log, i) => (
-              <div key={i} className={`text-[11px] p-3 rounded-xl border-l-4 ${log.text.includes("Illegal") ? "bg-rose-500/5 border-rose-500" : "bg-slate-800/40 border-blue-500/50"}`}>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="opacity-40 text-[9px] font-mono">{log.time}</span>
-                  <span className={`text-[8px] px-2 py-0.5 rounded-full font-black ${log.turn === 'WHITE' ? 'bg-white text-black' : 'bg-slate-700 text-white'}`}>{log.turn}</span>
+              <div key={i} className={`text-[10px] p-2 rounded-xl border-l-2 ${log.text.includes("Game started") ? "border-emerald-500 bg-emerald-500/5" : log.turn === 'WHITE' ? "border-blue-500 bg-blue-500/5" : "border-rose-500 bg-rose-500/5"}`}>
+                <div className="flex justify-between items-center mb-1 opacity-70">
+                  <span className="text-[7px] font-mono font-black">{log.time}</span>
+                  {!log.text.includes("Game started") && (<span className={`text-[7px] font-black uppercase ${log.turn === 'WHITE' ? "text-blue-600" : "text-rose-600"}`}>{log.turn}</span>)}
                 </div>
-                <span className="font-bold text-slate-300">{log.text}</span>
+                <span className={`font-bold leading-tight block ${log.text.includes("Game started") ? "text-emerald-600 dark:text-emerald-400" : "text-slate-700 dark:text-slate-300"}`}>{log.text}</span>
               </div>
             ))}
           </div>
         </div>
-        <div className="h-[200px] bg-slate-900/50 border border-slate-700/50 rounded-2xl overflow-hidden p-3 flex flex-col">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">History</span>
-            <div className="flex-1 overflow-y-auto custom-scroll">
-                {(moveHistory || []).slice().reverse().map((move, i) => (<div key={i} className="py-1 px-2 border-b border-slate-800/30 text-[11px] text-slate-400 font-mono">{move}</div>))}
-            </div>
+        <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl overflow-hidden flex flex-col shadow-inner transition-colors">
+          <div className="bg-slate-200/50 dark:bg-slate-800/50 p-3 border-b border-slate-200 dark:border-slate-700/50 flex items-center gap-2"><HistoryIcon size={14} className="text-indigo-500" /><span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Notation</span></div>
+          <div className="flex-1 overflow-y-auto custom-scroll">
+            <table className="w-full text-[10px] border-separate border-spacing-0">
+              <thead className="sticky top-0 bg-slate-200 dark:bg-[#0f172a] z-10">
+                <tr className="text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                  <th className="py-2 px-3 text-left font-black w-8 italic opacity-40">#</th>
+                  <th className="py-2 px-3 text-left font-black uppercase tracking-tighter text-blue-500">White</th>
+                  <th className="py-2 px-3 text-left font-black uppercase tracking-tighter text-rose-500">Black</th>
+                </tr>
+              </thead>
+              <tbody className="font-mono">
+                {pairedMoves.map((pair) => (
+                  <tr key={pair.index} className="border-b border-slate-200/50 dark:border-slate-800/30 hover:bg-slate-200/30 dark:hover:bg-white/5 transition-colors">
+                    <td className="py-2 px-3 text-slate-400 dark:text-slate-600 font-bold italic">{pair.index}.</td>
+                    <td className="py-2 px-3 text-blue-700 dark:text-blue-300 font-black">{pair.white}</td>
+                    <td className="py-2 px-3">{pair.black ? (<span className="text-rose-700 dark:text-rose-300 font-black">{pair.black}</span>) : (<span className="opacity-10 italic">...</span>)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

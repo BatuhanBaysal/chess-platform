@@ -2,12 +2,14 @@ package com.batuhan.chess.api.controller;
 
 import com.batuhan.chess.api.dto.game.GameHistory;
 import com.batuhan.chess.api.dto.game.GameResponse;
+import com.batuhan.chess.api.exception.ResourceNotFoundException;
 import com.batuhan.chess.application.service.game.GameService;
 import com.batuhan.chess.domain.model.chess.Game;
 import com.batuhan.chess.domain.model.chess.Position;
 import com.batuhan.chess.domain.model.history.GameEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,23 +24,24 @@ public class GameRestController {
     private final GameService gameService;
 
     @GetMapping("/{gameId}")
-    public GameResponse getGame(@PathVariable String gameId,
-                                @RequestParam(required = false) Long userId) {
+    public GameResponse getGame(@PathVariable String gameId) {
         Game game = gameService.getGame(gameId);
-        boolean isStarted = gameService.isGameStarted(gameId);
+        if (game == null) {
+            throw new ResourceNotFoundException("Game session not found with id: " + gameId);
+        }
+        return gameService.convertToResponse(gameId, game);
+    }
 
-        return new GameResponse(
-            gameId,
-            game.getBoard().toString(),
-            game.getCurrentTurn(),
-            game.getStatus(),
-            List.of(),
-            game.getHumanReadableHistory(),
-            game.getLastMoveMessage(),
-            game.getWhitePlayerId(),
-            game.getBlackPlayerId(),
-            isStarted
-        );
+    @GetMapping("/active/{userId}")
+    public ResponseEntity<GameResponse> getActiveGame(@PathVariable Long userId) {
+        log.info("Checking active game for user ID: {}", userId);
+        String gameId = gameService.getActiveGameIdByUserId(userId);
+        Game game = gameService.getGame(gameId);
+
+        if (game == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(gameService.convertToResponse(gameId, game));
     }
 
     @PostMapping
@@ -49,18 +52,8 @@ public class GameRestController {
         String gameId = gameService.createGame(whiteId, blackId);
         Game game = gameService.getGame(gameId);
 
-        return new GameResponse(
-            gameId,
-            game.getBoard().toString(),
-            game.getCurrentTurn(),
-            game.getStatus(),
-            List.of(),
-            List.of(),
-            game.getLastMoveMessage(),
-            whiteId,
-            blackId,
-            false
-        );
+        if (game == null) throw new ResourceNotFoundException("Failed to initialize game.");
+        return gameService.convertToResponse(gameId, game);
     }
 
     @GetMapping("/{gameId}/legal-moves")
@@ -69,11 +62,15 @@ public class GameRestController {
         @RequestParam int file,
         @RequestParam int rank) {
 
+        Game game = gameService.getGame(gameId);
+        if (game == null) {
+            throw new ResourceNotFoundException("Game not found: " + gameId);
+        }
+
         if (!gameService.isGameStarted(gameId)) {
             return List.of();
         }
 
-        Game game = gameService.getGame(gameId);
         Position startPos = new Position(file, rank);
         return game.getLegalMovesForSquare(startPos);
     }

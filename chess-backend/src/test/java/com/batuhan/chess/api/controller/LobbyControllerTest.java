@@ -1,5 +1,6 @@
 package com.batuhan.chess.api.controller;
 
+import com.batuhan.chess.api.controller.LobbyController;
 import com.batuhan.chess.application.service.game.LobbyService;
 import com.batuhan.chess.application.service.auth.JwtService;
 import org.junit.jupiter.api.DisplayName;

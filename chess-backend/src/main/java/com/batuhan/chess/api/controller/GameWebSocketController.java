@@ -6,24 +6,27 @@ import com.batuhan.chess.application.service.game.GameService;
 import com.batuhan.chess.domain.model.chess.*;
 import com.batuhan.chess.domain.model.history.GameResult;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
-import java.util.List;
 import java.util.Map;
 
 @Controller
-@RequiredArgsConstructor
 @Slf4j
 public class GameWebSocketController {
 
     private final GameService gameService;
     private final SimpMessagingTemplate messagingTemplate;
+
+    public GameWebSocketController(@Lazy GameService gameService, SimpMessagingTemplate messagingTemplate) {
+        this.gameService = gameService;
+        this.messagingTemplate = messagingTemplate;
+    }
 
     @Data
     public static class ReadyRequest {
@@ -36,7 +39,7 @@ public class GameWebSocketController {
         boolean bothReady = gameService.setPlayerReady(request.getGameId(), request.getUserId());
         if (bothReady) {
             Game game = gameService.getGame(request.getGameId());
-            broadcastGameUpdate(request.getGameId(), game, List.of());
+            broadcastGameUpdate(request.getGameId(), game);
         }
     }
 
@@ -44,24 +47,9 @@ public class GameWebSocketController {
     public void processMove(MoveRequest request) {
         Position from = new Position(request.fromFile(), request.fromRank());
         Position to = new Position(request.toFile(), request.toRank());
-
-        List<GameResponse.ExecutedMove> executedMoves = gameService.makeMove(
-            request.gameId(), from, to, request.promotionType()
-        );
-
+        gameService.makeMove(request.gameId(), from, to, request.promotionType());
         Game updatedGame = gameService.getGame(request.gameId());
-        broadcastGameUpdate(request.gameId(), updatedGame, executedMoves);
-    }
-
-    @MessageMapping("/timeout")
-    public void processTimeout(MoveRequest request) {
-        Game game = gameService.getGame(request.gameId());
-        if (game == null || game.getStatus().isFinished()) return;
-
-        GameResult result = (game.getCurrentTurn() == Color.WHITE) ? GameResult.BLACK_WIN : GameResult.WHITE_WIN;
-        gameService.processGameFinish(request.gameId(), result, GameStatus.TIMEOUT);
-
-        broadcastGameUpdate(request.gameId(), game, List.of());
+        broadcastGameUpdate(request.gameId(), updatedGame);
     }
 
     @MessageExceptionHandler
@@ -71,25 +59,24 @@ public class GameWebSocketController {
         return Map.of("error", exception.getMessage() != null ? exception.getMessage() : "An error occurred");
     }
 
-    private void broadcastGameUpdate(String gameId, Game updatedGame, List<GameResponse.ExecutedMove> executedMoves) {
+    public void broadcastGameUpdate(String gameId, Game updatedGame) {
         if (updatedGame == null) return;
+        updatedGame.updateTime();
 
-        log.info("Broadcasting Update for {}: Status={}", gameId, updatedGame.getStatus());
-
-        boolean isStarted = gameService.isGameStarted(gameId);
-        GameResponse response = new GameResponse(
+        log.info("Broadcasting Update {}: WhiteTime={}ms, BlackTime={}ms",
             gameId,
-            updatedGame.getBoard().toString(),
-            updatedGame.getCurrentTurn(),
-            updatedGame.getStatus(),
-            executedMoves,
-            updatedGame.getHumanReadableHistory(),
-            updatedGame.getLastMoveMessage(),
-            updatedGame.getWhitePlayerId(),
-            updatedGame.getBlackPlayerId(),
-            isStarted
-        );
+            updatedGame.getWhiteRemainingTimeMs(),
+            updatedGame.getBlackRemainingTimeMs());
 
+        GameResponse response = gameService.convertToResponse(gameId, updatedGame);
         messagingTemplate.convertAndSend("/topic/game/" + gameId, response);
+    }
+
+    public void sendGameOver(String gameId, GameResult result) {
+        log.info("Broadcasting Game Over for {}: Result={}", gameId, result);
+        messagingTemplate.convertAndSend("/topic/game/" + gameId, Map.of(
+            "type", "GAME_OVER",
+            "result", result.toString()
+        ));
     }
 }

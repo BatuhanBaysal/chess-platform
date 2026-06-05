@@ -1,5 +1,6 @@
 package com.batuhan.chess.api.config;
 
+import com.batuhan.chess.api.config.SecurityConfig;
 import com.batuhan.chess.api.dto.auth.AuthResponse;
 import com.batuhan.chess.api.dto.auth.LoginRequest;
 import com.batuhan.chess.application.service.auth.AuthService;

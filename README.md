@@ -4,13 +4,18 @@
 
 ---
 
-### 📡 Project Status: Enterprise Resilience & Distributed Stability Operational
+### 🚀 Why This Project?
+This platform is built to solve the challenges of **distributed real-time gaming**. It demonstrates how to combine **server-authoritative game logic**, **high-concurrency state management**, and **full-stack observability** into a cohesive, maintainable ecosystem. From high-precision move validation to real-time telemetry, this is a blueprint for scalable game development.
 
-> **Operational Status:** The core chess engine is **100% operational**, strictly adhering to **FIDE rules**, and now hardened for **distributed high-load scenarios**.
+---
+
+### 📡 Project Status: Enterprise Resilience & Real-Time Synchronization Operational
+
+> **Operational Status:** The core chess engine is **100% operational**, strictly adhering to **FIDE rules**, and hardened for **distributed high-load scenarios**.
 >
-> **Latest Milestone:** Successfully completed **Phase 13: Scalability & Resilience** ⚡. The project has achieved a **High-Availability Standard** by integrating **Resilience4j** for fault tolerance (Circuit Breaker & Rate Limiter) and **Redisson** for distributed locking. Systematic integrity is now guaranteed across multiple instances, with real-time health monitoring via **Spring Boot Actuator** and the **LGTM stack**.
+> **Latest Milestone:** Successfully initiated **Phase 14: Core Engine Refactoring & UX Optimization** ⚙️. The project has moved to a **Server-Authoritative model**, ensuring absolute temporal consistency across all clients by centralizing game timer orchestration. Global state integrity is maintained through **atomic synchronization** and **distributed locking**, with real-time observability powered by the **LGTM stack** and **Spring Boot Actuator**.
 
-![Board Preview](docs/assets/screenshots/03-gameplay-features/chess-board.png)
+![Board Preview](docs/assets/screenshots/03-gameplay-features/check.png)
 
 ---
 
@@ -74,29 +79,50 @@ This project is architected as a **high-cohesion monorepo**. Operational process
 * **The Solution:** Developed a **Simulation & Rollback** mechanism using **Java Records**. The engine clones the state, simulates the move on a virtual board, and discards it after safety verification.
 * **The Result:** 100% side-effect-free move validation, ensuring total state integrity.
 
+### 4. Server-Authoritative Timer & Synchronization
+* **The Challenge:** Maintaining a synchronized game timer across disparate clients (frontend) is susceptible to network latency, browser throttling, and "drift" issues. Client-side timing is inherently insecure and prone to desynchronization.
+* **The Solution:** Migrated timer orchestration to the **Backend (`GameService`)**. The backend now acts as the authoritative timekeeper, broadcasting periodic heartbeat signals and state updates via WebSockets.
+* **The Result:** Absolute temporal consistency across all clients. Eliminated clock drift and enforced robust, server-validated game durations regardless of client-side performance.
+
+### 5. Automated Quality Gate & Technical Debt Management (SonarQube)
+* **The Challenge:** Maintaining "Grade A" code quality in a rapidly evolving codebase is difficult. Manual reviews are inconsistent, and "Code Smells" can accumulate silently, leading to long-term architectural decay.
+* **The Solution:** Integrated **SonarQube** into the CI/CD pipeline, enforcing a strict **Quality Gate** that blocks builds if new technical debt, security hotspots, or coverage drops occur.
+* **The Result:** Mechanized code hygiene. Achieved a verified baseline of >90% test coverage and 0.0% duplication, ensuring that the platform adheres to clean code and SOLID principles at every commit.
+
+### 6. WebSocket Session Resilience & Reconnection Strategy
+* **The Challenge:** WebSocket connections are inherently fragile. Network flickers or browser refreshes often lead to session loss and synchronization drift in real-time gaming.
+* **The Solution:** Implemented a **Stateful Reconnection Handler** that persists `GameSession` context. Upon reconnection, the client automatically re-syncs the exact board state and timer via a `gameId` handshake.
+* **The Result:** Seamless user experience. The system is now resilient to transient network failures, ensuring uninterrupted gameplay.
+
+### 7. Global State Consistency with Event-Driven Synchronization
+* **The Challenge:** Maintaining a single source of truth in a multi-node backend environment when handling concurrent move events.
+* **The Solution:** Enforced **Atomic State Broadcasting** using Redisson distributed locks. Every move is validated, persisted, and atomically broadcasted to clients via the STOMP broker.
+* **The Result:** Total state integrity. Guaranteed protection against race conditions, ensuring that both players always view the synchronized, backend-validated game state.
+
 ---
 
 ## 🎯 Engineering Highlights
 
 ### 🧩 Domain-Driven Design (DDD) & Clean Architecture
-The core chess logic is encapsulated in a **Pure Java** domain layer.
-* **Zero Infrastructure Leakage:** Move validation is entirely decoupled from Spring Boot, ensuring 100% unit testability.
-* **Polymorphic Validation:** Each piece (`Rook`, `Bishop`, etc.) encapsulates its own logic, eliminating high-cyclomatic complexity from `switch-case` blocks.
+The core chess logic is encapsulated in a **Pure Java** domain layer, strictly adhering to Clean Architecture principles.
+* **Separation of Concerns:** Move validation is entirely decoupled from the Infrastructure layer (Spring Boot/WebSockets).
+* **Server-Authoritative Engine:** Timer orchestration and game state management are centralized in the backend, ensuring a "Single Source of Truth."
 
-### ⚡ Robust Rule Engine
+### ⚡ Robust Rule & Synchronization Engine
 * **FIDE Compliance:** Full support for [Castling](docs/assets/screenshots/03-gameplay-features/castling.png), [En Passant](docs/assets/screenshots/03-gameplay-features/en-passant.png), and [Pawn Promotion](docs/assets/screenshots/03-gameplay-features/pawn-promotion.png).
-* **King Safety Simulation:** Dry-run execution to detect [Check](docs/assets/screenshots/03-gameplay-features/check.png), [Checkmate](docs/assets/screenshots/03-gameplay-features/checkmate.png), and Stalemate.
-* **Efficient Pathfinding:** Optimized vector-based collision detection for sliding pieces to maintain high engine throughput.
+* **Server-Authoritative Timer:** Real-time clock synchronization enforced via the backend, eliminating client-side drift and latency discrepancies.
+* **Atomic State Broadcast:** Thread-safe move execution and synchronization using **Redisson** distributed locks to ensure zero race conditions.
 
-### 🔄 State Synchronization & UX
-* **Modern React (v19):** Utilizing custom hooks and Tailwind CSS for a high-performance, responsive [Board UI](docs/assets/screenshots/03-gameplay-features/chess-board.png).
-* **Lobby & Social:** Sophisticated [Lobby System](docs/assets/screenshots/menu-page.png) and persistent [User Statistics](docs/assets/screenshots/02-ui-previews/checkmate-victory-screen.png) against players or the **Training Bot**.
+### 🔄 Observability & UX Excellence
+* **Full-Stack Observability (LGTM):** Real-time monitoring of business metrics, distributed traces, and system health via **Grafana, Loki, Prometheus, and Tempo**.
+* **Modern React (v19):** High-performance [Board UI](docs/assets/screenshots/03-gameplay-features/chess-board.png) leveraging Tailwind CSS and custom hooks for fluid, low-latency updates.
+* **Zero Technical Debt:** Mechanized code quality through **SonarQube** integration, maintaining >90% test coverage and 0.0% duplication.
 
 ---
 
 ## 🚀 Development Roadmap
 
-*Current Status: ⚡ **Phase 13: Scalability & Resilience***
+*Current Status: ⚡ **Phase 14: Core Engine Refactoring & UX Optimization***
 
 - ✅ **Phase 1: Foundation** 🏗️ - Monorepo scaffolding, environment setup, and Spring Boot/React initialization.
 - ✅ **Phase 2: Domain Modeling** ♟️ - Piece-specific logic, board initialization, and DDD-based movement rules.
@@ -111,8 +137,10 @@ The core chess logic is encapsulated in a **Pure Java** domain layer.
 - ✅ **Phase 11: Full-Stack Observability (LGTM)** 📈 - Implementing **Grafana, Loki, and Prometheus** for real-time logs, metrics, and system health.
 - ✅ **Phase 12: Quality Assurance & Code Integrity** 🏆 - Expanding **JUnit 5/Mockito** coverage and integrating **SonarQube** for automated "Zero Technical Debt" reporting.
 - ✅ **Phase 13: Scalability & Resilience** ⚡ - Implementing **Resilience4j** (Circuit Breaker) and **Distributed Locking** with Redis.
-- ⏳ **Phase 14: Messaging & Async Logic** ✉️ - Integration of **RabbitMQ/Kafka** for background processing, notifications, and analytics.
-- 📅 **Phase 15: Advanced Analytics & AI** 🧠 - Integration of **Stockfish** via UCI protocol for move analysis and "Hint" system.
+- ⏳ **Phase 14: Core Engine Refactoring & UX Optimization** ⚙️ - Server-authoritative timer logic and enhanced UI responsiveness/notation feed.
+
+### 🔮 Future Work
+- **Advanced Analytics & AI** 🧠 - Integration of **Stockfish** via UCI protocol for move analysis and "Hint" system.
 
 ---
 
@@ -127,6 +155,5 @@ The entire application ecosystem is managed using **Docker Compose** to ensure a
 
 ## 👨‍💻 Developed By
 **Batuhan Baysal** - *Software Engineer*
-*Scalable Software Design, Modern Java, and Backend Architectures.*
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/in/batuhan-baysal) [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/BatuhanBaysal)

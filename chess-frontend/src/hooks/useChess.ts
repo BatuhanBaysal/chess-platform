@@ -22,6 +22,9 @@ interface GameState {
   whiteId?: number;
   blackId?: number;
   isStarted: boolean;
+  whiteRemainingTimeMs: number;
+  blackRemainingTimeMs: number;
+  timeLimit: number;
 }
 
 const getBaseUrl = () => {
@@ -42,10 +45,53 @@ export const useChess = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isLobbyConnected, setIsLobbyConnected] = useState(false);
   const [playerColor, setPlayerColor] = useState<'WHITE' | 'BLACK' | null>(null);
+  const [displayTime, setDisplayTime] = useState({ white: 0, black: 0 });
+  const [gameOverResult, setGameOverResult] = useState<string | null>(null);
 
   const stompClientRef = useRef<Client | null>(null);
   const lobbyClientRef = useRef<Client | null>(null);
   const gameIdRef = useRef<string | null>(null);
+  const lastUpdateRef = useRef<{ time: number; white: number; black: number }>({ time: 0, white: 0, black: 0 });
+
+  useEffect(() => {
+    if (game) {
+      lastUpdateRef.current = {
+        time: Date.now(),
+        white: game.whiteRemainingTimeMs,
+        black: game.blackRemainingTimeMs
+      };
+    }
+  }, [game?.whiteRemainingTimeMs, game?.blackRemainingTimeMs]);
+
+  useEffect(() => {
+    if (game) {
+      setDisplayTime({
+        white: game.whiteRemainingTimeMs,
+        black: game.blackRemainingTimeMs
+      });
+    }
+  }, [game?.gameId]);
+
+  useEffect(() => {
+    if (!game || !game.isStarted || ['CHECKMATE', 'TIMEOUT', 'STALEMATE', 'RESIGNED', 'DRAW'].includes(game.status)) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const elapsed = now - lastUpdateRef.current.time;
+
+      setDisplayTime(_prev => {
+        const isWhiteTurn = game.currentTurn === 'WHITE';
+        return {
+          white: isWhiteTurn ? Math.max(0, lastUpdateRef.current.white - elapsed) : lastUpdateRef.current.white,
+          black: !isWhiteTurn ? Math.max(0, lastUpdateRef.current.black - elapsed) : lastUpdateRef.current.black
+        };
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [game?.isStarted, game?.currentTurn, game?.status, game?.gameId]);
 
   const getAuthDetails = useCallback(() => {
     const token = localStorage.getItem('token');
@@ -57,7 +103,7 @@ export const useChess = () => {
         userId = parsed.id || null;
       }
     } catch (e) {
-      console.error("User parsing error", e);
+      console.error(e);
     }
     return { token, userId, headers: token ? { 'Authorization': `Bearer ${token}` } : {} };
   }, []);
@@ -89,6 +135,7 @@ export const useChess = () => {
   const connectWebSocket = useCallback((gameId: string) => {
     if (!gameId) return;
     disconnectWebSocket();
+    setGameOverResult(null);
     const { token, userId, headers } = getAuthDetails();
     const socket = new SockJS(WS_URL);
     const client = new Client({
@@ -101,9 +148,12 @@ export const useChess = () => {
         setIsConnected(true);
         setError(null);
         client.subscribe(`/topic/game/${gameId}`, (message) => {
-          const updatedGame: GameState = JSON.parse(message.body);
-          setGame(updatedGame);
-          syncPlayerColor(updatedGame);
+          const body = JSON.parse(message.body);
+          if (body.type === 'GAME_OVER') {
+            setGameOverResult(body.result);
+          } else {
+            setGame(body as GameState);
+          }
         });
         client.subscribe('/user/queue/errors', (message) => {
           setError(message.body);
@@ -124,7 +174,7 @@ export const useChess = () => {
     client.activate();
     stompClientRef.current = client;
     gameIdRef.current = gameId;
-  }, [disconnectWebSocket, getAuthDetails, syncPlayerColor]);
+  }, [disconnectWebSocket, getAuthDetails]);
 
   const connectLobby = useCallback((roomId: string, onMatchFound: (gameId: string) => void) => {
     disconnectLobby();
@@ -154,7 +204,14 @@ export const useChess = () => {
     const { headers } = getAuthDetails();
     client.publish({
       destination: '/app/move',
-      body: JSON.stringify({ gameId: String(roomId), fromFile, fromRank, toFile, toRank, promotionType: promotionPiece || null }),
+      body: JSON.stringify({
+        gameId: String(roomId),
+        fromFile,
+        fromRank,
+        toFile,
+        toRank,
+        promotionType: promotionPiece || 'QUEEN'
+      }),
       headers: headers as StompHeaders
     });
   }, [getAuthDetails, game]);
@@ -165,7 +222,9 @@ export const useChess = () => {
     try {
       const response = await fetch(`${API_URL}/games/${gameIdRef.current}/legal-moves?file=${file}&rank=${rank}`, { headers: headers as HeadersInit });
       return response.ok ? await response.json() : [];
-    } catch (err) { return []; }
+    } catch (err) {
+      return [];
+    }
   }, [getAuthDetails, game]);
 
   const getBoardMatrix = useCallback(() => {
@@ -185,31 +244,10 @@ export const useChess = () => {
       syncPlayerColor(data);
       connectWebSocket(data.gameId);
       return data.gameId;
-    } catch (err) { console.error("Game Initialization Error:", err); }
-  }, [connectWebSocket, getAuthDetails, syncPlayerColor]);
-
-  useEffect(() => {
-    const { token } = getAuthDetails();
-    let client: Client | null = null;
-
-    if (token && !isLobbyConnected) {
-      const socket = new SockJS(WS_URL);
-      client = new Client({
-        webSocketFactory: () => socket,
-        reconnectDelay: 5000,
-        onConnect: () => setIsLobbyConnected(true),
-        onDisconnect: () => setIsLobbyConnected(false)
-      });
-      client.activate();
-      lobbyClientRef.current = client;
+    } catch (err) {
+      console.error(err);
     }
-    return () => {
-      if (client) {
-        client.deactivate();
-        setIsLobbyConnected(false);
-      }
-    };
-  }, [getAuthDetails]); 
+  }, [connectWebSocket, getAuthDetails, syncPlayerColor]);
 
   const resetChessState = useCallback(() => {
     disconnectWebSocket();
@@ -218,10 +256,25 @@ export const useChess = () => {
     setPlayerColor(null);
     gameIdRef.current = null;
     setError(null);
+    setGameOverResult(null);
   }, [disconnectWebSocket, disconnectLobby]);
 
   return {
-    game, error, makeMove, isConnected, isLobbyConnected, fetchLegalMoves,
-    startNewGame, playerColor, getBoardMatrix, resetChessState, connectLobby, connectWebSocket
+    game,
+    displayTime,
+    error,
+    isConnected,
+    isLobbyConnected,
+    playerColor,
+    gameOverResult,
+    connectWebSocket,
+    disconnectWebSocket,
+    connectLobby,
+    disconnectLobby,
+    makeMove,
+    fetchLegalMoves,
+    getBoardMatrix,
+    startNewGame,
+    resetChessState
   };
 };

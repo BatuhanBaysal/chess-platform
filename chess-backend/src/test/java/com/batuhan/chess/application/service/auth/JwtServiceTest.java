@@ -1,5 +1,6 @@
 package com.batuhan.chess.application.service.auth;
 
+import com.batuhan.chess.application.service.auth.JwtService;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;

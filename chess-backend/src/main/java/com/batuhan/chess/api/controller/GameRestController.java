@@ -56,6 +56,29 @@ public class GameRestController {
         return gameService.convertToResponse(gameId, game);
     }
 
+    @PostMapping("/{gameId}/finish")
+    public ResponseEntity<Void> finishGame(@PathVariable String gameId) {
+        log.info("[FINISH] End-of-game request received: {}", gameId);
+
+        Game game = gameService.getGame(gameId);
+
+        if (game == null) {
+            log.warn("[FINISH] Game not found: {}", gameId);
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!game.getStatus().isFinished()) {
+            gameService.processGameFinish(
+                gameId,
+                gameService.determineResult(game, game.getStatus()),
+                game.getStatus()
+            );
+            log.info("[FINISH] The game has been successfully saved to the database: {}", gameId);
+        }
+
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/{gameId}/legal-moves")
     public List<Position> getLegalMoves(
         @PathVariable String gameId,

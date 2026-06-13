@@ -13,9 +13,9 @@ This platform is built to solve the challenges of **distributed real-time gaming
 
 > **Operational Status:** The core chess engine is **100% operational**, strictly adhering to **FIDE rules**, and hardened for **distributed high-load scenarios**.
 >
-> **Latest Milestone:** Successfully initiated **Phase 14: Core Engine Refactoring & UX Optimization** ⚙️. The project has moved to a **Server-Authoritative model**, ensuring absolute temporal consistency across all clients by centralizing game timer orchestration. Global state integrity is maintained through **atomic synchronization** and **distributed locking**, with real-time observability powered by the **LGTM stack** and **Spring Boot Actuator**.
+> **Latest Milestone:** Successfully completed **Phase 14: Core Engine Refactoring & UX Optimization** ⚙️. This phase introduced a **Server-Authoritative timer model** and a **Modernized Frontend Architecture**. We transitioned to a feature-based module system (`features/` vs `components/`), enhanced the Authentication UX with real-time feedback (password strength, auto-focus), and refined the global navigation with a persistent header/footer. Global state integrity remains secured by **Redisson-based distributed locking** and full-stack observability via the **LGTM stack**.
 
-![Board Preview](docs/assets/screenshots/03-gameplay-features/check.png)
+![Board Preview](docs/assets/screenshots/02-gameplay-features/03-chess-board/03-chess-board.png)
 
 ---
 
@@ -48,17 +48,17 @@ This platform is built to solve the challenges of **distributed real-time gaming
 ## 🏛️ Project Ecosystem & Governance
 This project is architected as a **high-cohesion monorepo**. Operational processes and architectural decisions are managed through the following modules:
 
-| Module / Document | Purpose & Brief | Location |
-|:--- | :--- | :--- |
-| **⚙️ Backend** | Core Chess Engine, API endpoints & Move validation logic | [`./chess-backend`](./chess-backend/README.md) |
-| **🎨 Frontend** | Reactive UI components & Real-time board state management | [`./chess-frontend`](./chess-frontend/README.md) |
-| **🏗️ Architecture** | High-level design choices (Hexagonal, DDD) & Tech patterns | [`./docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) |
+| Module / Document | Purpose & Brief | Location                                               |
+|:--- | :--- |:-------------------------------------------------------|
+| **⚙️ Backend** | Core Chess Engine, API endpoints & Move validation logic | [`./chess-backend`](./chess-backend/README.md)         |
+| **🎨 Frontend** | Reactive UI components & Real-time board state management | [`./chess-frontend`](./chess-frontend/README.md)       |
+| **🏗️ Architecture** | High-level design choices (Hexagonal, DDD) & Tech patterns | [`./docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)     |
 | **🧪 Infrastructure** | **Observability (LGTM), SonarQube results & Resilience metrics** | [`./docs/INFRASTRUCTURE.md`](./docs/INFRASTRUCTURE.md) |
-| **🚀 Setup Guide** | Comprehensive local environment & Dependency installation | [`./docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md) |
-| **📝 Git Flow** | Contribution workflow, Branching strategy & Commit standards | [`./.github/GIT_GUIDE.md`](docs/GIT_GUIDE.md) |
-| **📜 Changelog** | Daily Evolution, version tracking & project milestones | [`./docs/CHANGELOG.md`](./docs/CHANGELOG.md) |
-| **🛡️ Security** | Security policies, safety disclosure & best practices | [`./docs/SECURITY.md`](./docs/SECURITY.md) |
-| **🤝 Contributing** | Coding standards, PR guidelines & collaboration rules | [`./docs/CONTRIBUTING.md`](./docs/CONTRIBUTING.md) |
+| **🚀 Setup Guide** | Comprehensive local environment & Dependency installation | [`./docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md)       |
+| **📝 Git Flow** | Contribution workflow, Branching strategy & Commit standards | [`./docs/GIT_GUIDE.md`](docs/GIT_GUIDE.md)             |
+| **📜 Changelog** | Daily Evolution, version tracking & project milestones | [`./docs/CHANGELOG.md`](./docs/CHANGELOG.md)           |
+| **🛡️ Security** | Security policies, safety disclosure & best practices | [`./docs/SECURITY.md`](./docs/SECURITY.md)             |
+| **🤝 Contributing** | Coding standards, PR guidelines & collaboration rules | [`./docs/CONTRIBUTING.md`](./docs/CONTRIBUTING.md)     |
 
 ---
 
@@ -109,20 +109,20 @@ The core chess logic is encapsulated in a **Pure Java** domain layer, strictly a
 * **Server-Authoritative Engine:** Timer orchestration and game state management are centralized in the backend, ensuring a "Single Source of Truth."
 
 ### ⚡ Robust Rule & Synchronization Engine
-* **FIDE Compliance:** Full support for [Castling](docs/assets/screenshots/03-gameplay-features/castling.png), [En Passant](docs/assets/screenshots/03-gameplay-features/en-passant.png), and [Pawn Promotion](docs/assets/screenshots/03-gameplay-features/pawn-promotion.png).
+* **FIDE Compliance:** Full support for Castling, En Passant, and Pawn Promotion.
 * **Server-Authoritative Timer:** Real-time clock synchronization enforced via the backend, eliminating client-side drift and latency discrepancies.
 * **Atomic State Broadcast:** Thread-safe move execution and synchronization using **Redisson** distributed locks to ensure zero race conditions.
 
 ### 🔄 Observability & UX Excellence
 * **Full-Stack Observability (LGTM):** Real-time monitoring of business metrics, distributed traces, and system health via **Grafana, Loki, Prometheus, and Tempo**.
-* **Modern React (v19):** High-performance [Board UI](docs/assets/screenshots/03-gameplay-features/chess-board.png) leveraging Tailwind CSS and custom hooks for fluid, low-latency updates.
+* **Modern React (v19):** High-performance Board UI leveraging Tailwind CSS and custom hooks for fluid, low-latency updates.
 * **Zero Technical Debt:** Mechanized code quality through **SonarQube** integration, maintaining >90% test coverage and 0.0% duplication.
 
 ---
 
 ## 🚀 Development Roadmap
 
-*Current Status: ⚡ **Phase 14: Core Engine Refactoring & UX Optimization***
+*Current Status: ✅ **Phase 14: Core Engine Refactoring & UX Optimization Completed** 🚀*
 
 - ✅ **Phase 1: Foundation** 🏗️ - Monorepo scaffolding, environment setup, and Spring Boot/React initialization.
 - ✅ **Phase 2: Domain Modeling** ♟️ - Piece-specific logic, board initialization, and DDD-based movement rules.
@@ -137,7 +137,7 @@ The core chess logic is encapsulated in a **Pure Java** domain layer, strictly a
 - ✅ **Phase 11: Full-Stack Observability (LGTM)** 📈 - Implementing **Grafana, Loki, and Prometheus** for real-time logs, metrics, and system health.
 - ✅ **Phase 12: Quality Assurance & Code Integrity** 🏆 - Expanding **JUnit 5/Mockito** coverage and integrating **SonarQube** for automated "Zero Technical Debt" reporting.
 - ✅ **Phase 13: Scalability & Resilience** ⚡ - Implementing **Resilience4j** (Circuit Breaker) and **Distributed Locking** with Redis.
-- ⏳ **Phase 14: Core Engine Refactoring & UX Optimization** ⚙️ - Server-authoritative timer logic and enhanced UI responsiveness/notation feed.
+- ✅ **Phase 14: Core Engine Refactoring & UX Optimization** ⚙️ - Server-authoritative timer logic and enhanced UI responsiveness/notation feed.
 
 ### 🔮 Future Work
 - **Advanced Analytics & AI** 🧠 - Integration of **Stockfish** via UCI protocol for move analysis and "Hint" system.

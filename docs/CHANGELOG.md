@@ -2,11 +2,31 @@
 
 All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.14.0] - 2026-06-05
+## [0.14.0] - 2026-06-13
 
 ### ⚡ Phase 14: Core Engine Refactoring & UX Optimization
 > **Note:** This phase transitions the game engine to a server-authoritative timer model, ensuring absolute synchronization across clients. It further enhances the user interface by improving real-time responsiveness and visual feedback loops.
 
+- **2026-06-13:**
+    - **Frontend Architecture & Navigation Refactor (PR #43 | Issue #41):**
+        - **Modular Directory Architecture:**
+            - Migrated to a feature-based directory structure (`features/` vs. `components/`) to decouple UI atoms from domain-specific business logic.
+        - **Enhanced Authentication UX:**
+            - Refined `AuthContainer` and `AuthForm` integration with state-driven validation and improved form responsiveness.
+            - Introduced auto-focus mechanics for Login/Register forms for streamlined user onboarding.
+            - Integrated password security enhancements including visibility toggles and real-time password strength indicators.
+        - **Navigation & Layout Modernization:**
+            - Consolidated `Dashboard`, `LandingPage`, and `MatchHistory` into a cohesive feature module.
+            - Implemented a fixed global header and persistent footer; added user profile integration (Name display & Sign-out) to the navigation menu.
+            - Added "Return to Menu" navigation action within the `ChessBoard` header to optimize session flow.
+        - **Chess Engine UI Refinements:**
+            - Redesigned the Pawn Promotion modal for better interaction fidelity and user feedback.
+            - Synchronized clock/timer visuals and updated telemetry indicators.
+            - Applied standardized color schemes across all board components to improve visual consistency.
+        - **Validation:**
+            - Verified directory structure alignment with the new feature-based architecture.
+            - Confirmed responsiveness and stability of the Auth/Nav flow across multiple viewports.
+            - Validated layout stability with fixed-header content padding adjustments.
 - **2026-06-05:**
     - **Core Engine Refactoring & Synchronization (PR #42 | Issue #40):**
         - **Server-Authoritative Clock:** Migrated game-time tracking logic from the frontend to `GameService` and backend entities, eliminating client-side latency discrepancies.

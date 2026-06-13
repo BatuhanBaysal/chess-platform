@@ -109,12 +109,22 @@ export const getLegalMoves = async (gameId: string, file: number, rank: number):
 };
 
 export const getPlayerHistory = async (userId: number) => {
-    const response = await api.get(`/api/games/history/${userId}`);
-    return response.data;
+    try {
+        const response = await api.get(`/api/games/history/${userId}`);
+        return response.data;
+    } catch (error) {
+        console.error("History fetch error:", error);
+        return []; 
+    }
 };
 
 export const resignGame = async (gameId: string, userId: number) => {
-    return await api.post(`/api/games/${gameId}/resign`, null, {
-        params: { userId }
-    });
+    try {
+        return await api.post(`/api/games/${gameId}/resign`, null, {
+            params: { userId }
+        });
+    } catch (error) {
+        console.error("Resign failed:", error);
+        throw error; 
+    }
 };

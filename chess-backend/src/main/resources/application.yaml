@@ -33,9 +33,11 @@ spring:
 
 logging:
     level:
-        org.liquibase: INFO
-        org.hibernate.SQL: ERROR
-        io.opentelemetry: DEBUG
+        io.micrometer.tracing: WARN
+        org.springframework.cloud.sleuth: WARN
+        io.opentelemetry: WARN
+        tracing.p.B3PropagatorExtractorMultipleHeaders: ERROR
+        com.batuhan.chess: INFO
     pattern:
         level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}]"
 
@@ -100,3 +102,9 @@ resilience4j:
         instances:
             authService:
                 baseConfig: default
+
+    logging:
+        level:
+            com:
+                batuhan:
+                    chess=INFO:

@@ -72,8 +72,6 @@ class GameServiceTest {
             game.setWhiteRemainingTimeMs(300000L);
             game.setBlackRemainingTimeMs(300000L);
         }
-
-        gameService.setSelf(gameService);
     }
 
     @Nested
@@ -168,7 +166,7 @@ class GameServiceTest {
 
             // Assert
             assertThat(white.getEloRating()).isEqualTo(1225);
-            verify(gameRepository).save(any(GameEntity.class));
+            verify(gameRepository).saveAndFlush(any(GameEntity.class));
         }
 
         @Test

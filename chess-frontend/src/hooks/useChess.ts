@@ -249,15 +249,26 @@ export const useChess = () => {
     }
   }, [connectWebSocket, getAuthDetails, syncPlayerColor]);
 
-  const resetChessState = useCallback(() => {
-    disconnectWebSocket();
-    disconnectLobby();
-    setGame(null);
-    setPlayerColor(null);
-    gameIdRef.current = null;
-    setError(null);
-    setGameOverResult(null);
-  }, [disconnectWebSocket, disconnectLobby]);
+  const resetChessState = useCallback(async () => {
+  if (gameIdRef.current && gameOverResult) { 
+      try {
+          await fetch(`${API_URL}/games/${gameIdRef.current}/finish`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+          });
+      } catch (e) {
+          console.error("Error during registration:", e);
+      }
+  }
+
+  disconnectWebSocket();
+  disconnectLobby();
+  setGame(null);
+  setPlayerColor(null);
+  gameIdRef.current = null;
+  setError(null);
+  setGameOverResult(null);
+}, [disconnectWebSocket, disconnectLobby, gameOverResult]);
 
   return {
     game,

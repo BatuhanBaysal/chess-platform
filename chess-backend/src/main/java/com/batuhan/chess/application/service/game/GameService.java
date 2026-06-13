@@ -18,11 +18,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -38,13 +37,6 @@ public class GameService {
     private final RedissonClient redissonClient;
     private final LobbyService lobbyService;
     private final GameWebSocketController webSocketController;
-
-    private GameService self;
-
-    @Autowired
-    public void setSelf(@Lazy GameService self) {
-        this.self = self;
-    }
 
     private final Map<String, Game> activeGames = new ConcurrentHashMap<>();
     private final Map<String, Set<Long>> readyPlayers = new ConcurrentHashMap<>();
@@ -112,8 +104,7 @@ public class GameService {
             synchronized (game) {
                 game.updateTime();
                 if (isTimeExpired(game)) {
-                    log.info("Time is up; the game is ending. GameID: {}", gameId);
-                    self.processGameFinish(gameId, determineResult(game, GameStatus.TIMEOUT), GameStatus.TIMEOUT);
+                    processGameFinish(gameId, determineResult(game, GameStatus.TIMEOUT), GameStatus.TIMEOUT);
                 }
             }
         }, delayMs, TimeUnit.MILLISECONDS);
@@ -155,7 +146,7 @@ public class GameService {
 
         game.updateTime();
         if (isTimeExpired(game)) {
-            self.processGameFinish(gameId, determineResult(game, GameStatus.TIMEOUT), GameStatus.TIMEOUT);
+            processGameFinish(gameId, determineResult(game, GameStatus.TIMEOUT), GameStatus.TIMEOUT);
             throw new GameOperationException("Time expired");
         }
 
@@ -168,7 +159,7 @@ public class GameService {
 
         moveCounter.increment();
         if (game.getStatus().isFinished()) {
-            self.processGameFinish(gameId, determineResult(game, game.getStatus()), game.getStatus());
+            processGameFinish(gameId, determineResult(game, game.getStatus()), game.getStatus());
         }
         return moves;
     }
@@ -186,34 +177,22 @@ public class GameService {
     public void processGameFinish(String gameId, GameResult result, GameStatus finishMethod) {
         Game game = activeGames.get(gameId);
         if (game == null || game.getStatus().isFinished()) return;
+
         cancelTimeoutTask(gameId);
         handleFinishLogic(gameId, game, result, finishMethod);
     }
 
-    public String getActiveGameIdByUserId(Long userId) {
-        return activeGames.entrySet().stream()
-            .filter(entry -> entry.getValue().getWhitePlayerId().equals(userId) || entry.getValue().getBlackPlayerId().equals(userId))
-            .filter(entry -> !entry.getValue().getStatus().isFinished())
-            .map(Map.Entry::getKey)
-            .findFirst()
-            .orElse(null);
-    }
-
-    public Game getActiveGameByUserId(Long userId) {
-        return activeGames.values().stream()
-            .filter(g -> g.getWhitePlayerId().equals(userId) || g.getBlackPlayerId().equals(userId))
-            .filter(g -> !g.getStatus().isFinished())
-            .findFirst()
-            .orElse(null);
-    }
-
-    private void handleFinishLogic(String gameId, Game game, GameResult result, GameStatus finishMethod) {
+    @Transactional
+    public void handleFinishLogic(String gameId, Game game, GameResult result, GameStatus finishMethod) {
         game.setStatus(finishMethod);
         UserEntity white = findUserSafe(game.getWhitePlayerId());
         UserEntity black = findUserSafe(game.getBlackPlayerId());
+
         GameEntity history = buildGameEntity(game, white, black, result, finishMethod);
         applyEloChanges(white, black, result, history);
-        gameRepository.save(history);
+
+        gameRepository.saveAndFlush(history);
+
         webSocketController.broadcastGameUpdate(gameId, game);
         webSocketController.sendGameOver(gameId, result);
         scheduler.schedule(() -> cleanupSession(gameId), 30, TimeUnit.SECONDS);
@@ -234,6 +213,7 @@ public class GameService {
             .pgnData(String.join(" ", game.getHumanReadableHistory()))
             .whiteEloBefore(white != null ? white.getEloRating() : 1200)
             .blackEloBefore(black != null ? black.getEloRating() : 1200)
+            .playedAt(LocalDateTime.now())
             .build();
     }
 
@@ -251,7 +231,16 @@ public class GameService {
         }
     }
 
-    private GameResult determineResult(Game game, GameStatus status) {
+    public String getActiveGameIdByUserId(Long userId) {
+        return activeGames.entrySet().stream()
+            .filter(entry -> entry.getValue().getWhitePlayerId().equals(userId) || entry.getValue().getBlackPlayerId().equals(userId))
+            .filter(entry -> !entry.getValue().getStatus().isFinished())
+            .map(Map.Entry::getKey)
+            .findFirst()
+            .orElse(null);
+    }
+
+    public GameResult determineResult(Game game, GameStatus status) {
         if (status == GameStatus.STALEMATE || status == GameStatus.DRAW) return GameResult.DRAW;
         return (game.getCurrentTurn() == Color.WHITE) ? GameResult.BLACK_WIN : GameResult.WHITE_WIN;
     }
@@ -288,14 +277,13 @@ public class GameService {
     @PostConstruct
     public void startGlobalTimer() {
         scheduler.scheduleAtFixedRate(() -> {
-            for (Map.Entry<String, Game> entry : activeGames.entrySet()) {
+            for (Map.Entry<String, Game> entry : new HashSet<>(activeGames.entrySet())) {
                 Game game = entry.getValue();
-
                 if (game != null && !game.getStatus().isFinished()) {
                     synchronized (game) {
                         game.updateTime();
                         if (isTimeExpired(game)) {
-                            self.processGameFinish(entry.getKey(), determineResult(game, GameStatus.TIMEOUT), GameStatus.TIMEOUT);
+                            processGameFinish(entry.getKey(), determineResult(game, GameStatus.TIMEOUT), GameStatus.TIMEOUT);
                         } else {
                             webSocketController.broadcastGameUpdate(entry.getKey(), game);
                         }

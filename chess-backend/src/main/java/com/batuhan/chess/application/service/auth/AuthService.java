@@ -54,15 +54,16 @@ public class AuthService {
 
     @RateLimiter(name = "authService", fallbackMethod = "loginFallback")
     public AuthResponse login(LoginRequest request) {
+        var user = userRepository.findByUsername(request.username())
+            .or(() -> userRepository.findByEmail(request.username()))
+            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + request.username()));
+
         authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(
-                request.username(),
+                user.getUsername(),
                 request.password()
             )
         );
-
-        var user = userRepository.findByUsername(request.username())
-            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + request.username()));
 
         var userDetails = org.springframework.security.core.userdetails.User.builder()
             .username(user.getUsername())

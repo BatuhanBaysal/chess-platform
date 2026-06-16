@@ -17,7 +17,7 @@ spring:
         open-in-view: false
         hibernate:
             ddl-auto: validate
-        show-sql: false
+        show-sql: true
         properties:
             hibernate:
                 dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -33,13 +33,17 @@ spring:
 
 logging:
     level:
+        root: INFO
         io.micrometer.tracing: WARN
         org.springframework.cloud.sleuth: WARN
         io.opentelemetry: WARN
         tracing.p.B3PropagatorExtractorMultipleHeaders: ERROR
-        com.batuhan.chess: INFO
+        com.batuhan.chess: DEBUG
+        org.hibernate.SQL: DEBUG
+        org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+        org.hibernate.engine.jdbc.spi.SqlExceptionHelper: DEBUG
     pattern:
-        level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}]"
+        level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}] [%t] %c{1} : %m%n"
 
 management:
     endpoints:
@@ -102,9 +106,3 @@ resilience4j:
         instances:
             authService:
                 baseConfig: default
-
-    logging:
-        level:
-            com:
-                batuhan:
-                    chess=INFO:

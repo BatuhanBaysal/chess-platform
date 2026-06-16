@@ -24,6 +24,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
@@ -64,6 +65,14 @@ class GameServiceTest {
         when(mockRoom.getTimeLimit()).thenReturn(300);
         lenient().when(lobbyService.getRoom(anyString())).thenReturn(mockRoom);
 
+        GameService realService = new GameService(
+            gameRepository, userRepository, eloService,
+            meterRegistry, redissonClient, lobbyService,
+            webSocketController, null
+        );
+        gameService = spy(realService);
+
+        ReflectionTestUtils.setField(gameService, "self", gameService);
         gameService.initMetrics();
         gameId = gameService.createGame(whiteId, blackId);
 

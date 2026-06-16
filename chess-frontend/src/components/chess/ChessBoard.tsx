@@ -237,9 +237,9 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
   };
 
   return (
-    <div className="flex flex-col xl:flex-row items-stretch justify-center gap-6 p-8 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-462.5 transition-all relative">
+    <div className="flex flex-col xl:flex-row items-stretch justify-center gap-6 p-8 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-[1400px] transition-all relative">
       <style>{`.custom-scroll::-webkit-scrollbar { width: 5px; } .custom-scroll::-webkit-scrollbar-track { background: transparent; } .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; } .dark .custom-scroll::-webkit-scrollbar-thumb { background: #334155; }`}</style>
-      <div className={`fixed inset-0 z-500 flex items-center justify-center bg-black/80 backdrop-blur-xl transition-all duration-500 ${showGameOverModal ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
+      <div className={`fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-xl transition-all duration-500 ${showGameOverModal ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
         <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-12 rounded-[3rem] shadow-2xl flex flex-col items-center text-center transition-transform duration-500 ${showGameOverModal ? 'scale-100' : 'scale-90'}`}>
           <div className="w-24 h-24 bg-yellow-500/10 rounded-full flex items-center justify-center mb-8 border border-yellow-500/20 ring-8 ring-yellow-500/5">
             {upperStatus.includes('TIMEOUT') ? <AlertCircle size={48} className="text-yellow-500 animate-bounce" /> : <Trophy size={48} className="text-yellow-500 animate-bounce" />}
@@ -249,14 +249,14 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
         </div>
       </div>
       {!isStarted && !isGameOver && (
-        <div className="absolute inset-0 z-250 bg-slate-900/70 backdrop-blur-md rounded-2xl flex items-center justify-center">
+        <div className="absolute inset-0 z-[250] bg-slate-900/70 backdrop-blur-md rounded-2xl flex items-center justify-center">
           <div className="bg-slate-900 border border-blue-500/40 p-10 rounded-3xl flex items-center gap-6"><Loader2 className="text-blue-500 animate-spin" size={40} /><span className="text-[12px] font-black uppercase tracking-[0.4em] text-blue-400">Syncing...</span></div>
         </div>
       )}
       {promotionPending && (
-        <div className="fixed inset-0 z-600 flex items-center justify-center bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[600] flex items-center justify-center bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-300">
           <div className={`bg-white dark:bg-slate-900 p-12 rounded-[3.5rem] border ${orientation === 'WHITE' ? 'border-blue-500/30' : 'border-rose-500/30'} shadow-2xl flex flex-col items-center gap-8 max-w-2xl w-full mx-4 relative overflow-hidden`}>
-            <div className={`absolute top-0 left-0 w-full h-2 bg-linear-to-r ${orientation === 'WHITE' ? 'from-blue-600 to-cyan-400' : 'from-rose-600 to-orange-400'}`} />
+            <div className={`absolute top-0 left-0 w-full h-2 bg-gradient-to-r ${orientation === 'WHITE' ? 'from-blue-600 to-cyan-400' : 'from-rose-600 to-orange-400'}`} />
             <div className="text-center">
               <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full ${orientation === 'WHITE' ? 'bg-blue-500/10 text-blue-500' : 'bg-rose-500/10 text-rose-500'} mb-4`}>
                 <ChevronUp size={16} className="animate-bounce" />
@@ -290,7 +290,7 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
         </div>
       )}
 
-      <div className="w-48 bg-slate-100 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700/50 rounded-2xl flex flex-col overflow-hidden transition-all shadow-inner h-150">
+      <div className="w-56 bg-slate-100 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700/50 rounded-2xl flex flex-col overflow-hidden transition-all shadow-inner h-[600px]">
         <div className="w-full bg-slate-200/50 dark:bg-slate-800/50 p-2.5 border-b border-slate-200 dark:border-slate-700/50 flex items-center justify-center gap-2">
             <Timer size={14} className="text-amber-500" />
             <span className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">Clock</span>
@@ -298,7 +298,7 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
 
         <div className="flex-1 w-full flex flex-col justify-between p-4">
             <div className="flex flex-col items-center">
-                <div className={`text-[13px] font-black font-mono px-3 py-1.5 rounded-lg border transition-all ${currentTurn?.toUpperCase() === (orientation === 'WHITE' ? 'BLACK' : 'WHITE') ? (orientation === 'WHITE' ? 'text-rose-600 border-rose-500 bg-rose-500/10 animate-pulse' : 'text-blue-600 border-blue-500 bg-blue-500/10 animate-pulse') : 'text-slate-400 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm'}`}>
+                <div className={`text-[13px] font-black font-mono px-3 py-1.5 rounded-lg border transition-all ${currentTurn?.toUpperCase() === (orientation === 'WHITE' ? 'BLACK' : 'WHITE') ? (orientation === 'WHITE' ? 'text-rose-600 border-rose-500 bg-rose-500/10 animate-pulse' : 'text-blue-600 border-blue-500 bg-blue-500/10 animate-pulse') : 'text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm'}`}>
                     {formatTime(orientation === 'WHITE' ? (blackRemainingTimeMs || 0) : (whiteRemainingTimeMs || 0))}
                 </div>
                 <span className="text-[8px] font-black uppercase mt-1 tracking-widest text-center" style={{ color: orientation === 'WHITE' ? '#f43f5e' : '#3b82f6' }}>
@@ -316,7 +316,7 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
             </div>
 
             <div className={`flex flex-col items-center`}>
-              <div className={`text-[13px] font-black font-mono px-3 py-1.5 rounded-lg border transition-all ${currentTurn?.toUpperCase() === (orientation === 'WHITE' ? 'WHITE' : 'BLACK') ? (orientation === 'WHITE' ? 'text-blue-600 border-blue-500 bg-blue-500/10 animate-pulse' : 'text-rose-600 border-rose-500 bg-rose-500/10 animate-pulse') : 'text-slate-400 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm'}`}>
+              <div className={`text-[13px] font-black font-mono px-3 py-1.5 rounded-lg border transition-all ${currentTurn?.toUpperCase() === (orientation === 'WHITE' ? 'WHITE' : 'BLACK') ? (orientation === 'WHITE' ? 'text-blue-600 border-blue-500 bg-blue-500/10 animate-pulse' : 'text-rose-600 border-rose-500 bg-rose-500/10 animate-pulse') : 'text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm'}`}>
                   {formatTime(orientation === 'WHITE' ? (whiteRemainingTimeMs || 0) : (blackRemainingTimeMs || 0))}
               </div>
               <span className="text-[8px] font-black uppercase mt-1 tracking-widest text-center" style={{ color: orientation === 'WHITE' ? '#3b82f6' : '#f43f5e' }}>
@@ -328,7 +328,7 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
 
       <div className="relative">
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div className="grid grid-cols-8 grid-rows-8 border-12 border-slate-200 dark:border-slate-900 bg-slate-200 dark:bg-slate-900 rounded-xl overflow-hidden shadow-2xl transition-colors" style={{ width: '600px', height: '600px' }}>
+          <div className="grid grid-cols-8 grid-rows-8 border-[12px] border-slate-200 dark:border-slate-900 bg-slate-200 dark:bg-slate-900 rounded-xl overflow-hidden shadow-2xl transition-colors" style={{ width: '600px', height: '600px' }}>
             {Array.from({ length: 64 }).map((_, visualIndex) => {
               const actualIndex = getActualIndex(visualIndex);
               const char = squares[actualIndex];
@@ -351,7 +351,7 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
           </div>
           <DragOverlay dropAnimation={{ duration: 150, sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.4' } } }) }}>
             {activePiece ? (
-              <div className="w-17.5 h-17.5 flex items-center justify-center cursor-grabbing scale-110">
+              <div className="w-[70px] h-[70px] flex items-center justify-center cursor-grabbing scale-110">
                 <img src={PIECE_IMAGES[activePiece.char]} alt="dragging" className="w-full h-full drop-shadow-2xl" />
               </div>
             ) : null}
@@ -359,26 +359,26 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
         </DndContext>
       </div>
 
-      <div className="flex flex-row gap-4 h-150 w-full xl:w-165">
-        <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl flex flex-col overflow-hidden transition-colors shadow-inner">
+      <div className="flex flex-row gap-4 h-[600px] w-full xl:w-[480px]">
+        <div className="w-72 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl flex flex-col overflow-hidden transition-colors shadow-inner">
           <div className="bg-slate-200/50 dark:bg-slate-800/50 p-3 border-b border-slate-200 dark:border-slate-700/50 flex items-center gap-2">
             <Activity size={14} className="text-blue-500 animate-pulse" />
             <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 dark:border-slate-400">Telemetry</span>
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scroll">
             {logs.map((log, i) => (
-              <div key={i} className={`text-[10px] p-2 rounded-xl border-l-2 ${log.text.includes("Game started") ? "border-emerald-500 bg-emerald-500/5" : log.turn === 'WHITE' ? "border-blue-500 bg-blue-500/5" : "border-rose-500 bg-rose-500/5"}`}>
-                <div className="flex justify-between items-center mb-1 opacity-70">
-                  <span className="text-[7px] font-mono font-black">{log.time}</span>
-                  {!log.text.includes("Game started") && (<span className={`text-[7px] font-black uppercase ${log.turn === 'WHITE' ? "text-blue-600" : "text-rose-600"}`}>{log.turn}</span>)}
-                </div>
-                <span className={`font-bold leading-tight block ${log.text.includes("Game started") ? "text-emerald-600 dark:text-emerald-400" : "text-slate-700 dark:text-slate-300"}`}>{log.text}</span>
+            <div key={i} className={`text-[10px] p-2 rounded-xl border-l-2 ${log.text.includes("Game started") ? "border-emerald-500 bg-emerald-500/5" : log.turn === 'WHITE' ? "border-blue-500 bg-blue-500/5" : "border-rose-500 bg-rose-500/5"}`}>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[10px] font-mono font-black text-slate-500 dark:text-slate-400">{log.time}</span>
+                {!log.text.includes("Game started") && (<span className={`text-[7px] font-black uppercase ${log.turn === 'WHITE' ? "text-blue-600 dark:text-blue-400" : "text-rose-600 dark:text-rose-400"}`}>{log.turn}</span>)}
               </div>
-            ))}
+              <span className={`font-bold leading-tight block text-slate-800 dark:text-slate-200 ${log.text.includes("Game started") ? "dark:text-emerald-400" : ""}`}>{log.text}</span>
+            </div>
+          ))}
           </div>
         </div>
         <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl overflow-hidden flex flex-col shadow-inner transition-colors">
-          <div className="bg-slate-200/50 dark:bg-slate-800/50 p-3 border-b border-slate-200 dark:border-slate-700/50 flex items-center gap-2"><HistoryIcon size={14} className="text-indigo-500" /><span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Notation</span></div>
+          <div className="bg-slate-200/50 dark:bg-slate-800/50 p-3 border-b border-slate-200 dark:border-slate-700/50 flex items-center gap-2"><HistoryIcon size={14} className="text-indigo-500" /><span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 dark:border-slate-400">Notation</span></div>
           <div className="flex-1 overflow-y-auto custom-scroll">
             <table className="w-full text-[10px] border-separate border-spacing-0">
               <thead className="sticky top-0 bg-slate-200 dark:bg-[#0f172a] z-10">

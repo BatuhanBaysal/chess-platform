@@ -250,25 +250,31 @@ export const useChess = () => {
   }, [connectWebSocket, getAuthDetails, syncPlayerColor]);
 
   const resetChessState = useCallback(async () => {
-  if (gameIdRef.current && gameOverResult) { 
       try {
-          await fetch(`${API_URL}/games/${gameIdRef.current}/finish`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' }
-          });
+          if (gameIdRef.current && gameOverResult) { 
+              const response = await fetch(`${API_URL}/games/${gameIdRef.current}/finish`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' }
+              });
+              
+              if (response.ok) {
+                  await new Promise(resolve => setTimeout(resolve, 800));
+              } else {
+                  console.warn("The backend did not confirm the completion or returned an error.");
+              }
+          }
       } catch (e) {
-          console.error("Error during registration:", e);
+          console.error("Error:", e);
+      } finally {
+          disconnectWebSocket();
+          disconnectLobby();
+          setGame(null);
+          setPlayerColor(null);
+          gameIdRef.current = null;
+          setError(null);
+          setGameOverResult(null);
       }
-  }
-
-  disconnectWebSocket();
-  disconnectLobby();
-  setGame(null);
-  setPlayerColor(null);
-  gameIdRef.current = null;
-  setError(null);
-  setGameOverResult(null);
-}, [disconnectWebSocket, disconnectLobby, gameOverResult]);
+  }, [disconnectWebSocket, disconnectLobby, gameOverResult]);
 
   return {
     game,

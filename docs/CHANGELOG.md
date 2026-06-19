@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+> **Project Lifecycle Governance Note:**
+> All development milestones, release tags, and version history have been retroactively configured to align with our production-ready lifecycle. This project is developed using **Professional Agile methodologies**, utilizing **GitHub Projects (Kanban Board)** for end-to-end task management—encompassing the full scope from backlog refinement to continuous delivery and stable production releases.
+
+---
+
+## [1.0.0] - 2026-06-19
+
+### 🚀 Phase 15: Official Stable Release (v1.0.0)
+> **Note:** This milestone marks the official transition of the project to its first production-ready, stable state. We have completed the core engine, secured the API, and implemented comprehensive observability.
+
+- **2026-06-19 (Upcoming Release):**
+    - **Stable Production Foundation & Documentation (PR #50 | Issue #46):**
+        - **Documentation Overhaul:**
+            - Finalized comprehensive project documentation for the v1.0.0 stable release to ensure maintainability and user onboarding efficiency.
+            - Restructured infrastructure monitoring files into `deploy/monitoring/` and integrated new `loki-config.yml` for improved observability.
+            - Updated gameplay feature assets in `docs/assets/` to reflect the latest UI/UX state.
+            - Introduced `pull_request_template.md` to enforce code review standards.
+            - **Added visual walkthroughs and gameplay highlights (`v1-auth-workflow.mp4`, `v1-lobby-navigation.mp4`, `v1-gameplay-board.mp4`, and `v1-gameplay-highlight.gif`) to `docs/assets/videos/` for enhanced project demonstration.**
+        - **API Observability & Documentation:**
+            - Integrated **Swagger UI (OpenAPI 3)** for automated, interactive API documentation.
+            - Configured `springdoc-openapi` to expose endpoints at `/swagger-ui.html`, ensuring seamless developer onboarding and API exploration.
+    - **Project Governance & Standards (PR #49, #48):**
+        - Formalized contributor guidelines and community standards by creating `CODE_OF_CONDUCT.md`.
+        - Implemented standardized issue templates to streamline developer contributions and bug reporting.
+
+- **2026-06-16:**
+    - **Core Engine Stabilization & Persistence (PR #45 | Issue #44):**
+        - **End-Game Logic Optimization:**
+            - Implemented reliable end-game persistence and finish logic to guarantee data integrity.
+            - The `handleFinishLogic` method was updated to use `Propagation.REQUIRES_NEW` for independent saving and `saveAndFlush()` for immediate persistence.
+        - **Robustness Improvements:**
+            - Addressed an issue where game state was not persisting correctly upon checkmate.
+            - Applied fix to prevent premature cleanup or reset on checkmate, ensuring board representation persists in the UI.
+        - **Validation:**
+            - Conducted full ruleset validation, including checkmate detection, stalemates, and time controls.
+            - Validated secure JWT-based authentication with integrated rate-limiting for production-level protection.
+
+---
+
 ## [0.14.0] - 2026-06-13
 
 ### ⚡ Phase 14: Core Engine Refactoring & UX Optimization
@@ -341,6 +380,7 @@ All notable changes to this project will be documented in this file. This projec
 ---
 
 ## [0.1.0] - 2026-03-08
+> **Note:** This milestone was retroactively configured to map to issue #47 to establish the project's foundational tracking and lifecycle governance.
 
 ### ✨ Initial Infrastructure & Monorepo Setup
 - Initialized **Chess Backend** (Spring Boot 3.4.6) and **Chess Frontend** (React 19 + Vite).

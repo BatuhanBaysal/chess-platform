@@ -2,19 +2,33 @@
 name: Feature request
 about: Suggest an idea for this project
 title: ''
-labels: ''
+labels: 'type: feature'
 assignees: ''
-
 ---
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+## 📝 User Story
+<!-- As a [user role], I want to [feature/action], so that [value/benefit]. -->
+As a [user role], I want to [feature/action], so that [value/benefit].
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+## 💡 Problem / Motivation
+<!-- Why is this feature needed? What problem does it solve? -->
 
-**Describe alternatives you've considered**
-A clear and concise description of any alternative solutions or features you've considered.
+## 🚀 Proposed Solution
+<!-- What is your technical or functional proposal? -->
 
-**Additional context**
-Add any other context or screenshots about the feature request here.
+## ✅ Acceptance Criteria (AC)
+<!-- What are the requirements for this feature to be considered done? -->
+- [ ] Criterion 1
+- [ ] Criterion 2
+
+## 🧪 Testing Considerations
+<!-- How can we verify that this feature works as expected? -->
+
+## 📊 Alternatives Considered
+<!-- Any alternative solutions or features you've considered? -->
+
+## 🖼️ Additional Context
+<!-- Add any other context, screenshots, or mockups. -->
+
+---
+*This issue contributes to the ongoing development and stabilization of the Chess Platform project.*

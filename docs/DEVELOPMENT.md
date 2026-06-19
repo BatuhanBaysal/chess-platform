@@ -13,14 +13,15 @@ chess-platform/
 ├── .idea/                  # Shared IntelliJ IDEA configuration
 ├── chess-backend/          # Spring Boot 3.4.6 (Java 17) Backend
 ├── chess-frontend/         # React 19 (Vite + TS) Frontend
-├── docs/                   # Documentation & Technical Assets (This Folder)
-│   ├── api-specs/          # OpenAPI/Swagger schemas and API docs
-│   ├── assets/             # Project images and diagrams
-│   └── sql/                # Manual SQL scripts and schema migrations
+├── deploy/                 # Deployment & Infrastructure
+│   └── monitoring/         # LGTM Stack (Loki, Prometheus, Promtail, Tempo)
+├── docs/                   # Documentation & Technical Assets
+│   └── assets/             # Project images and diagrams
 ├── .editorconfig           # Consistent coding styles across IDEs
 ├── .env.example            # Root environment variables template
 ├── .gitattributes          # Git path and text attributes
 ├── .gitignore              # Monorepo-wide ignore rules
+├── docker-compose.yml      # Infrastructure & Monitoring orchestration
 ├── LICENSE                 # Project license
 └── README.md               # Main project overview and entry point
 ```
@@ -130,6 +131,40 @@ To ensure the full-stack ecosystem functions correctly, always start the Backend
 
 ---
 
+## 🐳 Docker Orchestration (Recommended)
+
+If you want to start the entire system (Backend, Frontend, and Monitoring tools) with a single command, you can use the `docker-compose.yml` file located in the project root directory. This ensures that all services can communicate securely with each other over a dedicated Docker network.
+
+### Start the Entire System
+
+```bash
+# Run all containers in detached mode
+docker-compose up -d --build
+```
+
+### Check System Status
+
+```bash
+docker-compose ps
+```
+
+### View Service Logs
+
+```bash
+# Follow logs for a specific service (e.g., backend)
+docker-compose logs -f chess-backend
+```
+
+### Stop and Clean Up the System
+
+```bash
+docker-compose down
+```
+
+> **Note:** When running the application through Docker, the services will be available on the ports defined in `docker-compose.yml` (default: `8080` and `5173`). For quick development and testing, you can continue using `npm run dev`.
+
+---
+
 ## 🤖 CI/CD Pipeline & Automated Testing
 
 This project utilizes **GitHub Actions** to maintain high code quality and ensure a regression-free development environment.
@@ -159,6 +194,10 @@ Every time a commit is pushed or a Pull Request is opened, the project’s digit
 * **Testing Strategy:** Run `./mvnw test` for the Backend. We utilize an **H2 In-memory database** for automated testing to ensure a "side-effect free" environment that does not interfere with your local PostgreSQL data.
 * **Java Standards:** We strictly utilize **Sealed Classes** for the piece hierarchy and **Records** for immutable Data Transfer Objects (DTOs), ensuring modern, type-safe, and clean code.
 * **Workflow:** Refer to the [**Git Guide**](GIT_GUIDE.md) for detailed information on branching strategy and commit conventions before pushing any changes.
+
+### 💡 Troubleshooting
+* **Port 8080 already in use?** If the backend fails to start, ensure no other instance is running: `lsof -i :8080 | grep LISTEN | awk '{print $2}' | xargs kill -9`
+* **Node version error?** If you have multiple Node versions, ensure you are using v20+ with `node -v`.
 
 ---
 *Maintained with a focus on Engineering Discipline and Scalable Design.*

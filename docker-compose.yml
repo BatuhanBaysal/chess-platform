@@ -120,7 +120,7 @@ services:
         container_name: chess-prometheus
         restart: unless-stopped
         volumes:
-            - ./prometheus.yml:/etc/prometheus/prometheus.yml
+            - ./deploy/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
             - prometheus_data:/prometheus
         command:
             - '--config.file=/etc/prometheus/prometheus.yml'
@@ -139,7 +139,9 @@ services:
             - "3100:3100"
         networks:
             - chess-network
-        command: -config.file=/etc/loki/local-config.yaml
+        volumes:
+            - ./deploy/monitoring/loki-config.yml:/etc/loki/config.yml
+        command: -config.file=/etc/loki/config.yml
         restart: unless-stopped
 
     tempo:
@@ -149,7 +151,7 @@ services:
             - chess-network
         command: [ "-config.file=/etc/tempo.yaml" ]
         volumes:
-            - ./tempo.yml:/etc/tempo.yaml
+            - ./deploy/monitoring/tempo.yml:/etc/tempo.yaml
         ports:
             - "3200:3200"
             - "4317:4317"
@@ -164,7 +166,7 @@ services:
             - chess-network
         volumes:
             - ./logs:/var/log
-            - ./promtail-config.yml:/etc/promtail/config.yml
+            - ./deploy/monitoring/promtail-config.yml:/etc/promtail/config.yml
         command: -config.file=/etc/promtail/config.yml
         depends_on:
             - loki

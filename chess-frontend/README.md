@@ -1,59 +1,166 @@
-# 🎨 Chess Frontend (React 19 + TS)
+# ♟️ Chess Platform - Frontend
 
 ![React 19](https://img.shields.io/badge/React-19-20232A?style=flat-square&logo=react&logoColor=61DAFB)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)
 
-A high-performance, reactive user interface built for real-time chess gameplay, focusing on **Type-Safe Component Architecture** and **Fluid State Synchronization**.
+The frontend module of the Chess Platform, built with **React 19**, **TypeScript**, and **Tailwind CSS**. It is designed for high-performance, real-time chess gameplay using a decoupled architecture.
 
 ---
 
-## 🚀 Frontend Strategy & Architecture
-This module is designed to handle complex game states and real-time updates without compromising performance:
+## 🖼️ Visuals
 
-- **Atomic UI Design:** Modular and responsive styling system built with **Tailwind CSS** for a scalable component library.
-- **Type-Safe Domain Mirroring:** Leveraging **TypeScript** to mirror Backend Domain models (Java Records/Sealed Classes), ensuring compile-time safety across the bridge.
-- **Hook-Based Logic:** Centralized game orchestration using custom hooks (`useChess`), decoupling the board's visual representation from the underlying move validation and state logic.
-- **Real-time Ready:** Architected to support **StompJS** over WebSockets, maintaining a persistent bidirectional connection with the Spring Boot engine.
+![Chess Platform Demo](../docs/assets/screenshots/02-gameplay-features/03-chess-board/01-user-chess-board.png)
+*Initial state of the chessboard, showcasing the responsive UI and piece positioning.*
 
----
 
-## 🚀 Getting Started & Setup
-To maintain a single source of truth, all installation and environment configuration instructions are located in the main development guide:
+### 🖼️ Feature Gallery
+For a detailed visual breakdown of the application features (Authentication, Menu, Gameplay, and Edge Cases), you can browse the full collection of screenshots:
 
-👉 [**Go to DEVELOPMENT.md for Setup Instructions**](../docs/DEVELOPMENT.md)
+* [**View Detailed Gameplay Screenshots**](../docs/assets/screenshots/02-gameplay-features/)
+
+*Note: The documentation includes detailed visual proofs for core features like white/black check states, pawn promotions, and login validation flows.*
 
 ---
 
-## 🛠️ Technical Stack
-- **Bundler:** [Vite](https://vitejs.dev/) - Selected for ultra-fast Hot Module Replacement (HMR) and an optimized Rollup-based build pipeline.
-- **Styling:** [Tailwind CSS](https://tailwindcss.com/) - Utility-first approach used to implement a consistent, design-system-oriented UI with full Dark/Light mode support.
-- **Assets:** Optimized high-fidelity SVGs for pieces, hosted locally to ensure resolution-independent rendering and zero external latency.
-- **State Management:** React 19 Context & Hooks API - Utilized for lightweight, high-performance logic management without the overhead of external state libraries.
+## 📝 Project Overview
+I built this platform to create a seamless, real-time chess experience. My goal was to move beyond just "making it work" and focus on creating a professional-grade application that feels fast and reliable.
+
+**What I actually built and my contributions:**
+* **Real-time Chess Engine:** I personally developed the core engine refactoring and UX optimization to ensure smooth gameplay.
+* **User-Centric Features:** I implemented a secure authentication system and notification modules, ensuring users have a safe and connected experience.
+* **Professional Standards:** I moved beyond basic functional code by structuring the project for long-term scalability, making it easy to maintain and expand.
+* **Production-Ready:** I designed the entire deployment workflow so that the project can be shipped to a server with a single command.
 
 ---
 
-## 📂 Directory Structure
-```text
-src/
-├── api/         # Infrastructure Layer: API clients (Axios) & Service definitions
-├── assets/      # Media Gallery: Specialized piece SVGs, backgrounds & brand assets
-├── components/  # Atomic UI Components: Modular React 19 units (ChessBoard, AuthCard, Piece)
-├── hooks/       # Custom Business Logic: Engine synchronization & Auth state management
-├── App.tsx      # Application Root: Global routing and context orchestration
-├── main.tsx     # React DOM entry point and strict mode initialization
-└── index.css    # Global styling: Tailwind CSS directives & theme variables
+## 🏗️ Architecture & Philosophy
+This frontend follows a **"Type-Safe Domain Mirroring"** approach to maintain perfect synchronization with our core engine.
+
+* **Domain Mirroring:** TypeScript interfaces are strictly synchronized with Backend Java Records. This ensures compile-time safety and total data consistency across the stack.
+* **Server-Side Authority (SSOT):** The backend is the single source of truth. The frontend acts solely as a reactive view layer; it does not independently validate move rules but synchronizes its visual state based on authorized server updates.
+* **Reactive Orchestration:** The `useChess.ts` custom hook acts as the brain, managing WebSocket (STOMP) connections, optimistic UI updates, and synchronization with the server-side authority.
+* **Hexagonal UI Layers:** We decouple view components (`Square`, `Piece`, `MoveLog`) from state management logic, allowing us to swap UI frameworks without touching the core game orchestration.
+
+---
+
+## 🚀 Engineering Pillars
+* **Optimistic UI Updates:** The board state updates locally instantly for fluid UX, with automatic rollback logic if the server rejects the move.
+* **Contract-First Development:** API and WebSocket payloads are strictly governed by shared TypeScript models, preventing runtime serialization errors.
+* **Atomic State Management:** UI is decomposed into small, reusable atoms, ensuring that state transitions are predictable and easily testable.
+* **Resilient Connectivity:** Implements automatic reconnection strategies and heartbeat monitoring for STOMP to ensure seamless real-time play.
+
+---
+
+## 🛠️ Technology Stack
+The project leverages industry-standard libraries to provide a type-safe, performant, and consistent experience.
+
+| Category | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Core** | React 19, TypeScript | Type-safe UI logic and component architecture. |
+| **Styling** | Tailwind CSS, Framer Motion | Fluid layouts and reactive UI animations. |
+| **Communication** | Stomp.js, SockJS | Real-time WebSocket synchronization with backend. |
+| **State** | TanStack Query, Zustand | Server-state management and atomic local state. |
+| **Architecture** | Custom Hooks, Zod | Domain logic isolation and schema validation. |
+| **Tooling** | Vite, ESLint, Prettier | Optimized bundling and strict code quality. |
+
+---
+
+## 🚀 Getting Started
+
+> **Note:** This frontend is part of a monorepo. For full-stack environment setup, including backend configuration, database requirements, and CI/CD pipelines, please refer to the [**Development & Setup Guide**](../docs/DEVELOPMENT.md).
+
+### Prerequisites
+- Node.js (v20+ recommended)
+- npm or yarn
+- A running instance of the backend on `localhost:8080`
+
+### Installation
+```bash
+# Install dependencies
+npm install
 ```
 
-## 🧪 Engineering Focus Areas
-This frontend is architected as a high-performance state machine, designed for real-time accuracy and fluid gameplay:
-
-* **Engine Synchronization (useChess):** The `useChess.ts` custom hook acts as the bridge between the UI and the Backend Rule Engine. It orchestrates real-time WebSocket events and local optimistic updates while maintaining strict state synchronization with the **Server-Side Authority**.
-* **Identity & Access Management:** With the implementation of **Phase 7**, the frontend now manages secure session persistence via **JWT**. The `AuthCard` and dedicated auth hooks ensure that user identity is consistently injected into the API layer for authenticated gameplay.
-* **Component-Level Rendering Optimization:** We leverage React 19's optimized rendering cycle to ensure that only the affected squares of the 64-tile grid are updated during a move. This results in fluid, sub-millisecond board interactions.
-* **Full-Stack Type Integrity:** Strict synchronization is maintained between **TypeScript** interfaces and Backend Java Records. This "Domain Mirroring" ensures total data consistency and provides compile-time protection when processing complex server-side state snapshots.
-* **Atomic Component Philosophy:** The UI is decomposed into small, reusable units (Square -> Piece -> MoveLog). This modularity allowed for the rapid integration of complex features like the **Promotion Modal** and **Live Operations Log** without breaking the core board architecture.
+### Running the Application
+```bash
+# Start development server
+npm run dev
+```
 
 ---
-*Focus: Delivering a seamless, real-time user experience with modern React standards.*
+
+## 🛠️ Available Scripts
+In the project directory, you can run:
+
+* `npm run dev` - Starts the development server.
+* `npm run build` - Builds the app for production to the `dist` folder.
+* `npm run lint` - Runs ESLint to check for code quality issues.
+
+---
+
+## ⚙️ Environment Variables
+To configure the application, create a `.env` file in the root directory. You can leverage Vite's `import.meta.env` mechanism to inject these variables during the Docker build process or local development.
+
+```env
+VITE_API_URL=http://localhost:8080
+```
+
+---
+
+## 🐳 Docker Deployment
+The application uses a multi-stage Docker build process to ensure high performance and a lightweight production image.
+
+1. **Build Stage:** Uses `node:20-alpine` to compile the TypeScript code and generate static assets.
+2. **Serve Stage:** Uses `nginx:stable-alpine` to serve the static files. It includes a `try_files` configuration to handle client-side routing (Single Page Application support), preventing 404 errors on page refresh.
+
+```bash
+# Build the image
+docker build -t chess-frontend .
+
+# Run the container using orchestration
+docker-compose up -d frontend
+```
+
+---
+
+## 🛠️ Technical Best Practices
+To maintain high performance and code quality, please follow these guidelines:
+
+* **Rendering Performance:** Use `React.memo` within `DraggablePiece` to ensure only specific squares re-render during moves, preventing unnecessary full-board updates.
+* **Accessibility:** When using `@dnd-kit`, remember to configure keyboard sensors within `DndContext` to ensure inclusive navigation.
+* **State Synchronization:** Always maintain strict synchronization between `useChess` and the server-side authority to prevent lag-induced state mismatches.
+
+---
+
+## 📁 Folder Structure (High-Level)
+```
+src/
+├── api/                # Infrastructure: API clients
+├── components/         # Atomic UI components and reusable layout units
+│   ├── charts/         # Data visualization components
+│   ├── chess/          # Chess engine visualization
+│   └── common/         # Shared UI elements
+├── features/           # Modular business logic
+│   ├── auth/           # Authentication and user session features
+│   └── menu/           # Menu-related navigation and logic features
+├── hooks/              # Custom React hooks
+├── App.tsx             # Global routing and context orchestration
+├── index.css           # Global Tailwind CSS and theme variables
+└── main.tsx            # Application entry point and DOM initialization
+```
+
+---
+
+## ⚠️ Troubleshooting
+* **Backend Connection:** Ensure the backend is active on port `8080`, as API services are configured to connect to this base URL.
+* **WebSocket Errors:** If connection fails, verify the STOMP/SockJS endpoint configuration in your environment variables.
+
+---
+
+## 📝 Credits
+* **Chess Piece Assets:** High-fidelity SVGs sourced from [Wikimedia Commons](https://commons.wikimedia.org/).
+* **Icons:** Powered by [Lucide React](https://lucide.dev/).
+
+---
+*For global project guidelines, contributing policies, and licensing, please refer to the [root README](../README.md).*

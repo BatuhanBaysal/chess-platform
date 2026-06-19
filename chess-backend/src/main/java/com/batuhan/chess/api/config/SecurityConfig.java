@@ -44,7 +44,10 @@ public class SecurityConfig {
                     "/api/users/**",
                     "/api/games/**",
                     "/ws-chess/**",
-                    "/actuator/**"
+                    "/actuator/**",
+                    "/v3/api-docs/**",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html"
                 ).permitAll()
                 .anyRequest().authenticated()
             )

@@ -1,30 +1,65 @@
 # 🏗️ Architectural Blueprint
 
-This document outlines the high-level design choices and architectural patterns used in the **Chess Platform**.
+This document outlines the unified architectural vision for the **Chess Platform**, covering both the Backend Engine and the Frontend UI.
 
 ---
 
-## 🧩 Hexagonal Architecture (Ports & Adapters)
-To ensure the core chess logic remains independent of frameworks and external tools, we follow the Hexagonal pattern:
+## 🧩 Backend: Hexagonal Architecture (Ports & Adapters)
+To ensure the core chess logic remains independent of frameworks, we follow the Hexagonal pattern:
 
-* **Domain Hexagon:** Contains pure Java logic (Pieces, Board, Move rules). **Zero dependencies** on Spring Framework or database drivers to ensure maximum testability.
-* **Driving Adapters (Input):** REST Controllers and WebSocket (STOMP) handlers that trigger domain actions.
-* **Driven Adapters (Output):** PostgreSQL persistence (JPA), and external messaging adapters.
+* **Domain Hexagon:** Contains pure Java 17+ logic. **Zero dependencies** on Spring or DB drivers.
+* **Driving Adapters (Input):** REST Controllers and WebSocket (STOMP) handlers.
+* **Driven Adapters (Output):** PostgreSQL persistence (JPA) and Redis caching adapters.
 
-## 🛡️ Domain-Driven Design (DDD) Approach
-We treat the Chess Engine as a bounded context with clear tactical patterns:
-
-* **Entities:** `Board`, `Game` (Objects with unique identity and state lifecycle).
-* **Value Objects:** [**Position.java**](../chess-backend/src/main/java/com/batuhan/chess/domain/model/Position.java), [**Color.java**](../chess-backend/src/main/java/com/batuhan/chess/domain/model/Color.java) (Immutable objects defined by their attributes).
-* **Aggregates:** The `Board` acts as an **Aggregate Root** to maintain invariants and consistency during piece movements.
-* **Domain Services:** `MoveValidationService` (Planned) to handle complex rules such as Castling or En Passant that involve multiple domain objects.
-
-## 🧵 Java 17+ Modern Features
-We leverage modern Java capabilities to ensure **Type Safety** and **Clean Code**:
-
-1.  **Sealed Classes:** The [**Piece.java**](../chess-backend/src/main/java/com/batuhan/chess/domain/model/Piece.java) hierarchy is strictly defined using `sealed` classes to enforce exhaustive pattern matching.
-2.  **Records:** Used for DTOs and internal data carriers to guarantee immutability by default.
-3.  **Pattern Matching:** Simplifies movement logic by utilizing `switch` enhancements and `instanceof` pattern matching for piece types.
+### 🛡️ DDD & Modern Java Standards
+* **Aggregate Roots:** The `Board` maintains all invariants.
+* **Type Safety:** We use `sealed` classes for **Piece.java** hierarchy to enforce exhaustive pattern matching.
+* **Immutability:** Extensive use of `records` for safe state snapshots.
 
 ---
-*Status: Architecture established. Implementation following the "Test-First" (TDD) methodology.*
+
+## 🎨 Frontend: Feature-Based Modular Architecture
+The frontend follows a **Modular, Feature-Sliced** approach to scale with the backend's complexity.
+
+### 1. Feature-Sliced Architecture
+Instead of grouping by file type, we group by **Business Features**:
+* `features/game`: Handles board rendering, move animation, and move validation.
+* `features/auth`: Manages JWT storage, login/register logic.
+* `features/lobby`: Real-time room listing via WebSockets.
+
+### 2. Atomic Design & Component Purity
+* **Atoms:** Low-level elements (Buttons, Square components, Chess Pieces).
+* **Molecules:** Functional groupings (ChessBoard, MoveHistoryTable).
+* **Organisms:** Complex UI sections (GameHUD, Sidebar, ModalDialogs).
+
+### 3. Type-Safe Domain Mirroring
+To maintain the **Single Source of Truth (SSOT)**:
+* **Domain Mirroring:** We mirror backend DTOs into TypeScript `interfaces` and `zod` schemas.
+* **WebSocket Client:** Uses a custom service layer to wrap STOMP clients, ensuring incoming game states strictly adhere to our **domain models**.
+
+---
+
+## 🔗 Unified Communication & Observability
+The bridge between the Hexagon (Backend) and the Components (Frontend):
+
+| Communication | Protocol | Purpose |
+| :--- | :--- | :--- |
+| **Request/Response** | REST API | Authentication, User Profile, Game History. |
+| **Real-time Engine** | WebSocket (STOMP) | Live moves, timer synchronization, opponent status. |
+| **Data Validation** | JSON Schema / Zod | Ensures payload integrity on both ends of the wire. |
+
+### 🔍 Observability Stack (LGTM)
+* **Logging (Loki):** Centralized log management.
+* **Metrics (Prometheus):** System performance and telemetry tracking.
+* **Tracing (Tempo):** Distributed tracing for API and WebSocket lifecycle.
+* **Visualization (Grafana):** Unified dashboard for system health.
+
+---
+
+## 🧠 Single Source of Truth (SSOT) Philosophy
+The backend is the **sole authority** for game state.
+* The frontend treats UI state as *ephemeral* (temporary).
+* Any move initiated by the user is treated as a "request" until the backend broadcasts the *validated* new board state via WebSocket.
+
+---
+*Status: Architecture established. Backend follows Hexagonal/DDD (Java 17); Frontend follows Feature-Sliced/Type-Safe principles.*

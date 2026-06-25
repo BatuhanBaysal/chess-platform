@@ -5,17 +5,16 @@
 
 version: 2
 updates:
-  # Backend (Java/Maven)
-  - package-ecosystem: "maven" 
-    directory: "/chess-backend"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 10
+    - package-ecosystem: "maven"
+      directory: "/chess-backend"
+      schedule:
+          interval: "weekly"
+      open-pull-requests-limit: 10
 
-  # Frontend (npm/yarn/pnpm)
-  - package-ecosystem: "npm"
-    directory: "/chess-frontend"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 10
-    
+    - package-ecosystem: "npm"
+      directory: "/chess-frontend"
+      schedule:
+          interval: "weekly"
+      open-pull-requests-limit: 10
+      ignore:
+          - dependency-name: "*"

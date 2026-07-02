@@ -131,37 +131,45 @@ To ensure the full-stack ecosystem functions correctly, always start the Backend
 
 ---
 
-## 🐳 Docker Orchestration (Recommended)
+## 🐳 Docker Orchestration
 
-If you want to start the entire system (Backend, Frontend, and Monitoring tools) with a single command, you can use the `docker-compose.yml` file located in the project root directory. This ensures that all services can communicate securely with each other over a dedicated Docker network.
+We utilize `docker-compose.yml` for infrastructure orchestration. To optimize system resources and internet bandwidth during daily development, we use **Docker Profiles**.
 
-### Start the Entire System
+### 🚀 Running the System
 
+Depending on your current needs, you can choose one of the following commands:
+
+#### 1. Core Development Mode (Recommended)
+Starts only the essential services (Backend, Frontend, PostgreSQL, Redis). This is the fastest way to start coding while saving system resources.
 ```bash
-# Run all containers in detached mode
-docker-compose up -d --build
+docker compose --profile core up -d
 ```
 
-### Check System Status
-
+#### 2. Full Ecosystem Mode
+Starts all services, including the entire LGTM monitoring stack (Loki, Prometheus, Promtail, Tempo) and Sonarqube for deep analysis and QA.
 ```bash
-docker-compose ps
+docker compose --profile core --profile monitoring up -d
 ```
 
-### View Service Logs
+### 🛠 Docker Management
 
+* **Check System Status:**
+```bash
+docker compose ps
+```
+
+* **View Service Logs:**
 ```bash
 # Follow logs for a specific service (e.g., backend)
-docker-compose logs -f chess-backend
+docker compose logs -f chess-backend
 ```
 
-### Stop and Clean Up the System
-
+* **Stop and Clean Up:**
 ```bash
-docker-compose down
+docker compose down
 ```
 
-> **Note:** When running the application through Docker, the services will be available on the ports defined in `docker-compose.yml` (default: `8080` and `5173`). For quick development and testing, you can continue using `npm run dev`.
+> **Note:** When running via Docker, your services will be accessible on the ports defined in `docker-compose.yml`. Use the `core` profile for daily tasks to minimize CPU/RAM usage and avoid unnecessary internet traffic.
 
 ---
 

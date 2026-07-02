@@ -102,12 +102,20 @@ We maintain a strict professional workflow to ensure code quality and project tr
 ---
 
 ## 🚀 Quick Start
-To spin up the entire ecosystem locally:
+
+To spin up the core services (Backend, Frontend, DB, Redis) required for development:
+
 ```bash
-docker-compose up -d
+docker compose --profile core up -d
 ```
 
-*Detailed setup instructions are available in [Development Guide](./docs/DEVELOPMENT.md).*
+To spin up the entire ecosystem, including monitoring tools and Sonarqube:
+
+```bash
+docker compose --profile core --profile monitoring up -d
+```
+
+*For detailed setup instructions, please refer to the [Development Guide](./docs/DEVELOPMENT.md).*
 
 ---
 

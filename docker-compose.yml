@@ -1,6 +1,7 @@
 services:
     db:
         image: postgres:15-alpine
+        profiles: ["core"]
         container_name: chess-postgres
         restart: always
         environment:
@@ -19,6 +20,7 @@ services:
 
     redis:
         image: redis:7-alpine
+        profiles: ["core"]
         container_name: chess-redis
         restart: always
         ports:
@@ -33,6 +35,7 @@ services:
 
     backend:
         build: ./chess-backend
+        profiles: ["core"]
         container_name: chess-server
         restart: always
         ports:
@@ -67,6 +70,7 @@ services:
 
     frontend:
         build: ./chess-frontend
+        profiles: ["core"]
         container_name: chess-ui
         restart: always
         ports:
@@ -82,6 +86,7 @@ services:
     # --- QUALITY ASSURANCE ---
     sonarqube-db:
         image: postgres:15-alpine
+        profiles: ["monitoring"]
         container_name: chess-sonarqube-db
         restart: always
         environment:
@@ -100,6 +105,7 @@ services:
 
     sonarqube:
         image: sonarqube:lts-community
+        profiles: ["monitoring"]
         container_name: chess-sonarqube
         restart: always
         ports:
@@ -117,6 +123,7 @@ services:
     # --- OBSERVABILITY (LGTM STACK) ---
     prometheus:
         image: prom/prometheus:latest
+        profiles: ["monitoring"]
         container_name: chess-prometheus
         restart: unless-stopped
         volumes:
@@ -134,6 +141,7 @@ services:
 
     loki:
         image: grafana/loki:latest
+        profiles: ["monitoring"]
         container_name: chess-loki
         ports:
             - "3100:3100"
@@ -146,6 +154,7 @@ services:
 
     tempo:
         image: grafana/tempo:latest
+        profiles: ["monitoring"]
         container_name: chess-tempo
         networks:
             - chess-network
@@ -160,6 +169,7 @@ services:
 
     promtail:
         image: grafana/promtail:latest
+        profiles: ["monitoring"]
         container_name: chess-promtail
         restart: unless-stopped
         networks:
@@ -173,6 +183,7 @@ services:
 
     grafana:
         image: grafana/grafana:latest
+        profiles: ["monitoring"]
         container_name: chess-grafana
         restart: unless-stopped
         ports:

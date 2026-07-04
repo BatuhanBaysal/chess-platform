@@ -106,3 +106,13 @@ resilience4j:
         instances:
             authService:
                 baseConfig: default
+
+            profileUpdateLimiter:
+                limitForPeriod: 5
+                limitRefreshPeriod: 1m
+                timeoutDuration: 500ms
+
+            accountActionLimiter:
+                limitForPeriod: 3
+                limitRefreshPeriod: 1m
+                timeoutDuration: 500ms

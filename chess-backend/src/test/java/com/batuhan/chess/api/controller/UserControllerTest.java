@@ -1,111 +1,211 @@
 package com.batuhan.chess.api.controller;
 
-import com.batuhan.chess.api.controller.UserController;
-import com.batuhan.chess.application.service.auth.JwtService;
-import com.batuhan.chess.domain.model.user.UserEntity;
-import com.batuhan.chess.domain.repository.UserRepository;
+import com.batuhan.chess.api.config.JwtAuthenticationFilter;
+import com.batuhan.chess.api.dto.user.*;
+import com.batuhan.chess.api.exception.UserAlreadyExistsException;
+import com.batuhan.chess.application.service.user.UserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.resilience4j.ratelimiter.RateLimiterConfig;
+import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Optional;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-/**
- * Web layer unit tests for UserController.
- * Validates the retrieval of user profile statistics, Elo rating calculations,
- * and appropriate HTTP status code responses for user lookups.
- */
-@WebMvcTest(UserController.class)
-@AutoConfigureMockMvc(addFilters = false)
-@DisplayName("User Controller Web Layer Tests")
+@WebMvcTest(
+    controllers = UserController.class,
+    excludeAutoConfiguration = {SecurityAutoConfiguration.class},
+    excludeFilters = @ComponentScan.Filter(
+        type = FilterType.ASSIGNABLE_TYPE,
+        classes = JwtAuthenticationFilter.class
+    )
+)
 class UserControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
-    private UserRepository userRepository;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @MockitoBean
-    private JwtService jwtService;
+    private UserService userService;
+
+    @TestConfiguration
+    static class TestConfig {
+        @Bean
+        public RateLimiterRegistry rateLimiterRegistry() {
+            return RateLimiterRegistry.of(RateLimiterConfig.custom().build());
+        }
+    }
+
+    @BeforeEach
+    void setUp() {
+        reset(userService);
+    }
 
     @Nested
-    @DisplayName("User Statistics Retrieval")
-    class UserStatsTests {
+    @DisplayName("GET /api/users/me Tests")
+    class GetProfileTests {
 
         @Test
-        @DisplayName("Should return 200 OK and complete stats when a valid user ID is provided")
-        void shouldReturnUserStatsSuccessfully() throws Exception {
+        @WithMockUser
+        @DisplayName("Should return 200 OK when fetching current user profile")
+        void getMyProfile_ValidRequest_ReturnsOk() throws Exception {
             // Arrange
-            Long userId = 1L;
-            UserEntity user = UserEntity.builder()
-                .id(userId)
-                .username("batuhan")
-                .eloRating(1500)
-                .totalWins(10)
-                .totalLosses(5)
-                .totalDraws(2)
-                .build();
-
-            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            UserResponseDTO mockResponse = UserResponseDTO.builder().username("batuhan").build();
+            when(userService.getProfile()).thenReturn(mockResponse);
 
             // Act & Assert
-            mockMvc.perform(get("/api/users/{id}/stats", userId)
-                    .contentType(MediaType.APPLICATION_JSON))
+            mockMvc.perform(get("/api/users/me"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("batuhan"))
-                .andExpect(jsonPath("$.elo").value(1500))
-                .andExpect(jsonPath("$.wins").value(10))
-                .andExpect(jsonPath("$.losses").value(5))
-                .andExpect(jsonPath("$.draws").value(2));
+                .andExpect(jsonPath("$.username").value("batuhan"));
+        }
+    }
 
-            verify(userRepository).findById(userId);
+    @Nested
+    @DisplayName("PUT /api/users/me Tests")
+    class UpdateProfileTests {
+
+        @Test
+        @WithMockUser
+        @DisplayName("Should return 204 No Content when profile update is valid")
+        void updateProfile_ValidRequest_ReturnsNoContent() throws Exception {
+            // Arrange
+            UpdateProfileRequest request = new UpdateProfileRequest("new_batuhan", "new@mail.com");
+            doNothing().when(userService).updateProfile(any(UpdateProfileRequest.class));
+
+            // Act & Assert
+            mockMvc.perform(put("/api/users/me")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNoContent());
+
+            verify(userService, times(1)).updateProfile(any(UpdateProfileRequest.class));
         }
 
         @Test
-        @DisplayName("Should return 200 OK and default Elo rating (400) when user has no set rating")
-        void shouldReturnDefaultEloWhenUserRatingIsNull() throws Exception {
+        @WithMockUser
+        @DisplayName("Should return 400 Bad Request when validation fails")
+        void updateProfile_InvalidRequest_ReturnsBadRequest() throws Exception {
             // Arrange
-            Long userId = 2L;
-            UserEntity user = UserEntity.builder()
-                .id(userId)
-                .username("new_player")
-                .eloRating(null)
-                .totalWins(0)
-                .totalLosses(0)
-                .totalDraws(0)
-                .build();
-
-            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            UpdateProfileRequest request = new UpdateProfileRequest("hi", "invalid-email");
 
             // Act & Assert
-            mockMvc.perform(get("/api/users/{id}/stats", userId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.elo").value(400));
+            mockMvc.perform(put("/api/users/me")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
         }
 
         @Test
-        @DisplayName("Should return 404 Not Found when searching for a non-existent user ID")
-        void shouldReturnNotFoundWhenUserDoesNotExist() throws Exception {
+        @WithMockUser
+        @DisplayName("Should return 409 Conflict when username is already taken")
+        void updateProfile_DuplicateUsername_ReturnsConflict() throws Exception {
             // Arrange
-            Long userId = 99L;
-            when(userRepository.findById(userId)).thenReturn(Optional.empty());
+            UpdateProfileRequest request = new UpdateProfileRequest("existingUser", "test@mail.com");
+            doThrow(new UserAlreadyExistsException("Already exists"))
+                .when(userService).updateProfile(any(UpdateProfileRequest.class));
 
             // Act & Assert
-            mockMvc.perform(get("/api/users/{id}/stats", userId))
-                .andExpect(status().isNotFound());
+            mockMvc.perform(put("/api/users/me")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("PUT /api/users/me/password Tests")
+    class ChangePasswordTests {
+
+        @Test
+        @WithMockUser
+        @DisplayName("Should return 204 No Content when password change is valid")
+        void changePassword_ValidRequest_ReturnsNoContent() throws Exception {
+            // Arrange
+            ChangePasswordRequest request = new ChangePasswordRequest("oldPass123", "newPass123");
+
+            // Act & Assert
+            mockMvc.perform(put("/api/users/me/password")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNoContent());
+
+            verify(userService, times(1)).changePassword(any(ChangePasswordRequest.class));
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("Should return 400 Bad Request when new password is too weak")
+        void changePassword_WeakPassword_ReturnsBadRequest() throws Exception {
+            // Arrange
+            ChangePasswordRequest request = new ChangePasswordRequest("oldPass123", "123");
+
+            // Act & Assert
+            mockMvc.perform(put("/api/users/me/password")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
+    @DisplayName("DELETE /api/users/me Tests")
+    class DeleteAccountTests {
+
+        @Test
+        @WithMockUser
+        @DisplayName("Should return 204 No Content when password confirmation is correct")
+        void deleteAccount_ValidRequest_ReturnsNoContent() throws Exception {
+            // Arrange
+            DeleteAccountRequest request = new DeleteAccountRequest("password123");
+
+            // Act & Assert
+            mockMvc.perform(delete("/api/users/me")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNoContent());
+
+            verify(userService, times(1)).deleteAccount(any(DeleteAccountRequest.class));
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("Should return 400 Bad Request when password field is blank")
+        void deleteAccount_BlankPassword_ReturnsBadRequest() throws Exception {
+            // Arrange
+            DeleteAccountRequest request = new DeleteAccountRequest("");
+
+            // Act & Assert
+            mockMvc.perform(delete("/api/users/me")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
         }
     }
 }

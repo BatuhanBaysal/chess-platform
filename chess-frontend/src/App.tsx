@@ -5,6 +5,7 @@ import Layout from './components/common/Layout';
 import AuthCard from './features/auth/AuthContainer';
 import ChessBoard from './components/chess/ChessBoard';
 import LandingPage from './features/menu/LandingPage';
+import ProfileDashboard from './features/user/ProfileDashboard';
 import { Terminal } from 'lucide-react';
 
 export type ChessTheme = 'classic' | 'modern' | 'emerald';
@@ -12,7 +13,7 @@ export type TimeControl = 3 | 10 | 30;
 
 function App() {
   const { user, login, register, loginAsGuest, loading: authLoading } = useAuth();
-  const [view, setView] = useState<'MENU' | 'GAME'>('MENU');
+  const [view, setView] = useState<'MENU' | 'GAME' | 'PROFILE'>('MENU');
   
   const [gameConfig, setGameConfig] = useState({
     playerName: '',
@@ -76,6 +77,10 @@ function App() {
     setView('MENU');
   }, [resetChessState]);
 
+  const handleNavigateToProfile = useCallback(() => {
+    setView('PROFILE');
+  }, []);
+
   const handleStartMatch = (theme: ChessTheme, time: TimeControl, roomId?: string) => {
     const targetRoomId = roomId && roomId.trim() !== "" ? roomId : undefined;
     setGameConfig(prev => ({ 
@@ -132,9 +137,12 @@ function App() {
       setColorMode={setColorMode}
       view={view}            
       onBackToMenu={handleBackToMenu}
+      onNavigateToProfile={handleNavigateToProfile}
     >
       {view === 'MENU' ? (
         <LandingPage onStart={handleStartMatch} />
+      ) : view === 'PROFILE' ? (
+        <ProfileDashboard />
       ) : (!game || !isConnected) ? (
         <div className="min-h-screen bg-white dark:bg-[#020617] flex items-center justify-center flex-col gap-8 text-slate-900 dark:text-white">
           <div className="relative flex items-center justify-center">

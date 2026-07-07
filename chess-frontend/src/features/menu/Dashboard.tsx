@@ -1,15 +1,16 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { getUserStats, getPlayerHistory } from '../../api/gameService';
+import { getPlayerHistory } from '../../api/gameService';
+import { getMyProfile } from '../../api/userService';
 import { Trophy, Swords, User, TrendingUp, History, RefreshCw, Loader2, LayoutDashboard, AlertCircle } from 'lucide-react';
 import ChessBoard from '../../components/chess/ChessBoard';
 import { useChess } from '../../hooks/useChess';
 
 interface Stats {
     username: string;
-    elo: number;
-    wins: number;
-    losses: number;
-    draws: number;
+    eloRating: number;
+    totalWins: number;
+    totalLosses: number;
+    totalDraws: number;
 }
 
 interface GameHistory {
@@ -54,7 +55,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) => {
 
         try {
             const [statsData, historyData] = await Promise.all([
-                getUserStats(userId),
+                getMyProfile(), 
                 getPlayerHistory(userId)
             ]);
 
@@ -75,17 +76,14 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) => {
     }, [userId]);
 
     useEffect(() => {
-    if (activeLobbyId) {
-        startNewGame(activeLobbyId);
-    }
-    
-    return () => {
-        if (game?.status === 'CHECKMATE' || game?.status === 'DRAW') {
+        if (activeLobbyId) {
+            startNewGame(activeLobbyId);
         }
         
-        resetChessState();
-    };
-}, [activeLobbyId, startNewGame, resetChessState, game?.status, game?.gameId]);
+        return () => {
+            resetChessState();
+        };
+    }, [activeLobbyId, startNewGame, resetChessState]);
 
     useEffect(() => {
         loadDashboardData();
@@ -96,9 +94,9 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) => {
 
         return [
             { label: 'Agent', value: stats.username, icon: <User size={12} />, color: 'border-blue-500' },
-            { label: 'ELO', value: stats.elo, icon: <TrendingUp size={12} />, color: 'border-yellow-500' },
-            { label: 'Wins', value: stats.wins, icon: <Trophy size={12} />, color: 'border-emerald-500' },
-            { label: 'Losses', value: stats.losses, icon: <Swords size={12} />, color: 'border-rose-500' }
+            { label: 'ELO', value: stats.eloRating, icon: <TrendingUp size={12} />, color: 'border-yellow-500' },
+            { label: 'Wins', value: stats.totalWins, icon: <Trophy size={12} />, color: 'border-emerald-500' },
+            { label: 'Losses', value: stats.totalLosses, icon: <Swords size={12} />, color: 'border-rose-500' }
         ];
     }, [stats]);
 

@@ -43,11 +43,6 @@ export const loginAsGuest = async () => {
     return (await api.post('/api/auth/guest')).data;
 };
 
-export const getUserStats = async (userId: number) => {
-    const response = await api.get(`/api/users/${userId}/stats`);
-    return response.data;
-};
-
 export const createLobby = async (userId: number, username: string, timeControl: number) => {
     const response = await api.post(`/api/lobby/create`, null, {
         params: { userId, username, time: timeControl }

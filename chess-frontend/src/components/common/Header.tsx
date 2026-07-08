@@ -1,20 +1,26 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { Sun, Moon, LogOut, User, LayoutDashboard } from 'lucide-react';
+import { Sun, Moon, LogOut, User, LayoutDashboard, Settings } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
 interface HeaderProps {
   colorMode: string;
   setColorMode: React.Dispatch<React.SetStateAction<string>>;
-  view?: 'MENU' | 'GAME';
+  view?: 'MENU' | 'GAME' | 'PROFILE';
   onBackToMenu?: () => void;
+  onNavigateToProfile?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ colorMode, setColorMode, view, onBackToMenu }) => {
+const Header: React.FC<HeaderProps> = ({ 
+  colorMode, 
+  setColorMode, 
+  view, 
+  onBackToMenu, 
+  onNavigateToProfile 
+}) => {
   const { user, logout } = useAuth(); 
   const location = useLocation();
   const isDark = colorMode === 'dark';
-  
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
   return (
@@ -30,10 +36,33 @@ const Header: React.FC<HeaderProps> = ({ colorMode, setColorMode, view, onBackTo
           </button>
         )}
 
+        {view === 'PROFILE' && (
+          <button 
+            onClick={onBackToMenu}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/50 rounded-full text-[11px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-all"
+          >
+            <LayoutDashboard size={14} />
+            <span>Menu</span>
+          </button>
+        )}
+
         {!isAuthPage && user && (
-          <div className="flex items-center gap-2 px-3 py-1.5 border border-blue-500/30 bg-blue-500/10 rounded-full text-[11px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
-            <User size={14} />
-            <span>{user.username}</span>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 px-3 py-1.5 border border-blue-500/30 bg-blue-500/10 rounded-full text-[11px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
+              <User size={14} />
+              <span>{user.username}</span>
+            </div>
+            
+            {view === 'MENU' && (
+              <button 
+                onClick={onNavigateToProfile}
+                className="flex items-center gap-2 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/30 rounded-full text-[11px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 transition-colors"
+                title="Profile Settings"
+              >
+                <Settings size={14} />
+                <span>My Profile</span>
+              </button>
+            )}
           </div>
         )}
       </div>

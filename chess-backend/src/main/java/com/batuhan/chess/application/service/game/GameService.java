@@ -17,6 +17,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -271,18 +272,34 @@ public class GameService {
             .build();
     }
 
+    @CacheEvict(value = "users", key = "#white.username")
     private void applyEloChanges(UserEntity white, UserEntity black, GameResult result, GameEntity history) {
         if (white != null && black != null) {
             double whiteScore = getScoreFromResult(result);
             int wGain = eloService.calculateGain(white.getEloRating(), black.getEloRating(), whiteScore);
             int bGain = eloService.calculateGain(black.getEloRating(), white.getEloRating(), 1.0 - whiteScore);
+
             white.setEloRating(white.getEloRating() + wGain);
             black.setEloRating(black.getEloRating() + bGain);
+
+            if (result == GameResult.WHITE_WIN) {
+                white.setTotalWins(white.getTotalWins() + 1);
+                black.setTotalLosses(black.getTotalLosses() + 1);
+            } else if (result == GameResult.BLACK_WIN) {
+                black.setTotalWins(black.getTotalWins() + 1);
+                white.setTotalLosses(white.getTotalLosses() + 1);
+            } else {
+                white.setTotalDraws(white.getTotalDraws() + 1);
+                black.setTotalDraws(black.getTotalDraws() + 1);
+            }
+
             userRepository.save(white);
             userRepository.save(black);
+
             history.setWhiteEloGain(wGain);
             history.setBlackEloGain(bGain);
-            log.info("Elo updated. White: {} ({}), Black: {} ({})", white.getUsername(), wGain, black.getUsername(), bGain);
+            log.info("Stats and Elo updated. White: {} ({} wins), Black: {} ({} wins)",
+                white.getUsername(), white.getTotalWins(), black.getUsername(), black.getTotalWins());
         }
     }
 

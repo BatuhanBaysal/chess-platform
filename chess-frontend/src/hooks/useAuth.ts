@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 
-export type LoginCredentials = { username: string; password:  string };
+export type LoginCredentials = { username: string; password: string };
 export type RegisterCredentials = { username: string; email: string; password: string };
 
 export interface AuthUser {
@@ -29,6 +29,11 @@ export const useAuth = () => {
     }
     setLoading(false);
   }, []);
+
+  const updateUser = (newUser: AuthUser) => {
+    setUser(newUser);
+    localStorage.setItem('user', JSON.stringify(newUser));
+  };
 
   const login = async (creds: LoginCredentials) => {
     try {
@@ -89,5 +94,5 @@ export const useAuth = () => {
     window.location.href = '/';
   }, []);
 
-  return { user, login, register, loginAsGuest, logout, loading };
+  return { user, login, register, loginAsGuest, logout, updateUser, loading };
 };

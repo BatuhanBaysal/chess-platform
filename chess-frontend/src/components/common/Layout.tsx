@@ -6,8 +6,9 @@ interface LayoutProps {
   children: React.ReactNode;
   colorMode: string;
   setColorMode: React.Dispatch<React.SetStateAction<string>>;
-  view?: 'MENU' | 'GAME'; 
-  onBackToMenu?: () => void; 
+  view?: 'MENU' | 'GAME' | 'PROFILE'; 
+  onBackToMenu?: () => void;
+  onNavigateToProfile?: () => void; 
 }
 
 const Layout: React.FC<LayoutProps> = ({ 
@@ -15,7 +16,8 @@ const Layout: React.FC<LayoutProps> = ({
   colorMode, 
   setColorMode, 
   view, 
-  onBackToMenu 
+  onBackToMenu,
+  onNavigateToProfile 
 }) => {
   return (
     <div className="min-h-screen flex flex-col transition-colors duration-500">
@@ -23,7 +25,8 @@ const Layout: React.FC<LayoutProps> = ({
         colorMode={colorMode} 
         setColorMode={setColorMode}
         view={view} 
-        onBackToMenu={onBackToMenu} 
+        onBackToMenu={onBackToMenu}
+        onNavigateToProfile={onNavigateToProfile}
       />
       
       <main className="grow flex flex-col justify-center items-center w-full py-12">

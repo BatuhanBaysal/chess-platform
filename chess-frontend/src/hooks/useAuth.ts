@@ -7,7 +7,7 @@ export type RegisterCredentials = { username: string; email: string; password: s
 export interface AuthUser {
   id: number;
   username: string;
-  isGuest: boolean;
+  role: 'ROLE_USER' | 'ROLE_GUEST' | 'ROLE_ADMIN';
 }
 
 export const useAuth = () => {
@@ -22,9 +22,7 @@ export const useAuth = () => {
       try {
         setUser(JSON.parse(savedUser));
       } catch (e) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('userId');
+        logout(); 
       }
     }
     setLoading(false);
@@ -38,9 +36,9 @@ export const useAuth = () => {
   const login = async (creds: LoginCredentials) => {
     try {
       const response = await api.post('/api/auth/login', creds);
-      const { token, id, username, isGuest } = response.data;
+      const { token, id, username, role } = response.data;
       
-      const userData: AuthUser = { id: Number(id), username, isGuest: !!isGuest };
+      const userData: AuthUser = { id: Number(id), username, role };
       
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(userData));
@@ -66,12 +64,12 @@ export const useAuth = () => {
   const loginAsGuest = async (): Promise<AuthUser> => {
     try {
       const response = await api.post('/api/auth/guest');
-      const { token, id, username, isGuest } = response.data;
+      const { token, id, username, role } = response.data;
 
       const userData: AuthUser = { 
         id: Number(id), 
         username: username, 
-        isGuest: !!isGuest 
+        role: role 
       };
 
       localStorage.setItem('token', token);

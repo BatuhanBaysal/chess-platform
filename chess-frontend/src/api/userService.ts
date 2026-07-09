@@ -7,6 +7,7 @@ export interface UserResponse {
     totalWins: number;
     totalLosses: number;
     totalDraws: number;
+    role: 'ROLE_USER' | 'ROLE_GUEST' | 'ROLE_ADMIN';
 }
 
 export interface UpdateProfileRequest {

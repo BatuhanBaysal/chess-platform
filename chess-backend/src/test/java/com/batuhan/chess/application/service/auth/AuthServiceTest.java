@@ -66,7 +66,7 @@ class AuthServiceTest {
             .email("batuhan@chess.com")
             .password("encodedPassword")
             .role(UserRole.ROLE_USER)
-            .isGuest(false)
+            .role(UserRole.ROLE_USER)
             .eloRating(1200)
             .build();
     }
@@ -164,7 +164,13 @@ class AuthServiceTest {
         @DisplayName("Should create a temporary guest user and return a guest JWT")
         void shouldHandleGuestLoginSuccessfully() {
             // Arrange
-            when(userRepository.save(any(UserEntity.class))).thenReturn(testUser);
+            UserEntity guestUser = UserEntity.builder()
+                .username("guest_123")
+                .password("encodedPassword")
+                .role(UserRole.ROLE_GUEST)
+                .build();
+
+            when(userRepository.save(any(UserEntity.class))).thenReturn(guestUser);
             when(jwtService.generateToken(any())).thenReturn("guest-jwt-token");
             when(passwordEncoder.encode(anyString())).thenReturn("encodedRandomPassword");
 
@@ -172,10 +178,9 @@ class AuthServiceTest {
             AuthResponse response = authService.loginAsGuest();
 
             // Assert
-            assertThat(response)
-                .isNotNull()
-                .extracting(AuthResponse::token)
-                .isEqualTo("guest-jwt-token");
+            assertThat(response).isNotNull();
+            assertThat(response.token()).isEqualTo("guest-jwt-token");
+            assertThat(response.role()).isEqualTo(UserRole.ROLE_GUEST);
 
             verify(userRepository).save(any(UserEntity.class));
         }

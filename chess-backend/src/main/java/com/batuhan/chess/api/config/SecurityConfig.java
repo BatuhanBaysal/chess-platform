@@ -11,8 +11,12 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 
 import java.util.List;
+
+import static com.batuhan.chess.domain.model.user.UserRole.*;
 
 @Configuration
 @EnableWebSecurity
@@ -41,19 +45,27 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/api/auth/**",
                     "/api/lobby/**",
-                    "/api/users/**",
-                    "/api/games/**",
                     "/ws-chess/**",
                     "/actuator/**",
                     "/v3/api-docs/**",
                     "/swagger-ui/**",
                     "/swagger-ui.html"
                 ).permitAll()
+                .requestMatchers("/api/users/me/**").hasAnyRole(ADMIN, USER)
+                .requestMatchers("/api/games/**").hasAnyRole(ADMIN, USER, GUEST)
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public RoleHierarchy roleHierarchy() {
+        return RoleHierarchyImpl.withDefaultRolePrefix()
+            .role("ADMIN").implies("USER")
+            .role("USER").implies("GUEST")
+            .build();
     }
 }

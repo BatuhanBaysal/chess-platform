@@ -48,8 +48,6 @@ public class UserEntity {
     @Column(nullable = false)
     private UserRole role;
 
-    private boolean isGuest;
-
     private LocalDateTime createdAt;
 
     public int getTotalGames() {

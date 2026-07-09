@@ -6,6 +6,7 @@ import com.batuhan.chess.api.dto.auth.LoginRequest;
 import com.batuhan.chess.api.dto.auth.RegisterRequest;
 import com.batuhan.chess.application.service.auth.AuthService;
 import com.batuhan.chess.application.service.auth.JwtService;
+import com.batuhan.chess.domain.model.user.UserRole;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -99,7 +100,7 @@ class AuthControllerTest {
             // Arrange
             AuthResponse response = AuthResponse.builder()
                 .token("guest-token")
-                .isGuest(true)
+                .role(UserRole.ROLE_GUEST)
                 .build();
 
             when(authService.loginAsGuest()).thenReturn(response);
@@ -108,7 +109,7 @@ class AuthControllerTest {
             mockMvc.perform(post("/api/auth/guest"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").value("guest-token"))
-                .andExpect(jsonPath("$.isGuest").value(true));
+                .andExpect(jsonPath("$.role").value("ROLE_GUEST"));
 
             verify(authService).loginAsGuest();
         }

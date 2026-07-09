@@ -22,6 +22,7 @@ const Header: React.FC<HeaderProps> = ({
   const location = useLocation();
   const isDark = colorMode === 'dark';
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  const isGuest = user?.role === 'ROLE_GUEST';
 
   return (
     <header className="w-full px-8 py-4 flex justify-between items-center bg-white/80 dark:bg-[#020617]/80 backdrop-blur-md fixed top-0 left-0 z-50 transition-colors duration-500 border-b border-slate-200 dark:border-slate-800/50">
@@ -53,7 +54,7 @@ const Header: React.FC<HeaderProps> = ({
               <span>{user.username}</span>
             </div>
             
-            {view === 'MENU' && (
+            {view === 'MENU' && user && !isGuest && (
               <button 
                 onClick={onNavigateToProfile}
                 className="flex items-center gap-2 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/30 rounded-full text-[11px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 transition-colors"

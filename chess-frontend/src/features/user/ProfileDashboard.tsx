@@ -25,7 +25,7 @@ const Tooltip = ({ title, items }: { title: string, items: string[] }) => (
 );
 
 const ProfileDashboard: React.FC = () => {
-    const { logout, user, updateUser } = useAuth(); 
+    const { logout } = useAuth(); 
     
     const [initialData, setInitialData] = useState<UserResponse | null>(null);
     const [formData, setFormData] = useState<UserResponse | null>(null);
@@ -44,7 +44,8 @@ const ProfileDashboard: React.FC = () => {
 
     const isPasswordStrong = useMemo(() => /^(?=.*\d)(?=.*[a-z]).{8,}$/.test(passwordData.newPassword), [passwordData.newPassword]);
     const isDirty = useMemo(() => JSON.stringify(formData) !== JSON.stringify(initialData), [formData, initialData]);
-    const canSave = useMemo(() => isDirty && (formData?.username?.trim() !== '') && (formData?.email?.trim() !== '') && !loading, [isDirty, formData, loading]);
+    const isValidEmail = (email: string) => /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(email);
+    const canSave = useMemo(() => isDirty && (formData?.username?.trim() !== '') && isValidEmail(formData?.email || '') && !loading, [isDirty, formData, loading]);
 
     useEffect(() => {
         let isMounted = true;
@@ -68,13 +69,16 @@ const ProfileDashboard: React.FC = () => {
     };
 
     const handleSave = async () => {
-        if (!formData || !canSave) return;
+    if (!formData || !canSave) return;
         setLoading(true); setProfileError(null); setSuccess(null);
         try {
             await updateMyProfile({ username: formData.username, email: formData.email });
-            updateUser({ ...user!, username: formData.username });
-            setInitialData(formData); setIsEditing(false); setSuccess("Profile updated successfully!");
-        } catch (err: any) { setProfileError(err.response?.data?.message || "Update failed"); } 
+            alert("Your profile information has been updated. For security reasons, please log in again.");
+            localStorage.setItem('profileUpdated', 'true');
+            logout(); 
+        } catch (err: any) { 
+            setProfileError(err.response?.data?.message || "Update failed"); 
+        } 
         finally { setLoading(false); }
     };
 
@@ -83,9 +87,11 @@ const ProfileDashboard: React.FC = () => {
         setLoading(true); setPasswordError(null); setSuccess(null);
         try {
             await changeMyPassword(passwordData);
-            setPasswordData({ currentPassword: '', newPassword: '' });
-            setSuccess("Password updated successfully!");
-        } catch (err: any) { setPasswordError(err.response?.data?.message || "Password update failed"); } 
+            alert("Password updated successfully! Please log in again.");
+            logout(); 
+        } catch (err: any) { 
+            setPasswordError(err.response?.data?.message || "Password update failed"); 
+        } 
         finally { setLoading(false); }
     };
 
@@ -150,7 +156,7 @@ const ProfileDashboard: React.FC = () => {
                             <Tooltip title="Email Address" items={['Used for notifications.', 'Provides access for password reset.']} />
                         </div>
                         <Mail className="absolute left-4 top-11 text-slate-400" size={20} />
-                        <input className={`w-full bg-slate-50 dark:bg-slate-950 p-4 pl-12 rounded-2xl border ${profileError ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} focus:ring-2 focus:ring-blue-500 outline-none`} disabled={!isEditing} value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} />
+                        <input className={`w-full bg-slate-50 dark:bg-slate-950 p-4 pl-12 rounded-2xl border ${formData.email && !isValidEmail(formData.email) ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} focus:ring-2 focus:ring-blue-500 outline-none`} disabled={!isEditing} value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} />
                     </div>
                 </div>
                 <div className="flex gap-4 pt-2">

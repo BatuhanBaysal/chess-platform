@@ -39,6 +39,7 @@ public class UserService {
             .totalWins(user.getTotalWins())
             .totalLosses(user.getTotalLosses())
             .totalDraws(user.getTotalDraws())
+            .role(user.getRole())
             .build();
     }
 

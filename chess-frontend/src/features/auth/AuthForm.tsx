@@ -55,21 +55,29 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin }
   const strengthColors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-emerald-500'];
 
   const validate = () => {
-    let isValid = true;
-    const newErrors = { username: '', email: '', password: '' };
+      let isValid = true;
+      const newErrors = { username: '', email: '', password: '' };
 
-    if (!formData.username) { 
-      newErrors.username = isRegistering ? 'Username is required' : 'Username or Email is required'; 
-      isValid = false; 
-    }
-    if (isRegistering && !formData.email.includes('@')) { 
-      newErrors.email = 'Valid email is required'; 
-      isValid = false; 
-    }
-    if (!formData.password) { newErrors.password = 'Password is required'; isValid = false; }
+      if (!formData.username) { 
+          newErrors.username = isRegistering ? 'Username is required' : 'Username or Email is required'; 
+          isValid = false; 
+      }
 
-    setErrors(newErrors);
-    return isValid;
+      if (isRegistering) {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!formData.email || !emailRegex.test(formData.email)) {
+              newErrors.email = 'Please enter a valid email address';
+              isValid = false;
+          }
+      }
+
+      if (!formData.password) { 
+          newErrors.password = 'Password is required'; 
+          isValid = false; 
+      }
+
+      setErrors(newErrors);
+      return isValid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

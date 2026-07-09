@@ -46,7 +46,6 @@ public class AuthService {
             .email(request.email())
             .password(passwordEncoder.encode(request.password()))
             .role(UserRole.ROLE_USER)
-            .isGuest(false)
             .build();
 
         userRepository.save(user);
@@ -79,7 +78,7 @@ public class AuthService {
             .username(user.getUsername())
             .email(user.getEmail())
             .eloRating(user.getEloRating())
-            .isGuest(user.isGuest())
+            .role(user.getRole())
             .build();
     }
 
@@ -92,9 +91,7 @@ public class AuthService {
             .username(guestUsername)
             .email(guestUsername + "@chess.com")
             .password(passwordEncoder.encode(UUID.randomUUID().toString()))
-            .role(UserRole.ROLE_USER)
-            .isGuest(true)
-            .eloRating(400)
+            .role(UserRole.ROLE_GUEST)
             .build();
 
         UserEntity savedUser = userRepository.save(guestUser);
@@ -102,7 +99,7 @@ public class AuthService {
         var userDetails = org.springframework.security.core.userdetails.User.builder()
             .username(savedUser.getUsername())
             .password(savedUser.getPassword())
-            .roles("USER")
+            .roles(savedUser.getRole().name().replace("ROLE_", ""))
             .build();
 
         String jwtToken = jwtService.generateToken(userDetails);
@@ -113,7 +110,7 @@ public class AuthService {
             .username(savedUser.getUsername())
             .email(savedUser.getEmail())
             .eloRating(savedUser.getEloRating())
-            .isGuest(true)
+            .role(savedUser.getRole())
             .build();
     }
 

@@ -44,7 +44,7 @@ class UserEntityTest {
                 assertThat(u.getTotalWins()).isZero();
                 assertThat(u.getTotalLosses()).isZero();
                 assertThat(u.getTotalDraws()).isZero();
-                assertThat(u.isGuest()).isFalse();
+                assertThat(u.getRole()).isEqualTo(UserRole.ROLE_USER);
             });
         }
     }

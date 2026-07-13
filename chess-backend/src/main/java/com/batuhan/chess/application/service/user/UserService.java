@@ -12,10 +12,14 @@ import com.batuhan.chess.domain.repository.UserRepository;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +45,31 @@ public class UserService {
             .totalDraws(user.getTotalDraws())
             .role(user.getRole())
             .build();
+    }
+
+    @Cacheable(value = "leaderboard", unless = "#result.isEmpty()")
+    public List<UserResponseDTO> getLeaderboard() {
+        return userRepository.findTop3ByOrderByEloRatingDesc(PageRequest.of(0, 3))
+            .stream()
+            .map(user -> UserResponseDTO.builder()
+                .username(user.getUsername())
+                .eloRating(user.getEloRating())
+                .build())
+            .toList();
+    }
+
+    public List<UserResponseDTO> getAllLeaderboard() {
+        return userRepository.findAllByOrderByEloRatingDesc()
+            .stream()
+            .map(user -> UserResponseDTO.builder()
+                .username(user.getUsername())
+                .eloRating(user.getEloRating())
+                .totalWins(user.getTotalWins())
+                .totalLosses(user.getTotalLosses())
+                .totalDraws(user.getTotalDraws())
+                .totalGames(user.getTotalGames())
+                .build())
+            .toList();
     }
 
     @Transactional

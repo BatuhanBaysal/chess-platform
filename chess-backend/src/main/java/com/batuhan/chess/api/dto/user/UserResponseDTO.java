@@ -11,5 +11,6 @@ public record UserResponseDTO(
     int totalWins,
     int totalLosses,
     int totalDraws,
+    int totalGames,
     UserRole role
 ) {}

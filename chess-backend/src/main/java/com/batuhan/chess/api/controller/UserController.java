@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/users")
@@ -29,6 +31,20 @@ public class UserController {
     public ResponseEntity<UserResponseDTO> getMyProfile() {
         log.info("Fetching profile for current user");
         return ResponseEntity.ok(userService.getProfile());
+    }
+
+    @Operation(summary = "Get global leaderboard top 3")
+    @GetMapping("/leaderboard")
+    public ResponseEntity<List<UserResponseDTO>> getLeaderboard() {
+        log.info("Fetching global leaderboard top 3 users");
+        return ResponseEntity.ok(userService.getLeaderboard());
+    }
+
+    @Operation(summary = "Get global leaderboard all users")
+    @GetMapping("/leaderboard/all")
+    public ResponseEntity<List<UserResponseDTO>> getAllLeaderboard() {
+        log.info("Fetching global leaderboard for all users");
+        return ResponseEntity.ok(userService.getAllLeaderboard());
     }
 
     @Operation(summary = "Update user profile")

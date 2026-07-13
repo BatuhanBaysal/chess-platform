@@ -6,6 +6,7 @@ import AuthCard from './features/auth/AuthContainer';
 import ChessBoard from './components/chess/ChessBoard';
 import LandingPage from './features/menu/LandingPage';
 import ProfileDashboard from './features/user/ProfileDashboard';
+import FullLeaderboardPage from './features/menu/FullLeaderboardPage';
 import { Terminal } from 'lucide-react';
 
 export type ChessTheme = 'classic' | 'modern' | 'emerald';
@@ -13,7 +14,7 @@ export type TimeControl = 3 | 10 | 30;
 
 function App() {
   const { user, login, register, loginAsGuest, loading: authLoading } = useAuth();
-  const [view, setView] = useState<'MENU' | 'GAME' | 'PROFILE'>('MENU');
+  const [view, setView] = useState<'MENU' | 'GAME' | 'PROFILE' | 'LEADERBOARD'>('MENU');
   
   const [gameConfig, setGameConfig] = useState({
     playerName: '',
@@ -140,9 +141,14 @@ function App() {
       onNavigateToProfile={handleNavigateToProfile}
     >
       {view === 'MENU' ? (
-        <LandingPage onStart={handleStartMatch} />
+        <LandingPage 
+          onStart={handleStartMatch} 
+          setView={setView} 
+        />
       ) : view === 'PROFILE' ? (
         <ProfileDashboard />
+      ) : view === 'LEADERBOARD' ? (
+        <FullLeaderboardPage />
       ) : (!game || !isConnected) ? (
         <div className="min-h-screen bg-white dark:bg-[#020617] flex items-center justify-center flex-col gap-8 text-slate-900 dark:text-white">
           <div className="relative flex items-center justify-center">

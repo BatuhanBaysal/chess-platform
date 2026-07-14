@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file. This projec
 > **Project Lifecycle Governance Note:**
 > All development milestones, release tags, and version history have been retroactively configured to align with our production-ready lifecycle. This project is developed using **Professional Agile methodologies**, utilizing **GitHub Projects (Kanban Board)** for end-to-end task management—encompassing the full scope from backlog refinement to continuous delivery and stable production releases.
 
+## [1.1.0] - 2026-07-14
+
+### 🚀 Phase 16: User Experience & Dashboards (v1.1.0)
+> **Note:** This milestone marks the project's evolution from a purely functional game engine to a modern, analytical web application.
+
+- **2026-07-14:**
+    - **Interactive Performance Analytics (PR #95 | Issue #88):**
+        - Integrated a JavaScript data visualization module to render ELO progression and performance distributions.
+        - Enforced a strict maximum boundary of the last 5 activities on the central profile view, with a "View All Data" redirect for comprehensive history.
+
+- **2026-07-13:**
+    - **Global Leaderboard Integration (PR #95 | Issue #88):**
+        - Implemented a global leaderboard feature accessible via the main menu.
+        - Added backend ranking and analytics endpoints to support the "View All" scoreboard functionality[cite:
+
+- **2026-07-09:**
+    - **Security & RBAC Architecture (PR #94 | Issue #93):**
+        - Migrated authentication system from a legacy `isGuest` boolean flag to a robust Role-Based Access Control (RBAC) architecture.
+        - Enforced strict authorization for `ROLE_USER`, `ROLE_GUEST`, and `ROLE_ADMIN` enums to eliminate unauthorized UI visibility.
+        - Implemented mandatory session invalidation for critical profile updates and reinforced email format validation.
+
+- **2026-07-08:**
+    - **Profile & Account Management (PR #92 | Issue #87):**
+        - Implemented `ProfileDashboard` with toggleable read-only/edit states and client-side "dirty checking" to optimize backend transactions.
+        - Updated `GameService` to expose statistics for profile display.
+
+- **2026-07-04:**
+    - **User Service Refactoring (PR #91 | Issue #86):**
+        - Decoupled user profile operations into a secure `UserService` to prevent direct repository access.
+        - Implemented `GET/PUT /api/users/me` endpoints with Jakarta validation.
+        - Configured `Resilience4j` rate-limiting and `@CacheEvict` for secure, performant account updates.
+
 ---
 
 ## [1.0.0] - 2026-06-19
@@ -12,7 +44,7 @@ All notable changes to this project will be documented in this file. This projec
 ### 🚀 Phase 15: Official Stable Release (v1.0.0)
 > **Note:** This milestone marks the official transition of the project to its first production-ready, stable state. We have completed the core engine, secured the API, and implemented comprehensive observability.
 
-- **2026-06-19 (Upcoming Release):**
+- **2026-06-19:**
     - **Stable Production Foundation & Documentation (PR #50 | Issue #46):**
         - **Documentation Overhaul:**
             - Finalized comprehensive project documentation for the v1.0.0 stable release to ensure maintainability and user onboarding efficiency.

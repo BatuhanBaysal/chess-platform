@@ -1,4 +1,4 @@
-# ♟️ Chess Platform (v1.0.0) ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
+# ♟️ Chess Platform (v1.1.0) ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
 
 > *A Production-Ready Real-Time Chess Ecosystem Powered by Hexagonal Architecture and the LGTM Stack.*
 
@@ -170,7 +170,7 @@ The entire application ecosystem is managed using **Docker Compose** to ensure a
 ## 🎯 Engineering Highlights
 
 * **🧩 Clean Architecture & DDD:** Core logic is encapsulated in a pure Java domain layer, strictly decoupled from infrastructure layers (Spring Boot/WebSockets).
-* **⚡ Robust Rule Engine:** Full FIDE compliance (Castling, En Passant, Promotion) with server-authoritative timer enforcement.
+* **⚡ Robust Rule Engine:** Full FIDE compliance (Castling, En Passant, Promotion) implemented via a native Java domain layer using sealed classes and immutability, ensuring 100% control over the game logic without third-party engine dependencies.
 * **🔄 Full-Stack Observability:** Real-time system health and distributed tracing managed by the **LGTM stack** (Loki, Grafana, Tempo, Prometheus).
 * **🖥️ Modern React (v19) Stack:** High-performance UI utilizing Tailwind CSS and custom hooks for fluid, low-latency board interactions.
 * **🏆 Zero Technical Debt:** CI/CD-driven mechanized quality standards, maintaining >90% test coverage through integrated SonarQube gates.
@@ -193,27 +193,11 @@ The entire application ecosystem is managed using **Docker Compose** to ensure a
 - ✅ **Phase 12: Quality Assurance & Code Integrity** 🏆 - Expanding **JUnit 5/Mockito** coverage and integrating **SonarQube** for automated "Zero Technical Debt" reporting.
 - ✅ **Phase 13: Scalability & Resilience** ⚡ - Implementing **Resilience4j** (Circuit Breaker) and **Distributed Locking** with Redis.
 - ✅ **Phase 14: Core Engine Refactoring & UX Optimization** ⚙️ - Server-authoritative timer logic and enhanced UI responsiveness/notation feed.
-
-## 🔮 Future Work & Roadmap Milestones
-
-We are committed to the long-term evolution of the platform. The following milestones represent our upcoming development focus:
-
-### 🛠️ Phase 15: User Experience & Dashboard Expansion
-* **User Profiles:** Implementing a dedicated profile management dashboard for personal statistics, account settings, and role-based interface adjustments.
-* **Data Visualization:** Integrating interactive charts into the main menu to display player analytics.
-* **Advanced Dashboards:** Creating a deep-dive analytics page for comprehensive match history, performance metrics, and global leaderboard data.
-
-### 🛡️ Phase 16: Security, Resilience & Quality
-* **Game State Integrity:** Enhancing the `WebSocket` reconnection handler to enforce a **"Dismiss = Loss"** policy; manual session dismissal will automatically trigger a resignation event to ensure fair play.
-* **Performance & Security:** Implementing advanced request rate-limiting, hardened HTTP headers, and optimized JSON serialization for lower latency and increased throughput.
-* **Testing Expansion:** Scaling **JUnit 5/Mockito** coverage to include deep-dive integration testing for security flows and edge-case game state scenarios.
-
-### 👑 Phase 17: Administration & Operations
-* **Admin Dashboard:** Developing a role-based administrative UI integrated into the existing profile system to manage users, monitor system health, and oversee global platform operations.
-* **Production Deployment:** Transitioning to a live, cloud-native hosting environment and hardening the CI/CD pipeline for real-world observability and uptime.
-
-### 🧠 Phase 18: Advanced Intelligence
-* **AI Integration:** Implementing the **Stockfish** engine via UCI protocol to provide real-time move analysis, blunder detection, and hint mechanisms.
+- ✅ **Phase 15: Official Stable Release (v1.0.0)** 🚀 - Production-ready engine, OpenAPI/Swagger docs, and enhanced observability.
+- ✅ **Phase 16: User Experience & Dashboards (v1.1.0)** 📈 - Secure user profiles, RBAC authorization, and interactive performance analytics.
+- 🔜 **Phase 17: Administration & Operations** 👑 - Developing an RBAC-integrated Admin Dashboard to manage users, monitor health, and oversee global platform operations.
+- 🔜 **Phase 18: Security, Resilience & Quality** 🛡️ - Hardening game state integrity by enforcing a "Dismiss = Loss" policy within the WebSocket reconnection handler.
+- 🔜 **Phase 19: Advanced Intelligence** 🧠 - Integrating the Stockfish engine via UCI protocol to enable real-time move analysis, blunder detection, and hint mechanisms.
 
 ---
 

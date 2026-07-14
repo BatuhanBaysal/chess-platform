@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Plus, Users, Loader2, Sword, Shield, Clock, LayoutDashboard, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import Dashboard from './Dashboard';
@@ -22,7 +22,7 @@ interface GameRoom {
 
 interface LandingPageProps {
   onStart: (theme: ChessTheme, time: TimeControl, roomId?: string) => void;
-  setView: (view: 'MENU' | 'GAME' | 'PROFILE' | 'LEADERBOARD') => void;
+  setView: (view: 'MENU' | 'GAME' | 'PROFILE' | 'LEADERBOARD' | 'HISTORY') => void;
 }
 
 const THEME_PREVIEWS = {
@@ -33,6 +33,7 @@ const THEME_PREVIEWS = {
 
 const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
   const { user, loginAsGuest } = useAuth();
+  const matchHistoryRef = useRef<{ refresh: () => void }>(null);
   const [selectedTheme, setSelectedTheme] = useState<ChessTheme>('classic');
   const [selectedTime, setSelectedTime] = useState<TimeControl>(10);
   const [rooms, setRooms] = useState<GameRoom[]>([]);
@@ -140,7 +141,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
 
   if (activeGameId && game) {
     return (
-      <div className="min-h-screen bg-white dark:bg-slate-950 flex flex-col items-center p-4 pt-20 lg:pt-32 animate-in fade-in duration-500 transition-colors">
+      <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col items-center p-4 pt-20 lg:pt-32 animate-in fade-in duration-500 transition-colors">
         <div className="w-full max-w-7xl flex justify-between items-center mb-8 bg-slate-100 dark:bg-slate-900/50 p-6 rounded-3xl border border-slate-200 dark:border-white/5 backdrop-blur-xl">
            <div className="flex items-center gap-4">
               <button 
@@ -175,14 +176,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
           orientation={playerColor || 'WHITE'}
           whiteRemainingTimeMs={game.whiteRemainingTimeMs}
           blackRemainingTimeMs={game.blackRemainingTimeMs}
-          onBackToMenu={() => { setActiveGameId(null); resetChessState(); }}
+          onBackToMenu={() => { 
+              setActiveGameId(null); 
+              resetChessState(); 
+              matchHistoryRef.current?.refresh();
+          }}
         />
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-[70%] mx-auto pt-20 pb-12 space-y-8">
+    <div className="w-full max-w-[70%] mx-auto pt-20 pb-12 space-y-8 text-slate-900 dark:text-slate-100">
       {reconnectGame && (
         <div className="fixed bottom-10 right-10 z-50 animate-in slide-in-from-right-10 duration-500 w-[90%] max-w-xs">
           <div className="bg-blue-600 p-6 rounded-3xl shadow-2xl border border-white/10 flex flex-col gap-4">
@@ -226,8 +231,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
                   <p className="text-[8px] font-black opacity-40 uppercase text-slate-900 dark:text-white">Mode</p>
                   <p className="text-xs font-bold text-slate-900 dark:text-white">{selectedTime} MIN</p>
                </div>
-               <div className="w-px h-8 bg-slate-300 dark:bg-slate-700"></div>
-               <div className="text-center">
+                <div className="w-px h-8 bg-slate-300 dark:bg-slate-700"></div>
+                <div className="text-center">
                   <p className="text-[8px] font-black opacity-40 uppercase text-slate-900 dark:text-white">Theme</p>
                   <p className="text-xs font-bold uppercase text-slate-900 dark:text-white">{selectedTheme}</p>
                </div>
@@ -296,27 +301,27 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
              </div>
            </div>
            <div className="grow overflow-y-auto pr-2 space-y-3">
-              {rooms.length > 0 ? (
-                rooms.map(room => (
-                  <div key={room.roomId} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/50 flex justify-between items-center group hover:border-blue-500 transition-all shadow-sm">
-                    <div>
-                      <p className="text-[10px] font-black opacity-60 uppercase tracking-widest text-slate-900 dark:text-white">{room.hostName}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                          <Shield size={10} className="text-blue-500" />
-                          <p className="text-[10px] text-blue-600 dark:text-blue-400 font-bold">{room.timeControl} MIN</p>
-                      </div>
-                    </div>
-                    <button onClick={() => handleJoinRoom(room)} className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 shadow-md transition-all active:scale-95">
-                      Engage
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <div className="h-full flex flex-col items-center justify-center opacity-40 text-slate-900 dark:text-white">
-                  <Sword size={24} className="mb-2" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em]">No signals detected...</p>
-                </div>
-              )}
+             {rooms.length > 0 ? (
+               rooms.map(room => (
+                 <div key={room.roomId} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/50 flex justify-between items-center group hover:border-blue-500 transition-all shadow-sm">
+                   <div>
+                     <p className="text-[10px] font-black opacity-60 uppercase tracking-widest text-slate-900 dark:text-white">{room.hostName}</p>
+                     <div className="flex items-center gap-2 mt-0.5">
+                         <Shield size={10} className="text-blue-500" />
+                         <p className="text-[10px] text-blue-600 dark:text-blue-400 font-bold">{room.timeControl} MIN</p>
+                     </div>
+                   </div>
+                   <button onClick={() => handleJoinRoom(room)} className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 shadow-md transition-all active:scale-95">
+                     Engage
+                   </button>
+                 </div>
+               ))
+             ) : (
+               <div className="h-full flex flex-col items-center justify-center opacity-40 text-slate-900 dark:text-white">
+                 <Sword size={24} className="mb-2" />
+                 <p className="text-[10px] font-black uppercase tracking-[0.2em]">No signals detected...</p>
+               </div>
+             )}
            </div>
         </div>
       </div>
@@ -331,9 +336,22 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
           {user && <Dashboard userId={user.id} activeLobbyId={waitingRoomId} />}
         </div>
         <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 rounded-[3rem] p-8 shadow-sm">
-          <h2 className="text-lg font-black uppercase tracking-widest mb-6 text-slate-900 dark:text-white">Deployment History</h2>
-          {user && <MatchHistory userId={user.id} />}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-black uppercase tracking-widest text-slate-900 dark:text-white">
+            Deployment History
+          </h2>
+          <button 
+            onClick={() => setView('HISTORY')}
+            className="text-blue-500 hover:text-blue-400 text-xs font-black uppercase tracking-widest transition-all flex items-center gap-1"
+          >
+            View All &gt;
+          </button>
         </div>
+
+        {user && (
+          <MatchHistory ref={matchHistoryRef} userId={user.id} limit={5} />
+        )}
+      </div>
       </div>
     </div>
   );

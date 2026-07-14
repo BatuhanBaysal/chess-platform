@@ -14,7 +14,7 @@ const Footer: React.FC = () => {
       <div className="flex flex-col md:flex-row items-center gap-6">
         <div className="flex items-center gap-6">
           <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 opacity-60">
-            CHESS PLATFORM V1.0.0
+            CHESS PLATFORM V1.1.0
           </p>
           
           {isAuthPage ? (

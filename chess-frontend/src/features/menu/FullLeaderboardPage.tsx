@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { getFullLeaderboard, type LeaderboardUser } from '../../api/userService';
-import { ChevronLeft, ChevronRight, Medal } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Medal, ArrowLeft } from 'lucide-react';
 
-const FullLeaderboardPage: React.FC = () => {
+interface FullLeaderboardPageProps {
+    onBack: () => void;
+}
+
+const FullLeaderboardPage: React.FC<FullLeaderboardPageProps> = ({ onBack }) => {
     const [allUsers, setAllUsers] = useState<LeaderboardUser[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
@@ -26,6 +30,10 @@ const FullLeaderboardPage: React.FC = () => {
 
     return (
         <div className="min-h-screen p-6 md:p-12 max-w-8xl mx-auto text-slate-900 dark:text-white">
+            <button onClick={onBack} className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors mb-8 uppercase font-black text-xs tracking-widest">
+                <ArrowLeft size={16} /> Back to Dashboard
+            </button>
+
             <div className="flex flex-col mb-10">
                 <h2 className="text-6xl font-black uppercase tracking-tighter italic">
                     Global Rankings

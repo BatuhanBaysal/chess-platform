@@ -92,6 +92,7 @@ public class AuthService {
             .email(guestUsername + "@chess.com")
             .password(passwordEncoder.encode(UUID.randomUUID().toString()))
             .role(UserRole.ROLE_GUEST)
+            .eloRating(400)
             .build();
 
         UserEntity savedUser = userRepository.save(guestUser);

@@ -12,7 +12,7 @@
 
     <groupId>com.batuhan</groupId>
     <artifactId>chess-backend</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
     <name>chess-backend</name>
     <description>Hexagonal Architecture Chess Service with Spring Boot 3</description>
 

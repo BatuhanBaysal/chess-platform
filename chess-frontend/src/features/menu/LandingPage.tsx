@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Plus, Users, Loader2, Sword, Shield, Clock, LayoutDashboard, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import Dashboard from './Dashboard';
 import MatchHistory from './MatchHistory';
 import ChessBoard from '../../components/chess/ChessBoard';
+import GlobalLeaderboard from './GlobalLeaderboard';
 import { useChess } from '../../hooks/useChess';
 import api from '../../api/axios';
 import { getActiveGame } from '../../api/gameService';
@@ -21,6 +22,7 @@ interface GameRoom {
 
 interface LandingPageProps {
   onStart: (theme: ChessTheme, time: TimeControl, roomId?: string) => void;
+  setView: (view: 'MENU' | 'GAME' | 'PROFILE' | 'LEADERBOARD' | 'HISTORY') => void;
 }
 
 const THEME_PREVIEWS = {
@@ -29,8 +31,9 @@ const THEME_PREVIEWS = {
   emerald: { dark: '#6a8d5c', light: '#eceed1' }
 };
 
-const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
-  const {user, loginAsGuest } = useAuth();
+const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
+  const { user, loginAsGuest } = useAuth();
+  const matchHistoryRef = useRef<{ refresh: () => void }>(null);
   const [selectedTheme, setSelectedTheme] = useState<ChessTheme>('classic');
   const [selectedTime, setSelectedTime] = useState<TimeControl>(10);
   const [rooms, setRooms] = useState<GameRoom[]>([]);
@@ -138,23 +141,23 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
 
   if (activeGameId && game) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center p-4 pt-20 lg:pt-32 animate-in fade-in duration-500">
-        <div className="w-full max-w-350 flex justify-between items-center mb-8 bg-slate-900/50 p-6 rounded-3xl border border-white/5 backdrop-blur-xl">
+      <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col items-center p-4 pt-20 lg:pt-32 animate-in fade-in duration-500 transition-colors">
+        <div className="w-full max-w-7xl flex justify-between items-center mb-8 bg-slate-100 dark:bg-slate-900/50 p-6 rounded-3xl border border-slate-200 dark:border-white/5 backdrop-blur-xl">
            <div className="flex items-center gap-4">
               <button 
                 onClick={() => { setActiveGameId(null); resetChessState(); }} 
-                className="p-3 hover:bg-white/5 rounded-2xl transition-all text-slate-400 hover:text-white"
+                className="p-3 hover:bg-slate-200 dark:hover:bg-white/5 rounded-2xl transition-all text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
               >
                 <LayoutDashboard size={20} />
               </button>
               <div>
-                <h2 className="text-lg font-black uppercase tracking-widest text-white">Active Operations</h2>
+                <h2 className="text-lg font-black uppercase tracking-widest text-slate-900 dark:text-white">Active Operations</h2>
                 <p className="text-[10px] font-mono text-slate-500 uppercase">Sector: {activeGameId}</p>
               </div>
            </div>
-           <div className="flex items-center gap-3 bg-slate-800/50 px-4 py-2 rounded-xl border border-white/5">
+           <div className="flex items-center gap-3 bg-slate-200 dark:bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-300 dark:border-white/5">
               <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-rose-500'} animate-pulse`} />
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">
                 {isConnected ? 'Link Established' : 'Link Corrupted'}
               </span>
            </div>
@@ -173,17 +176,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
           orientation={playerColor || 'WHITE'}
           whiteRemainingTimeMs={game.whiteRemainingTimeMs}
           blackRemainingTimeMs={game.blackRemainingTimeMs}
-          onBackToMenu={() => { setActiveGameId(null); resetChessState(); }}
+          onBackToMenu={() => { 
+              setActiveGameId(null); 
+              resetChessState(); 
+              matchHistoryRef.current?.refresh();
+          }}
         />
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-350 mx-auto pt-20 pb-12 px-4 lg:px-8">
+    <div className="w-full max-w-[70%] mx-auto pt-20 pb-12 space-y-8 text-slate-900 dark:text-slate-100">
       {reconnectGame && (
-        <div className="fixed bottom-10 right-10 z-110 animate-in slide-in-from-right-10 duration-500 w-[90%] max-w-xs">
-          <div className="bg-blue-600 p-6 rounded-3xl shadow-2xl shadow-blue-500/40 border border-white/10 flex flex-col gap-4">
+        <div className="fixed bottom-10 right-10 z-50 animate-in slide-in-from-right-10 duration-500 w-[90%] max-w-xs">
+          <div className="bg-blue-600 p-6 rounded-3xl shadow-2xl border border-white/10 flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <RefreshCw className="text-white animate-spin-slow" size={20} />
               <span className="text-xs font-black uppercase tracking-widest text-white">Active Signal Found</span>
@@ -210,8 +217,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
       )}
 
       {waitingRoomId && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-blue-500/30 shadow-2xl shadow-blue-500/10 text-center max-w-sm w-[90%]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/90 dark:bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-200 dark:border-blue-500/30 shadow-2xl text-center max-w-sm w-[90%]">
             <div className="relative w-20 h-20 mx-auto mb-6">
               <div className="absolute inset-0 rounded-full border-4 border-blue-500/20"></div>
               <div className="absolute inset-0 rounded-full border-4 border-t-blue-500 animate-spin"></div>
@@ -221,12 +228,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-6">Room ID: {waitingRoomId}</p>
             <div className="flex items-center justify-center gap-4 py-3 px-6 bg-slate-100 dark:bg-slate-800 rounded-2xl mb-6">
               <div className="text-center">
-                  <p className="text-[8px] font-black opacity-40 uppercase">Mode</p>
+                  <p className="text-[8px] font-black opacity-40 uppercase text-slate-900 dark:text-white">Mode</p>
                   <p className="text-xs font-bold text-slate-900 dark:text-white">{selectedTime} MIN</p>
                </div>
-               <div className="w-px h-8 bg-slate-200 dark:bg-slate-700"></div>
-               <div className="text-center">
-                  <p className="text-[8px] font-black opacity-40 uppercase">Theme</p>
+                <div className="w-px h-8 bg-slate-300 dark:bg-slate-700"></div>
+                <div className="text-center">
+                  <p className="text-[8px] font-black opacity-40 uppercase text-slate-900 dark:text-white">Theme</p>
                   <p className="text-xs font-bold uppercase text-slate-900 dark:text-white">{selectedTheme}</p>
                </div>
             </div>
@@ -241,101 +248,110 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch auto-rows-fr">
-        <div className="flex flex-col gap-8">
-          <div className="p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800/60 bg-white dark:bg-slate-900/40 backdrop-blur-3xl shadow-xl">
-            <div className="space-y-8">
-              <section>
-                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest mb-3 text-slate-500 dark:text-slate-400 ml-1">
-                  <Clock size={12} /> Time Control
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[3, 10, 30].map(t => (
-                    <button key={t} onClick={() => setSelectedTime(t as TimeControl)} className={`py-3 rounded-xl text-[10px] font-black transition-all border ${selectedTime === t ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 text-slate-600 dark:text-slate-300'}`}>
-                      {t} MIN
-                    </button>
-                  ))}
-                </div>
-              </section>
-              <section>
-                <label className="block text-[10px] font-black uppercase tracking-widest mb-3 text-slate-500 dark:text-slate-400 ml-1">Board Aesthetic</label>
-                <div className="grid grid-cols-3 gap-3">
-                  {(['classic', 'modern', 'emerald'] as ChessTheme[]).map(theme => (
-                    <button key={theme} onClick={() => setSelectedTheme(theme)} className={`relative p-3 rounded-2xl transition-all border-2 flex flex-col items-center gap-3 ${selectedTheme === theme ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/5' : 'border-transparent bg-slate-50 dark:bg-slate-800/40'}`}>
-                      <div className="w-10 h-10 grid grid-cols-2 rounded-lg overflow-hidden shadow-sm">
-                        <div style={{ backgroundColor: THEME_PREVIEWS[theme].light }}></div>
-                        <div style={{ backgroundColor: THEME_PREVIEWS[theme].dark }}></div>
-                        <div style={{ backgroundColor: THEME_PREVIEWS[theme].dark }}></div>
-                        <div style={{ backgroundColor: THEME_PREVIEWS[theme].light }}></div>
-                      </div>
-                      <span className="text-[9px] font-black uppercase tracking-tighter text-slate-900 dark:text-white">{theme}</span>
-                    </button>
-                  ))}
-                </div>
-              </section>
-              <button 
-                onClick={handleCreateRoom} 
-                disabled={isCreating}
-                className="w-full py-5 flex items-center justify-center gap-3 rounded-3xl font-black uppercase tracking-[0.3em] text-xs transition-all bg-slate-900 text-white dark:bg-white dark:text-slate-950 hover:scale-[1.02] active:scale-[0.98] shadow-xl disabled:opacity-50"
-              >
-                {isCreating ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />} 
-                Initialize Match
-              </button>
-            </div>
-          </div>
-          <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 rounded-[3rem] p-6 shadow-lg flex flex-col grow">
-            {user && <Dashboard userId={user.id} activeLobbyId={waitingRoomId} />}
-          </div>
-        </div>
-        
-        <div className="flex flex-col gap-8">
-          <div className="p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800/60 bg-white dark:bg-slate-900/40 backdrop-blur-3xl shadow-xl h-full flex flex-col">
-             <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <Users className="text-blue-600" size={20} />
-                  <h2 className="text-lg font-black uppercase tracking-widest text-slate-900 dark:text-white">Active Operations</h2>
-                </div>
-                <div className="flex items-center gap-2">
-                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{rooms.length} Channels Open</span>
-                </div>
-             </div>
-             <div className="grow flex items-center justify-center">
-                {rooms.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-                    {rooms.map(room => (
-                      <div key={room.roomId} className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center group hover:border-blue-500 transition-all shadow-sm">
-                        <div>
-                          <p className="text-[10px] font-black opacity-40 uppercase tracking-widest text-slate-900 dark:text-white">Host</p>
-                          <p className="font-bold text-slate-900 dark:text-white">{room.hostName}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                              <Shield size={10} className="text-blue-500" />
-                              <p className="text-[10px] text-blue-600 dark:text-blue-400 font-bold">{room.timeControl} MIN</p>
-                          </div>
-                        </div>
-                        <button onClick={() => handleJoinRoom(room)} className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 shadow-md transition-all active:scale-95">
-                          Engage
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-20 text-center flex flex-col items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center opacity-20">
-                        <Sword size={24} />
+        <div className="p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800/60 bg-white dark:bg-slate-900/40 backdrop-blur-3xl shadow-sm">
+          <div className="space-y-8">
+            <section>
+              <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest mb-3 text-slate-500 dark:text-slate-400 ml-1">
+                <Clock size={12} /> Time Control
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[3, 10, 30].map(t => (
+                  <button key={t} onClick={() => setSelectedTime(t as TimeControl)} className={`py-3 rounded-xl text-[10px] font-black transition-all border ${selectedTime === t ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 text-slate-600 dark:text-slate-300'}`}>
+                    {t} MIN
+                  </button>
+                ))}
+              </div>
+            </section>
+            <section>
+              <label className="block text-[10px] font-black uppercase tracking-widest mb-3 text-slate-500 dark:text-slate-400 ml-1">Board Aesthetic</label>
+              <div className="grid grid-cols-3 gap-3">
+                {(['classic', 'modern', 'emerald'] as ChessTheme[]).map(theme => (
+                  <button key={theme} onClick={() => setSelectedTheme(theme)} className={`relative p-3 rounded-2xl transition-all border-2 flex flex-col items-center gap-3 ${selectedTheme === theme ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/5' : 'border-transparent bg-slate-100 dark:bg-slate-800/40'}`}>
+                    <div className="w-10 h-10 grid grid-cols-2 rounded-lg overflow-hidden shadow-sm">
+                      <div style={{ backgroundColor: THEME_PREVIEWS[theme].light }}></div>
+                      <div style={{ backgroundColor: THEME_PREVIEWS[theme].dark }}></div>
+                      <div style={{ backgroundColor: THEME_PREVIEWS[theme].dark }}></div>
+                      <div style={{ backgroundColor: THEME_PREVIEWS[theme].light }}></div>
                     </div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">No active combat signals detected...</p>
-                  </div>
-                )}
-             </div>
-          </div>
-          
-          <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 rounded-[3rem] p-8 shadow-xl text-slate-900 dark:text-slate-200 flex flex-col grow">
-            <h2 className="text-lg font-black uppercase tracking-widest mb-6">Deployment History</h2>
-            <div className="grow overflow-y-auto">
-              {user && <MatchHistory userId={user.id} />}
-            </div>
+                    <span className="text-[9px] font-black uppercase tracking-tighter text-slate-900 dark:text-white">{theme}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+            <button 
+              onClick={handleCreateRoom} 
+              disabled={isCreating}
+              className="w-full py-5 flex items-center justify-center gap-3 rounded-3xl font-black uppercase tracking-[0.3em] text-xs transition-all bg-slate-900 text-white dark:bg-white dark:text-slate-950 hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-50"
+            >
+              {isCreating ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />} 
+              Initialize Match
+            </button>
           </div>
         </div>
+
+        <div className="p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800/60 bg-white dark:bg-slate-900/40 backdrop-blur-3xl shadow-sm flex flex-col">
+           <div className="flex items-center justify-between mb-6">
+             <div className="flex items-center gap-3">
+               <Users className="text-blue-600" size={20} />
+               <h2 className="text-lg font-black uppercase tracking-widest text-slate-900 dark:text-white">Active Channels</h2>
+             </div>
+             <div className="flex items-center gap-2">
+                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                 <span className="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{rooms.length} Active</span>
+             </div>
+           </div>
+           <div className="grow overflow-y-auto pr-2 space-y-3">
+             {rooms.length > 0 ? (
+               rooms.map(room => (
+                 <div key={room.roomId} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/50 flex justify-between items-center group hover:border-blue-500 transition-all shadow-sm">
+                   <div>
+                     <p className="text-[10px] font-black opacity-60 uppercase tracking-widest text-slate-900 dark:text-white">{room.hostName}</p>
+                     <div className="flex items-center gap-2 mt-0.5">
+                         <Shield size={10} className="text-blue-500" />
+                         <p className="text-[10px] text-blue-600 dark:text-blue-400 font-bold">{room.timeControl} MIN</p>
+                     </div>
+                   </div>
+                   <button onClick={() => handleJoinRoom(room)} className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 shadow-md transition-all active:scale-95">
+                     Engage
+                   </button>
+                 </div>
+               ))
+             ) : (
+               <div className="h-full flex flex-col items-center justify-center opacity-40 text-slate-900 dark:text-white">
+                 <Sword size={24} className="mb-2" />
+                 <p className="text-[10px] font-black uppercase tracking-[0.2em]">No signals detected...</p>
+               </div>
+             )}
+           </div>
+        </div>
+      </div>
+
+      <div className="w-full bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 rounded-[3rem] p-8 shadow-sm">
+        <GlobalLeaderboard setView={setView} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch auto-rows-fr">
+        <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 rounded-[3rem] p-8 shadow-sm">
+          <h2 className="text-lg font-black uppercase tracking-widest mb-6 text-slate-900 dark:text-white">Command Center</h2>
+          {user && <Dashboard userId={user.id} activeLobbyId={waitingRoomId} />}
+        </div>
+        <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 rounded-[3rem] p-8 shadow-sm">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-black uppercase tracking-widest text-slate-900 dark:text-white">
+            Deployment History
+          </h2>
+          <button 
+            onClick={() => setView('HISTORY')}
+            className="text-blue-500 hover:text-blue-400 text-xs font-black uppercase tracking-widest transition-all flex items-center gap-1"
+          >
+            View All &gt;
+          </button>
+        </div>
+
+        {user && (
+          <MatchHistory ref={matchHistoryRef} userId={user.id} limit={5} />
+        )}
+      </div>
       </div>
     </div>
   );

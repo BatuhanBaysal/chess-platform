@@ -10,6 +10,15 @@ export interface UserResponse {
     role: 'ROLE_USER' | 'ROLE_GUEST' | 'ROLE_ADMIN';
 }
 
+export interface LeaderboardUser {
+    username: string;
+    eloRating: number;
+    totalWins: number;      
+    totalLosses: number;    
+    totalDraws: number; 
+    totalGames: number;    
+}
+
 export interface UpdateProfileRequest {
     username: string;
     email: string;
@@ -26,6 +35,16 @@ export interface DeleteAccountRequest {
 
 export const getMyProfile = async (): Promise<UserResponse> => {
     const response = await axios.get('/api/users/me');
+    return response.data;
+};
+
+export const getLeaderboard = async (): Promise<LeaderboardUser[]> => {
+    const response = await axios.get('/api/users/leaderboard');
+    return response.data;
+};
+
+export const getFullLeaderboard = async (): Promise<LeaderboardUser[]> => {
+    const response = await axios.get('/api/users/leaderboard/all');
     return response.data;
 };
 

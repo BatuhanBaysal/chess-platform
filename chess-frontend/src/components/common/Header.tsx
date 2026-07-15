@@ -6,7 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 interface HeaderProps {
   colorMode: string;
   setColorMode: React.Dispatch<React.SetStateAction<string>>;
-  view?: 'MENU' | 'GAME' | 'PROFILE';
+  view?: 'MENU' | 'GAME' | 'PROFILE' | 'LEADERBOARD'| 'HISTORY';
   onBackToMenu?: () => void;
   onNavigateToProfile?: () => void;
 }
@@ -27,17 +27,7 @@ const Header: React.FC<HeaderProps> = ({
   return (
     <header className="w-full px-8 py-4 flex justify-between items-center bg-white/80 dark:bg-[#020617]/80 backdrop-blur-md fixed top-0 left-0 z-50 transition-colors duration-500 border-b border-slate-200 dark:border-slate-800/50">
       <div className="flex items-center gap-3">
-        {view === 'GAME' && (
-          <button 
-            onClick={onBackToMenu}
-            className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/50 rounded-full text-[11px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-all"
-          >
-            <LayoutDashboard size={14} />
-            <span>Menu</span>
-          </button>
-        )}
-
-        {view === 'PROFILE' && (
+        { (view === 'GAME' || view === 'PROFILE' || view === 'LEADERBOARD'|| view === 'HISTORY') && (
           <button 
             onClick={onBackToMenu}
             className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/50 rounded-full text-[11px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-all"

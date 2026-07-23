@@ -317,6 +317,10 @@ public class GameService {
         return (game.getCurrentTurn() == Color.WHITE) ? GameResult.BLACK_WIN : GameResult.WHITE_WIN;
     }
 
+    public Map<String, Game> getActiveGamesMap() {
+        return activeGames;
+    }
+
     private double getScoreFromResult(GameResult result) {
         return switch (result) {
             case WHITE_WIN -> 1.0;

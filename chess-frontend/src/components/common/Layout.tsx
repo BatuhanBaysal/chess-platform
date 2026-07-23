@@ -6,7 +6,7 @@ interface LayoutProps {
   children: React.ReactNode;
   colorMode: string;
   setColorMode: React.Dispatch<React.SetStateAction<string>>;
-  view?: 'MENU' | 'GAME' | 'PROFILE' | 'LEADERBOARD' | 'HISTORY'; 
+  view?: 'MENU' | 'GAME' | 'PROFILE' | 'LEADERBOARD' | 'HISTORY' | 'ADMIN';
   onBackToMenu?: () => void;
   onNavigateToProfile?: () => void; 
 }

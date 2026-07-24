@@ -1,6 +1,5 @@
 package com.batuhan.chess.api.config;
 
-import com.batuhan.chess.api.config.JwtAuthenticationFilter;
 import com.batuhan.chess.application.service.auth.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -15,12 +14,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.util.Date;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -114,6 +118,7 @@ class JwtAuthenticationFilterTest {
 
     @Nested
     @DisplayName("Token Validation and Authentication")
+    @MockitoSettings(strictness = Strictness.LENIENT)
     class AuthenticationTests {
 
         @Test
@@ -127,8 +132,9 @@ class JwtAuthenticationFilterTest {
             when(request.getServletPath()).thenReturn("/api/chess/move");
             when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
             when(jwtService.extractUsername(token)).thenReturn(username);
+            when(jwtService.extractClaim(eq(token), any())).thenReturn(Date.from(Instant.now().plusSeconds(3600)));
+            when(jwtService.extractRoles(token)).thenReturn(List.of("ROLE_USER"));
             when(userDetailsService.loadUserByUsername(username)).thenReturn(userDetails);
-            when(jwtService.isTokenValid(token, userDetails)).thenReturn(true);
 
             // Act
             jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);

@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file. This projec
 > **Project Lifecycle Governance Note:**
 > All development milestones, release tags, and version history have been retroactively configured to align with our production-ready lifecycle. This project is developed using **Professional Agile methodologies**, utilizing **GitHub Projects (Kanban Board)** for end-to-end task management—encompassing the full scope from backlog refinement to continuous delivery and stable production releases.
 
+## [1.2.0] - 2026-07-23
+
+### 🚀 Phase 17: Platform Governance & Resilience (v1.2.0)
+> **Note:** This milestone establishes centralized operational oversight and administrative governance to ensure robust platform stability.
+
+- **2026-07-23:**
+    - **Admin Dashboard & Operational Control Center (PR #102 | Issue #96):**
+        - Implemented a secure `/admin` route protected by an RBAC guard, restricting access exclusively to `ROLE_ADMIN` users.
+        - Created dynamic data grids for comprehensive user management (including status resets and soft-delete capabilities) and live tracking of active game sessions.
+        - Integrated a Developer Sandbox section to trigger and troubleshoot specific game state testing routines efficiently.
+
+---
+
 ## [1.1.0] - 2026-07-14
 
 ### 🚀 Phase 16: User Experience & Dashboards (v1.1.0)

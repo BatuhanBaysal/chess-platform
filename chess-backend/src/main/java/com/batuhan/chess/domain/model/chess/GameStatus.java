@@ -8,10 +8,11 @@ public enum GameStatus {
     RESIGNED,
     TIMEOUT,
     DRAW,
-    CLOSING;
+    CLOSING,
+    ABANDONED;
 
     public boolean isFinished() {
         return this == CHECKMATE || this == STALEMATE ||
-            this == RESIGNED || this == TIMEOUT || this == DRAW || this == CLOSING;
+            this == RESIGNED || this == TIMEOUT || this == DRAW || this == CLOSING || this == ABANDONED;
     }
 }

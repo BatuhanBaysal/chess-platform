@@ -48,6 +48,9 @@ public class UserEntity {
     @Column(nullable = false)
     private UserRole role;
 
+    @Builder.Default
+    private boolean active = true;
+
     private LocalDateTime createdAt;
 
     public int getTotalGames() {

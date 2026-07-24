@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useChess } from './hooks/useChess';
 import { useAuth } from './hooks/useAuth';
 import Layout from './components/common/Layout';
@@ -7,16 +8,21 @@ import ChessBoard from './components/chess/ChessBoard';
 import LandingPage from './features/menu/LandingPage';
 import ProfileDashboard from './features/user/ProfileDashboard';
 import FullLeaderboardPage from './features/menu/FullLeaderboardPage';
-import { Terminal } from 'lucide-react';
 import AllMatchHistory from './features/menu/AllMatchHistory';
+import { ProtectedRoute } from './components/common/ProtectedRoute';
+import AdminDashboard from './features/admin/AdminDashboard';
+import { Terminal } from 'lucide-react';
 
 export type ChessTheme = 'classic' | 'modern' | 'emerald';
 export type TimeControl = 3 | 10 | 30;
 
 function App() {
   const { user, login, register, loginAsGuest, loading: authLoading } = useAuth();
-  const [view, setView] = useState<'MENU' | 'GAME' | 'PROFILE' | 'LEADERBOARD' | 'HISTORY'>(() => {
-    return (localStorage.getItem('chess_current_view') as any) || 'MENU';
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [view, setView] = useState<'MENU' | 'GAME' | 'PROFILE' | 'LEADERBOARD' | 'HISTORY' | 'ADMIN'>(() => {
+    return (localStorage.getItem('chess_current_view') as 'MENU' | 'GAME' | 'PROFILE' | 'LEADERBOARD' | 'HISTORY' | 'ADMIN') || 'MENU';
   });
   
   const [gameConfig, setGameConfig] = useState({
@@ -41,7 +47,17 @@ function App() {
   } = useChess();
 
   useEffect(() => {
-    localStorage.setItem('chess_current_view', view);
+    if (location.pathname.startsWith('/admin')) {
+      setView('ADMIN');
+    } else if (view === 'ADMIN') {
+      setView('MENU');
+    }
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (view !== 'ADMIN') {
+      localStorage.setItem('chess_current_view', view);
+    }
   }, [view]);
 
   useEffect(() => {
@@ -83,11 +99,17 @@ function App() {
     resetChessState();
     setGameConfig(prev => ({ ...prev, roomId: '' }));
     setView('MENU');
-  }, [resetChessState]);
+    if (location.pathname !== '/') {
+      navigate('/');
+    }
+  }, [resetChessState, location.pathname, navigate]);
 
   const handleNavigateToProfile = useCallback(() => {
     setView('PROFILE');
-  }, []);
+    if (location.pathname !== '/') {
+      navigate('/');
+    }
+  }, [location.pathname, navigate]);
 
   const handleStartMatch = (theme: ChessTheme, time: TimeControl, roomId?: string) => {
     const targetRoomId = roomId && roomId.trim() !== "" ? roomId : undefined;
@@ -98,6 +120,9 @@ function App() {
       roomId: targetRoomId || '' 
     }));
     setView('GAME');
+    if (location.pathname !== '/') {
+      navigate('/');
+    }
     startNewGame(targetRoomId);
   };
 
@@ -129,13 +154,17 @@ function App() {
 
   if (!user) {
     return (
-      <AuthCard 
-        colorMode={colorMode}
-        setColorMode={setColorMode}
-        onLogin={handleLogin} 
-        onRegister={handleRegister} 
-        onGuestLogin={loginAsGuest} 
-      />
+      <Routes>
+        <Route path="*" element={
+          <AuthCard 
+            colorMode={colorMode}
+            setColorMode={setColorMode}
+            onLogin={handleLogin} 
+            onRegister={handleRegister} 
+            onGuestLogin={loginAsGuest} 
+          />
+        } />
+      </Routes>
     );
   }
 
@@ -147,51 +176,61 @@ function App() {
       onBackToMenu={handleBackToMenu}
       onNavigateToProfile={handleNavigateToProfile}
     >
-      {view === 'MENU' ? (
-      <LandingPage onStart={handleStartMatch} setView={setView} />
-    ) : view === 'PROFILE' ? (
-      <ProfileDashboard />
-    ) : view === 'LEADERBOARD' ? (
-      <FullLeaderboardPage onBack={() => setView('MENU')} />
-    ) : view === 'HISTORY' ? (
-      <AllMatchHistory userId={user.id} onBack={() => setView('MENU')} />
-    ) : (!game || !isConnected) ? (
-        <div className="min-h-screen bg-white dark:bg-[#020617] flex items-center justify-center flex-col gap-8 text-slate-900 dark:text-white">
-          <div className="relative flex items-center justify-center">
-            <div className="absolute w-24 h-24 border-2 border-blue-500/10 rounded-full" />
-            <div className="absolute w-20 h-20 border-t-2 border-blue-500 rounded-full animate-spin" />
-            <Terminal size={32} className="text-blue-500 animate-pulse" />
-          </div>
-          <button 
-            onClick={handleBackToMenu}
-            className="mt-4 group flex items-center gap-2 px-8 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-2xl"
-          >
-            Abort Deployment
-          </button>
-        </div>
-      ) : (
-        <main className="grow flex flex-col items-center justify-center w-full px-4 py-8">
-          <div className="w-full max-w-4xl flex justify-center items-center">
-            <ChessBoard 
-              boardRepresentation={game?.boardRepresentation || ""} 
-              isStarted={game?.isStarted || false}
-              gameStatus={game?.status || "ACTIVE"}
-              currentTurn={game?.currentTurn || "WHITE"} 
-              moveHistory={game?.humanReadableHistory || game?.moveHistory || []} 
-              lastMoveMessage={game?.lastMoveMessage || ""} 
-              onMove={onMoveInternal} 
-              fetchLegalMoves={fetchLegalMoves}
-              onNewGame={handleRestart}
-              onBackToMenu={handleBackToMenu} 
-              theme={gameConfig.theme}
-              timeLimit={gameConfig.timeControl}
-              orientation={playerColor || 'WHITE'}
-              whiteRemainingTimeMs={game?.whiteRemainingTimeMs ?? (gameConfig.timeControl * 60 * 1000)}
-              blackRemainingTimeMs={game?.blackRemainingTimeMs ?? (gameConfig.timeControl * 60 * 1000)}
-            />
-          </div>
-        </main>
-      )}
+      <Routes>
+        <Route element={<ProtectedRoute requiredRole="ROLE_ADMIN" />}>
+          <Route path="/admin" element={<AdminDashboard />} />
+        </Route>
+
+        <Route path="*" element={
+          view === 'MENU' ? (
+            <LandingPage onStart={handleStartMatch} setView={setView} />
+          ) : view === 'PROFILE' ? (
+            <ProfileDashboard />
+          ) : view === 'ADMIN' ? (
+            <AdminDashboard />
+          ) : view === 'LEADERBOARD' ? (
+            <FullLeaderboardPage onBack={() => setView('MENU')} />
+          ) : view === 'HISTORY' ? (
+            <AllMatchHistory userId={user.id} onBack={() => setView('MENU')} />
+          ) : (!game || !isConnected) ? (
+            <div className="min-h-screen bg-white dark:bg-[#020617] flex items-center justify-center flex-col gap-8 text-slate-900 dark:text-white">
+              <div className="relative flex items-center justify-center">
+                <div className="absolute w-24 h-24 border-2 border-blue-500/10 rounded-full" />
+                <div className="absolute w-20 h-20 border-t-2 border-blue-500 rounded-full animate-spin" />
+                <Terminal size={32} className="text-blue-500 animate-pulse" />
+              </div>
+              <button 
+                onClick={handleBackToMenu}
+                className="mt-4 group flex items-center gap-2 px-8 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-2xl"
+              >
+                Abort Deployment
+              </button>
+            </div>
+          ) : (
+            <main className="grow flex flex-col items-center justify-center w-full px-4 py-8">
+              <div className="w-full max-w-4xl flex justify-center items-center">
+                <ChessBoard 
+                  boardRepresentation={game?.boardRepresentation || ""} 
+                  isStarted={game?.isStarted || false}
+                  gameStatus={game?.status || "ACTIVE"}
+                  currentTurn={game?.currentTurn || "WHITE"} 
+                  moveHistory={game?.humanReadableHistory || game?.moveHistory || []} 
+                  lastMoveMessage={game?.lastMoveMessage || ""} 
+                  onMove={onMoveInternal} 
+                  fetchLegalMoves={fetchLegalMoves}
+                  onNewGame={handleRestart}
+                  onBackToMenu={handleBackToMenu} 
+                  theme={gameConfig.theme}
+                  timeLimit={gameConfig.timeControl}
+                  orientation={playerColor || 'WHITE'}
+                  whiteRemainingTimeMs={game?.whiteRemainingTimeMs ?? (gameConfig.timeControl * 60 * 1000)}
+                  blackRemainingTimeMs={game?.blackRemainingTimeMs ?? (gameConfig.timeControl * 60 * 1000)}
+                />
+              </div>
+            </main>
+          )
+        } />
+      </Routes>
     </Layout>
   );
 }

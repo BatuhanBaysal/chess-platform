@@ -43,6 +43,7 @@ public class GameService {
     private final Map<String, Game> activeGames = new ConcurrentHashMap<>();
     private final Map<String, Set<Long>> readyPlayers = new ConcurrentHashMap<>();
     private final Map<String, ScheduledFuture<?>> timeoutTasks = new ConcurrentHashMap<>();
+    private final Map<String, ConcurrentHashMap<Long, Long>> playerHeartbeats = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
 
     private Counter moveCounter;
@@ -100,6 +101,8 @@ public class GameService {
         readyPlayers.computeIfAbsent(gameId, k -> ConcurrentHashMap.newKeySet()).add(userId);
         Game game = activeGames.get(gameId);
         if (game == null) return false;
+
+        playerHeartbeats.computeIfAbsent(gameId, k -> new ConcurrentHashMap<>()).put(userId, System.currentTimeMillis());
 
         Set<Long> playersInRoom = readyPlayers.get(gameId);
         boolean bothReady = playersInRoom != null && playersInRoom.contains(game.getWhitePlayerId()) && playersInRoom.contains(game.getBlackPlayerId());
@@ -350,6 +353,11 @@ public class GameService {
             isGameStarted(gameId), game.getWhiteRemainingTimeMs(), game.getBlackRemainingTimeMs(), (room != null) ? room.getTimeLimit() : 10);
     }
 
+    public void recordHeartbeat(String gameId, Long userId) {
+        if (gameId == null || userId == null) return;
+        playerHeartbeats.computeIfAbsent(gameId, k -> new ConcurrentHashMap<>()).put(userId, System.currentTimeMillis());
+    }
+
     @PostConstruct
     public void startGlobalTimer() {
         scheduler.scheduleAtFixedRate(() -> {
@@ -368,5 +376,56 @@ public class GameService {
                 }
             }
         }, 1, 1, TimeUnit.SECONDS);
+    }
+
+    @PostConstruct
+    public void startWatchdogScheduler() {
+        scheduler.scheduleAtFixedRate(this.watchdogTask, 5, 5, TimeUnit.SECONDS);
+    }
+
+    private final Runnable watchdogTask = () -> {
+        long now = System.currentTimeMillis();
+        long heartbeatTimeoutThreshold = 30_000;
+
+        for (Map.Entry<String, ConcurrentHashMap<Long, Long>> entry : playerHeartbeats.entrySet()) {
+            processGameHeartbeat(entry, now, heartbeatTimeoutThreshold);
+        }
+    };
+
+    private void processGameHeartbeat(Map.Entry<String, ConcurrentHashMap<Long, Long>> entry, long now, long threshold) {
+        String gameId = entry.getKey();
+        Game game = activeGames.get(gameId);
+
+        if (isGameInvalidOrFinished(gameId, game)) {
+            return;
+        }
+
+        ConcurrentHashMap<Long, Long> timestamps = entry.getValue();
+        boolean whiteTimedOut = checkPlayerTimeout(gameId, game.getWhitePlayerId(), timestamps, now, threshold, GameResult.BLACK_WIN);
+
+        if (!whiteTimedOut) {
+            checkPlayerTimeout(gameId, game.getBlackPlayerId(), timestamps, now, threshold, GameResult.WHITE_WIN);
+        }
+    }
+
+    private boolean isGameInvalidOrFinished(String gameId, Game game) {
+        if (game == null || game.getStatus().isFinished()) {
+            playerHeartbeats.remove(gameId);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean checkPlayerTimeout(String gameId, Long playerId, Map<Long, Long> timestamps, long now, long threshold, GameResult result) {
+        if (playerId != null && timestamps.containsKey(playerId)) {
+            long lastHeartbeat = timestamps.get(playerId);
+            if (now - lastHeartbeat > threshold) {
+                log.warn("Watchdog: Player (Id: {}) timed out due to missing heartbeat in game: {}", playerId, gameId);
+                self.processGameFinish(gameId, result, GameStatus.ABANDONED);
+                playerHeartbeats.remove(gameId);
+                return true;
+            }
+        }
+        return false;
     }
 }

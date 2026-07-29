@@ -27,6 +27,8 @@ interface GameState {
   timeLimit: number;
 }
 
+const FINISHED_STATUSES = ['CHECKMATE', 'STALEMATE', 'RESIGNED', 'TIMEOUT', 'DRAW', 'CLOSING', 'ABANDONED', 'FINISHED'];
+
 const getBaseUrl = () => {
   if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('http')) {
     return import.meta.env.VITE_API_URL.replace('/api', '');
@@ -52,6 +54,7 @@ export const useChess = () => {
   const lobbyClientRef = useRef<Client | null>(null);
   const gameIdRef = useRef<string | null>(null);
   const lastUpdateRef = useRef<{ time: number; white: number; black: number }>({ time: 0, white: 0, black: 0 });
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (game) {
@@ -73,7 +76,7 @@ export const useChess = () => {
   }, [game?.gameId]);
 
   useEffect(() => {
-    if (!game || !game.isStarted || ['CHECKMATE', 'TIMEOUT', 'STALEMATE', 'RESIGNED', 'DRAW'].includes(game.status)) {
+    if (!game || !game.isStarted || FINISHED_STATUSES.includes(game.status.toUpperCase())) {
       return;
     }
 
@@ -117,6 +120,10 @@ export const useChess = () => {
   }, [getAuthDetails]);
 
   const disconnectWebSocket = useCallback(() => {
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
     if (stompClientRef.current) {
       stompClientRef.current.deactivate();
       stompClientRef.current = null;
@@ -147,12 +154,38 @@ export const useChess = () => {
       onConnect: () => {
         setIsConnected(true);
         setError(null);
+
+        if (userId && gameId) {
+          heartbeatIntervalRef.current = setInterval(() => {
+            if (client.connected) {
+              client.publish({
+                destination: '/app/game/heartbeat',
+                body: JSON.stringify({ gameId, userId }),
+                headers: headers as StompHeaders
+              });
+            }
+          }, 10000);
+        }
+
         client.subscribe(`/topic/game/${gameId}`, (message) => {
           const body = JSON.parse(message.body);
           if (body.type === 'GAME_OVER') {
             setGameOverResult(body.result);
+            if (heartbeatIntervalRef.current) {
+              clearInterval(heartbeatIntervalRef.current);
+              heartbeatIntervalRef.current = null;
+            }
           } else {
-            setGame(body as GameState);
+            const gameState = body as GameState;
+            setGame(gameState);
+            syncPlayerColor(gameState);
+            if (gameState.status && FINISHED_STATUSES.includes(gameState.status.toUpperCase())) {
+              if (heartbeatIntervalRef.current) {
+                clearInterval(heartbeatIntervalRef.current);
+                heartbeatIntervalRef.current = null;
+              }
+              setGameOverResult(gameState.status);
+            }
           }
         });
         client.subscribe('/user/queue/errors', (message) => {
@@ -174,7 +207,7 @@ export const useChess = () => {
     client.activate();
     stompClientRef.current = client;
     gameIdRef.current = gameId;
-  }, [disconnectWebSocket, getAuthDetails]);
+  }, [disconnectWebSocket, getAuthDetails, syncPlayerColor]);
 
   const connectLobby = useCallback((roomId: string, onMatchFound: (gameId: string) => void) => {
     disconnectLobby();
@@ -242,7 +275,12 @@ export const useChess = () => {
       const data: GameState = await res.json();
       setGame(data);
       syncPlayerColor(data);
-      connectWebSocket(data.gameId);
+      
+      if (data.status && FINISHED_STATUSES.includes(data.status.toUpperCase())) {
+        setGameOverResult(data.status);
+      } else {
+        connectWebSocket(data.gameId);
+      }
       return data.gameId;
     } catch (err) {
       console.error(err);

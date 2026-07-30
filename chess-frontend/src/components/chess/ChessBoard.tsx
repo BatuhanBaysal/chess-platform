@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
   DndContext, 
   useDraggable, 
@@ -113,11 +113,12 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
   }, [boardRepresentation]);
 
   const upperStatus = (gameStatus || "").toUpperCase();
-  const isGameOver = isStarted && ['WON', 'LOST', 'DRAW', 'CHECKMATE', 'STALEMATE', 'RESIGNED', 'TIMEOUT'].some(s => upperStatus.includes(s));
+  const isGameOver = isStarted && ['WON', 'LOST', 'DRAW', 'CHECKMATE', 'STALEMATE', 'RESIGNED', 'TIMEOUT', 'CLOSING', 'ABANDONED', 'FINISHED'].some(s => upperStatus.includes(s));
+  const showSyncing = (!isStarted && !isGameOver) || (upperStatus.includes('TIMEOUT') && !showGameOverModal);
   const isCheck = upperStatus.includes('CHECK') && !isGameOver;
   const isMyTurn = currentTurn?.toUpperCase() === orientation.toUpperCase();
   const currentTheme = BOARD_THEMES[theme] || BOARD_THEMES.classic;
-  const getActualIndex = (visualIndex: number) => orientation === 'WHITE' ? visualIndex : 63 - visualIndex;
+  const getActualIndex = useCallback((visualIndex: number) => orientation === 'WHITE' ? visualIndex : 63 - visualIndex, [orientation]);
   const getCoordsFromIndex = (index: number) => ({ file: index % 8, rank: 7 - Math.floor(index / 8) });
   
   const pairedMoves = useMemo(() => {
@@ -136,6 +137,7 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
     }
     if (upperStatus.includes('WON')) return "You won!";
     if (upperStatus.includes('LOST')) return "You lost.";
+    if (upperStatus.includes('DRAW') || upperStatus.includes('STALEMATE')) return "Draw!";
     return "Game Over";
   };
 
@@ -239,20 +241,33 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
   return (
     <div className="flex flex-col xl:flex-row items-stretch justify-center gap-6 p-8 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-[1400px] transition-all relative">
       <style>{`.custom-scroll::-webkit-scrollbar { width: 5px; } .custom-scroll::-webkit-scrollbar-track { background: transparent; } .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; } .dark .custom-scroll::-webkit-scrollbar-thumb { background: #334155; }`}</style>
+      
       <div className={`fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-xl transition-all duration-500 ${showGameOverModal ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
         <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-12 rounded-[3rem] shadow-2xl flex flex-col items-center text-center transition-transform duration-500 ${showGameOverModal ? 'scale-100' : 'scale-90'}`}>
           <div className="w-24 h-24 bg-yellow-500/10 rounded-full flex items-center justify-center mb-8 border border-yellow-500/20 ring-8 ring-yellow-500/5">
             {upperStatus.includes('TIMEOUT') ? <AlertCircle size={48} className="text-yellow-500 animate-bounce" /> : <Trophy size={48} className="text-yellow-500 animate-bounce" />}
           </div>
           <h2 className="text-4xl font-black text-slate-900 dark:text-white mb-3 uppercase tracking-tighter italic">{getEndGameReason()}</h2>
-          <button onClick={onBackToMenu} className="group flex items-center justify-center gap-3 px-10 py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black rounded-2xl uppercase text-[11px] tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-2xl"><ArrowLeft size={16} /> Menu</button>
+          <div className="flex items-center gap-4 mt-4">
+            <button onClick={onBackToMenu} className="group flex items-center justify-center gap-3 px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black rounded-2xl uppercase text-[11px] tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-xl">
+              <ArrowLeft size={16} /> Menu
+            </button>
+          </div>
         </div>
       </div>
-      {!isStarted && !isGameOver && (
-        <div className="absolute inset-0 z-[250] bg-slate-900/70 backdrop-blur-md rounded-2xl flex items-center justify-center">
-          <div className="bg-slate-900 border border-blue-500/40 p-10 rounded-3xl flex items-center gap-6"><Loader2 className="text-blue-500 animate-spin" size={40} /><span className="text-[12px] font-black uppercase tracking-[0.4em] text-blue-400">Syncing...</span></div>
+
+      {showSyncing && (
+        <div className="absolute inset-0 z-[250] bg-slate-900/80 backdrop-blur-md rounded-2xl flex items-center justify-center">
+          <div className="bg-slate-900 border border-blue-500/40 p-10 rounded-3xl flex flex-col items-center gap-4 text-center shadow-2xl">
+            <Loader2 className="text-blue-500 animate-spin" size={40} />
+            <div className="flex flex-col gap-1">
+              <span className="text-[12px] font-black uppercase tracking-[0.4em] text-blue-400">Reconnecting to Game</span>
+              <span className="text-[10px] text-slate-400 font-medium tracking-wide">Active match state is being synchronized...</span>
+            </div>
+          </div>
         </div>
       )}
+
       {promotionPending && (
         <div className="fixed inset-0 z-[600] flex items-center justify-center bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-300">
           <div className={`bg-white dark:bg-slate-900 p-12 rounded-[3.5rem] border ${orientation === 'WHITE' ? 'border-blue-500/30' : 'border-rose-500/30'} shadow-2xl flex flex-col items-center gap-8 max-w-2xl w-full mx-4 relative overflow-hidden`}>
@@ -272,12 +287,12 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
                 const iconKey = orientation === 'WHITE' ? char : char.toLowerCase();
                 return (
                   <button key={type} onClick={() => {
-                      const from = getCoordsFromIndex(promotionPending!.from);
-                      const to = getCoordsFromIndex(promotionPending!.to);
-                      onMove(from.file, from.rank, to.file, to.rank, type);
-                      setPromotionPending(null);
-                    }} 
-                    className={`group flex flex-col items-center p-6 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-4xl transition-all hover:scale-105 active:scale-95 ${orientation === 'WHITE' ? 'hover:border-blue-500/50 hover:bg-blue-500/5' : 'hover:border-rose-500/50 hover:bg-rose-500/5'}`}>
+                    const from = getCoordsFromIndex(promotionPending!.from);
+                    const to = getCoordsFromIndex(promotionPending!.to);
+                    onMove(from.file, from.rank, to.file, to.rank, type);
+                    setPromotionPending(null);
+                  }} 
+                    className={`group flex flex-col items-center p-6 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-3xl transition-all hover:scale-105 active:scale-95 ${orientation === 'WHITE' ? 'hover:border-blue-500/50 hover:bg-blue-500/5' : 'hover:border-rose-500/50 hover:bg-rose-500/5'}`}>
                     <div className="w-20 h-20 mb-4 transition-transform group-hover:rotate-6">
                       <img src={PIECE_IMAGES[iconKey]} className="w-full h-full drop-shadow-xl" alt={type} />
                     </div>
@@ -315,7 +330,7 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
                 </div>
             </div>
 
-            <div className={`flex flex-col items-center`}>
+            <div className="flex flex-col items-center">
               <div className={`text-[13px] font-black font-mono px-3 py-1.5 rounded-lg border transition-all ${currentTurn?.toUpperCase() === (orientation === 'WHITE' ? 'WHITE' : 'BLACK') ? (orientation === 'WHITE' ? 'text-blue-600 border-blue-500 bg-blue-500/10 animate-pulse' : 'text-rose-600 border-rose-500 bg-rose-500/10 animate-pulse') : 'text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm'}`}>
                   {formatTime(orientation === 'WHITE' ? (whiteRemainingTimeMs || 0) : (blackRemainingTimeMs || 0))}
               </div>
@@ -363,7 +378,7 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
         <div className="w-72 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl flex flex-col overflow-hidden transition-colors shadow-inner">
           <div className="bg-slate-200/50 dark:bg-slate-800/50 p-3 border-b border-slate-200 dark:border-slate-700/50 flex items-center gap-2">
             <Activity size={14} className="text-blue-500 animate-pulse" />
-            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 dark:border-slate-400">Telemetry</span>
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Telemetry</span>
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scroll">
             {logs.map((log, i) => (
@@ -378,7 +393,7 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
           </div>
         </div>
         <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl overflow-hidden flex flex-col shadow-inner transition-colors">
-          <div className="bg-slate-200/50 dark:bg-slate-800/50 p-3 border-b border-slate-200 dark:border-slate-700/50 flex items-center gap-2"><HistoryIcon size={14} className="text-indigo-500" /><span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 dark:border-slate-400">Notation</span></div>
+          <div className="bg-slate-200/50 dark:bg-slate-800/50 p-3 border-b border-slate-200 dark:border-slate-700/50 flex items-center gap-2"><HistoryIcon size={14} className="text-indigo-500" /><span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Notation</span></div>
           <div className="flex-1 overflow-y-auto custom-scroll">
             <table className="w-full text-[10px] border-separate border-spacing-0">
               <thead className="sticky top-0 bg-slate-200 dark:bg-[#0f172a] z-10">

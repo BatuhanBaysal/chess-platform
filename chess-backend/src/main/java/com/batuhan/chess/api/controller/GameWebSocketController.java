@@ -1,6 +1,7 @@
 package com.batuhan.chess.api.controller;
 
 import com.batuhan.chess.api.dto.game.GameResponse;
+import com.batuhan.chess.api.dto.game.HeartbeatRequest;
 import com.batuhan.chess.api.dto.game.MoveRequest;
 import com.batuhan.chess.application.service.game.GameService;
 import com.batuhan.chess.domain.model.chess.*;
@@ -10,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
@@ -63,10 +65,11 @@ public class GameWebSocketController {
         if (updatedGame == null) return;
         updatedGame.updateTime();
 
-        log.info("Broadcasting Update {}: WhiteTime={}ms, BlackTime={}ms",
+        log.info("Broadcasting Update {}: WhiteTime={}ms, BlackTime={}ms, Status={}",
             gameId,
             updatedGame.getWhiteRemainingTimeMs(),
-            updatedGame.getBlackRemainingTimeMs());
+            updatedGame.getBlackRemainingTimeMs(),
+            updatedGame.getStatus());
 
         GameResponse response = gameService.convertToResponse(gameId, updatedGame);
         messagingTemplate.convertAndSend("/topic/game/" + gameId, response);
@@ -76,7 +79,12 @@ public class GameWebSocketController {
         log.info("Broadcasting Game Over for {}: Result={}", gameId, result);
         messagingTemplate.convertAndSend("/topic/game/" + gameId, Map.of(
             "type", "GAME_OVER",
-            "result", result.toString()
+            "result", result.name()
         ));
+    }
+
+    @MessageMapping("/game/heartbeat")
+    public void handleHeartbeat(@Payload HeartbeatRequest request) {
+        gameService.recordHeartbeat(request.gameId(), request.userId());
     }
 }

@@ -10,6 +10,11 @@ All notable changes to this project will be documented in this file. This projec
 ### 🚀 Phase 17: Platform Governance & Resilience (v1.2.0)
 > **Note:** This milestone establishes centralized operational oversight and administrative governance to ensure robust platform stability.
 
+- **2026-07-29:**
+    - **Watchdog Heartbeat & Ghost Game Resolution (PR #103 | Issue #97):**
+        - Implemented a backend-driven Watchdog heartbeat monitoring mechanism to track player activity via WebSockets and prevent active sessions from remaining indefinitely locked.
+        - Configured a 30-second timeout threshold to automatically transition abandoned games to a finished state with a loss for the disconnected player.
+        - Integrated a client-side periodic ping mechanism (every 10 seconds) within the React `useChess` hook to maintain stable socket session handshakes.
 - **2026-07-23:**
     - **Admin Dashboard & Operational Control Center (PR #102 | Issue #96):**
         - Implemented a secure `/admin` route protected by an RBAC guard, restricting access exclusively to `ROLE_ADMIN` users.

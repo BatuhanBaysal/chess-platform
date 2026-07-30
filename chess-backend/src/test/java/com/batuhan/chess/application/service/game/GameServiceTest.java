@@ -28,6 +28,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -73,6 +74,8 @@ class GameServiceTest {
         gameService = spy(realService);
 
         ReflectionTestUtils.setField(gameService, "self", gameService);
+        ReflectionTestUtils.setField(realService, "self", gameService);
+
         gameService.initMetrics();
         gameId = gameService.createGame(whiteId, blackId);
 
@@ -190,6 +193,61 @@ class GameServiceTest {
             // Assert
             verifyNoInteractions(gameRepository);
             verifyNoInteractions(userRepository);
+        }
+    }
+
+    @Nested
+    @DisplayName("Watchdog & Heartbeat Mechanism")
+    class WatchdogTests {
+
+        @Test
+        @DisplayName("Should record player heartbeat successfully")
+        void shouldRecordPlayerHeartbeat() {
+            // Act
+            gameService.recordHeartbeat(gameId, whiteId);
+
+            // Assert
+            @SuppressWarnings("unchecked")
+            ConcurrentHashMap<String, ConcurrentHashMap<Long, Long>> heartbeats =
+                (ConcurrentHashMap<String, ConcurrentHashMap<Long, Long>>) ReflectionTestUtils.getField(gameService, "playerHeartbeats");
+
+            assertThat(heartbeats).satisfies(h -> {
+                assertThat(h).containsKey(gameId);
+                assertThat(h.get(gameId)).containsKey(whiteId);
+            });
+        }
+
+        @Test
+        @DisplayName("Should timeout player and abandon game when heartbeat is missing")
+        void shouldTimeoutPlayerWhenHeartbeatExpired() {
+            // Arrange
+            ReflectionTestUtils.setField(gameService, "self", gameService);
+
+            gameService.setPlayerReady(gameId, whiteId);
+            gameService.setPlayerReady(gameId, blackId);
+
+            long pastTime = System.currentTimeMillis() - 35_000L;
+            ConcurrentHashMap<Long, Long> timestamps = new ConcurrentHashMap<>();
+            timestamps.put(whiteId, pastTime);
+
+            @SuppressWarnings("unchecked")
+            ConcurrentHashMap<String, ConcurrentHashMap<Long, Long>> heartbeats =
+                (ConcurrentHashMap<String, ConcurrentHashMap<Long, Long>>) ReflectionTestUtils.getField(gameService, "playerHeartbeats");
+
+            if (heartbeats != null) {
+                heartbeats.put(gameId, timestamps);
+            }
+
+            // Act
+            Runnable task = (Runnable) ReflectionTestUtils.getField(gameService, "watchdogTask");
+            assertThat(task).isNotNull();
+            task.run();
+
+            // Assert
+            Game game = gameService.getGame(gameId);
+            assertThat(game).isNotNull();
+            assertThat(game.getStatus()).isEqualTo(GameStatus.ABANDONED);
+            verify(gameService).processGameFinish(gameId, GameResult.BLACK_WIN, GameStatus.ABANDONED);
         }
     }
 }

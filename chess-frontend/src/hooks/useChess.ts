@@ -27,7 +27,7 @@ interface GameState {
   timeLimit: number;
 }
 
-const FINISHED_STATUSES = ['CHECKMATE', 'STALEMATE', 'RESIGNED', 'TIMEOUT', 'DRAW', 'CLOSING', 'ABANDONED', 'FINISHED'];
+const FINISHED_STATUSES = ['CHECKMATE', 'STALEMATE', 'RESIGNED', 'TIMEOUT', 'DRAW', 'CLOSING', 'ABANDONED', 'FINISHED', 'DISMISSED'];
 
 const getBaseUrl = () => {
   if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('http')) {
@@ -189,8 +189,18 @@ export const useChess = () => {
           }
         });
         client.subscribe('/user/queue/errors', (message) => {
-          setError(message.body);
-          setTimeout(() => setError(null), 3000);
+          try {
+            const body = JSON.parse(message.body);
+            if (body.type === 'DISMISSED') {
+              setGameOverResult('DISMISSED');
+              setGame(prev => prev ? { ...prev, status: 'ABANDONED', isStarted: false } : null);
+              disconnectWebSocket();
+              return;
+            }
+          } catch (e) {
+            setError(message.body);
+            setTimeout(() => setError(null), 3000);
+          }
         });
         if (userId) {
           client.publish({
@@ -248,6 +258,22 @@ export const useChess = () => {
       headers: headers as StompHeaders
     });
   }, [getAuthDetails, game]);
+
+  const dismissGame = useCallback(() => {
+    const client = stompClientRef.current;
+    const { userId } = getAuthDetails();
+    if (!gameIdRef.current || !userId) return;
+
+    if (client && client.connected) {
+      client.publish({
+        destination: '/app/game/dismiss',
+        body: JSON.stringify({ gameId: gameIdRef.current, userId })
+      });
+    }
+    setGameOverResult('DISMISSED');
+    setGame(prev => prev ? { ...prev, status: 'ABANDONED', isStarted: false } : null);
+    disconnectWebSocket();
+  }, [disconnectWebSocket, getAuthDetails]);
 
   const fetchLegalMoves = useCallback(async (file: number, rank: number) => {
     if (!gameIdRef.current || !game) return [];
@@ -327,6 +353,7 @@ export const useChess = () => {
     connectLobby,
     disconnectLobby,
     makeMove,
+    dismissGame,
     fetchLegalMoves,
     getBoardMatrix,
     startNewGame,

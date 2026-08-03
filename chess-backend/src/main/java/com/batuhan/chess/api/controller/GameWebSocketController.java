@@ -1,5 +1,6 @@
 package com.batuhan.chess.api.controller;
 
+import com.batuhan.chess.api.dto.game.DismissRequest;
 import com.batuhan.chess.api.dto.game.GameResponse;
 import com.batuhan.chess.api.dto.game.HeartbeatRequest;
 import com.batuhan.chess.api.dto.game.MoveRequest;
@@ -86,5 +87,16 @@ public class GameWebSocketController {
     @MessageMapping("/game/heartbeat")
     public void handleHeartbeat(@Payload HeartbeatRequest request) {
         gameService.recordHeartbeat(request.gameId(), request.userId());
+    }
+
+    @MessageMapping("/game/dismiss")
+    public void handleDismiss(@Payload DismissRequest request) {
+        log.info("Received dismiss signal for gameId: {} by userId: {}", request.gameId(), request.userId());
+        gameService.processPlayerDismiss(request.gameId(), request.userId());
+        messagingTemplate.convertAndSendToUser(
+            String.valueOf(request.userId()),
+            "/queue/errors",
+            Map.of("type", "DISMISSED", "message", "Game dismissed and terminated.")
+        );
     }
 }

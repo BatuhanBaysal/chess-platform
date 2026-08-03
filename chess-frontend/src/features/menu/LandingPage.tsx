@@ -57,7 +57,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
       if (user?.id) {
         const activeGame = await getActiveGame(user.id);
         if (activeGame && activeGame.status !== 'CLOSING') {
-          setReconnectGame(activeGame);
+          const dismissedGames = JSON.parse(localStorage.getItem('dismissed_games') || '[]');
+          
+          if (!dismissedGames.includes(activeGame.gameId)) {
+            setReconnectGame(activeGame);
+          }
         }
       }
     };
@@ -206,7 +210,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
                 Reconnect
               </button>
               <button 
-                onClick={() => setReconnectGame(null)}
+                onClick={() => {
+                  if (reconnectGame) {
+                    const dismissedGames = JSON.parse(localStorage.getItem('dismissed_games') || '[]');
+                    if (!dismissedGames.includes(reconnectGame.gameId)) {
+                      dismissedGames.push(reconnectGame.gameId);
+                      localStorage.setItem('dismissed_games', JSON.stringify(dismissedGames));
+                    }
+                  }
+                  setReconnectGame(null);
+                }}
                 className="px-4 py-3 bg-blue-700 text-blue-200 rounded-xl text-[10px] font-black uppercase hover:bg-blue-800 transition-all"
               >
                 Dismiss

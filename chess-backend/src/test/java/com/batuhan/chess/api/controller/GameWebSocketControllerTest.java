@@ -1,5 +1,6 @@
 package com.batuhan.chess.api.controller;
 
+import com.batuhan.chess.api.dto.game.DismissRequest;
 import com.batuhan.chess.api.dto.game.GameResponse;
 import com.batuhan.chess.api.dto.game.MoveRequest;
 import com.batuhan.chess.application.service.game.GameService;
@@ -168,6 +169,31 @@ class GameWebSocketControllerTest {
 
             // Assert
             verify(messagingTemplate, never()).convertAndSend(anyString(), any(GameResponse.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("Dismiss Handler Logic")
+    class DismissControllerTests {
+
+        @Test
+        @DisplayName("Should invoke service processPlayerDismiss and send user notification on dismiss")
+        void shouldHandleDismissRequestSuccessfully() {
+            // Arrange
+            String gameId = "game-123";
+            Long userId = 1L;
+            var request = new DismissRequest(gameId, userId);
+
+            // Act
+            webSocketController.handleDismiss(request);
+
+            // Assert
+            verify(gameService).processPlayerDismiss(gameId, userId);
+            verify(messagingTemplate).convertAndSendToUser(
+                eq("1"),
+                eq("/queue/errors"),
+                anyMap()
+            );
         }
     }
 }

@@ -195,8 +195,8 @@ The entire application ecosystem is managed using **Docker Compose** to ensure a
 - ✅ **Phase 14: Core Engine Refactoring & UX Optimization** ⚙️ - Server-authoritative timer logic and enhanced UI responsiveness/notation feed.
 - ✅ **Phase 15: Official Stable Release (v1.0.0)** 🚀 - Production-ready engine, OpenAPI/Swagger docs, and enhanced observability.
 - ✅ **Phase 16: User Experience & Dashboards (v1.1.0)** 📈 - Secure user profiles, RBAC authorization, and interactive performance analytics.
-- 🔜 **Phase 17: Administration & Operations** 👑 - Developing an RBAC-integrated Admin Dashboard to manage users, monitor health, and oversee global platform operations.
-- 🔜 **Phase 18: Security, Resilience & Quality** 🛡️ - Hardening game state integrity by enforcing a "Dismiss = Loss" policy within the WebSocket reconnection handler.
+- ✅ **Phase 17: Administration & Operations** 👑 - Developing an RBAC-integrated Admin Dashboard to manage users, monitor health, and oversee global platform operations.
+- ⏳ **Phase 18: Security, Resilience & Quality** 🛡️ - Hardening game state integrity by enforcing a "Dismiss = Loss" policy within the WebSocket reconnection handler.
 - 🔜 **Phase 19: Advanced Intelligence** 🧠 - Integrating the Stockfish engine via UCI protocol to enable real-time move analysis, blunder detection, and hint mechanisms.
 
 ---

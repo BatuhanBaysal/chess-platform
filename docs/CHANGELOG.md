@@ -7,20 +7,31 @@ All notable changes to this project will be documented in this file. This projec
 
 ## [1.2.0] - 2026-07-23
 
-### 🚀 Phase 17: Platform Governance & Resilience (v1.2.0)
-> **Note:** This milestone establishes centralized operational oversight and administrative governance to ensure robust platform stability.
+### 🚀 Phase 18: Security, Resilience & Quality 🛡️ (v1.2.0)
+> **Note:** Hardening game state integrity by enforcing a "Dismiss = Loss" policy within the WebSocket reconnection handler.
+
+- **2026-08-03:**
+    - **Game Abandonment & Session Dismissal Logic (PR #104 | Issue #99):**
+        - Updated the `WebSocketReconnectionHandler` to treat the `Dismiss` signal as a terminal state.
+        - Configured the database to register an immediate loss record for the player triggering the game dismissal.
+        - Implemented backend mechanics for WebSocket disconnection and game session abandonment.
+        - Integrated frontend updates to disable game links and remove connection buttons for dismissed sessions.
 
 - **2026-07-29:**
     - **Watchdog Heartbeat & Ghost Game Resolution (PR #103 | Issue #97):**
         - Implemented a backend-driven Watchdog heartbeat monitoring mechanism to track player activity via WebSockets and prevent active sessions from remaining indefinitely locked.
         - Configured a 30-second timeout threshold to automatically transition abandoned games to a finished state with a loss for the disconnected player.
         - Integrated a client-side periodic ping mechanism (every 10 seconds) within the React `useChess` hook to maintain stable socket session handshakes.
+
+### 🚀 Phase 17: Platform Governance & Resilience (v1.2.0)
+> **Note:** This milestone establishes centralized operational oversight and administrative governance to ensure robust platform stability.
+
 - **2026-07-23:**
     - **Admin Dashboard & Operational Control Center (PR #102 | Issue #96):**
         - Implemented a secure `/admin` route protected by an RBAC guard, restricting access exclusively to `ROLE_ADMIN` users.
         - Created dynamic data grids for comprehensive user management (including status resets and soft-delete capabilities) and live tracking of active game sessions.
         - Integrated a Developer Sandbox section to trigger and troubleshoot specific game state testing routines efficiently.
-
+      
 ---
 
 ## [1.1.0] - 2026-07-14

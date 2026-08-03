@@ -255,6 +255,29 @@ public class GameService {
     }
 
     @Transactional
+    public void processPlayerDismiss(String gameId, Long userId) {
+        Game game = activeGames.get(gameId);
+        if (game == null || game.getStatus().isFinished()) {
+            return;
+        }
+
+        log.info("Player {} explicitly dismissed/abandoned game: {}", userId, gameId);
+
+        GameResult result;
+        if (userId.equals(game.getWhitePlayerId())) {
+            result = GameResult.BLACK_WIN;
+        } else if (userId.equals(game.getBlackPlayerId())) {
+            result = GameResult.WHITE_WIN;
+        } else {
+            return;
+        }
+
+        self.processGameFinish(gameId, result, GameStatus.ABANDONED);
+        self.cleanupSession(gameId);
+        playerHeartbeats.remove(gameId);
+    }
+
+    @Transactional
     public void cleanupSession(String gameId) {
         cancelTimeoutTask(gameId);
         activeGames.remove(gameId);
@@ -380,12 +403,12 @@ public class GameService {
 
     @PostConstruct
     public void startWatchdogScheduler() {
-        scheduler.scheduleAtFixedRate(this.watchdogTask, 5, 5, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this.watchdogTask, 1, 1, TimeUnit.SECONDS);
     }
 
     private final Runnable watchdogTask = () -> {
         long now = System.currentTimeMillis();
-        long heartbeatTimeoutThreshold = 30_000;
+        long heartbeatTimeoutThreshold = 10_000;
 
         for (Map.Entry<String, ConcurrentHashMap<Long, Long>> entry : playerHeartbeats.entrySet()) {
             processGameHeartbeat(entry, now, heartbeatTimeoutThreshold);
@@ -409,7 +432,7 @@ public class GameService {
     }
 
     private boolean isGameInvalidOrFinished(String gameId, Game game) {
-        if (game == null || game.getStatus().isFinished()) {
+        if (game == null || game.getStatus().isFinished() || game.getStatus() == GameStatus.CLOSING) {
             playerHeartbeats.remove(gameId);
             return true;
         }

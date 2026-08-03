@@ -250,4 +250,40 @@ class GameServiceTest {
             verify(gameService).processGameFinish(gameId, GameResult.BLACK_WIN, GameStatus.ABANDONED);
         }
     }
+
+    @Nested
+    @DisplayName("Dismiss & Abandonment Mechanism")
+    class DismissTests {
+
+        @Test
+        @DisplayName("Should mark game as abandoned and clean up session when player dismisses")
+        void shouldProcessPlayerDismissSuccessfully() {
+            // Arrange
+            ReflectionTestUtils.setField(gameService, "self", gameService);
+            gameService.setPlayerReady(gameId, whiteId);
+            gameService.setPlayerReady(gameId, blackId);
+
+            // Act
+            gameService.processPlayerDismiss(gameId, whiteId);
+
+            // Assert
+            Game game = gameService.getGame(gameId);
+            assertThat(game).isNull();
+            verify(gameService).processGameFinish(gameId, GameResult.BLACK_WIN, GameStatus.ABANDONED);
+        }
+
+        @Test
+        @DisplayName("Should ignore dismiss if user is not part of the game")
+        void shouldIgnoreDismissForInvalidUser() {
+            // Arrange
+            ReflectionTestUtils.setField(gameService, "self", gameService);
+            Long invalidUserId = 99L;
+
+            // Act
+            gameService.processPlayerDismiss(gameId, invalidUserId);
+
+            // Assert
+            verify(gameService, never()).processGameFinish(anyString(), any(), any());
+        }
+    }
 }

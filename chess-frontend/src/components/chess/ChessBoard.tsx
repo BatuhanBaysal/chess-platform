@@ -11,7 +11,7 @@ import {
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'; 
 import { CSS } from '@dnd-kit/utilities';
-import { Trophy, ArrowLeft, Loader2, History as HistoryIcon, Activity, Timer, ChevronUp, AlertCircle } from 'lucide-react';
+import { Trophy, ArrowLeft, Loader2, History as HistoryIcon, Activity, Timer, ChevronUp, AlertCircle, LogOut } from 'lucide-react';
 
 interface ChessBoardProps {
   boardRepresentation: string;
@@ -24,6 +24,7 @@ interface ChessBoardProps {
   fetchLegalMoves?: (file: number, rank: number) => Promise<{ file: number, rank: number }[]>;
   onNewGame?: () => void;
   onBackToMenu?: () => void;
+  onDismissGame?: () => void;
   theme: 'classic' | 'modern' | 'emerald';
   timeLimit: number;
   orientation: 'WHITE' | 'BLACK';
@@ -94,7 +95,7 @@ const DroppableSquare: React.FC<{ index: number; children: React.ReactNode; clas
 
 const ChessBoard: React.FC<ChessBoardProps> = ({ 
   boardRepresentation, isStarted, gameStatus, currentTurn, moveHistory, lastMoveMessage,
-  onMove, fetchLegalMoves, onBackToMenu, theme, orientation,
+  onMove, fetchLegalMoves, onBackToMenu, onDismissGame, theme, orientation,
   whiteRemainingTimeMs, blackRemainingTimeMs
 }) => {
   const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
@@ -113,7 +114,7 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
   }, [boardRepresentation]);
 
   const upperStatus = (gameStatus || "").toUpperCase();
-  const isGameOver = isStarted && ['WON', 'LOST', 'DRAW', 'CHECKMATE', 'STALEMATE', 'RESIGNED', 'TIMEOUT', 'CLOSING', 'ABANDONED', 'FINISHED'].some(s => upperStatus.includes(s));
+  const isGameOver = isStarted && ['WON', 'LOST', 'DRAW', 'CHECKMATE', 'STALEMATE', 'RESIGNED', 'TIMEOUT', 'CLOSING', 'ABANDONED', 'FINISHED', 'DISMISSED'].some(s => upperStatus.includes(s));
   const showSyncing = (!isStarted && !isGameOver) || (upperStatus.includes('TIMEOUT') && !showGameOverModal);
   const isCheck = upperStatus.includes('CHECK') && !isGameOver;
   const isMyTurn = currentTurn?.toUpperCase() === orientation.toUpperCase();
@@ -131,6 +132,9 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
   }, [moveHistory]);
 
   const getEndGameReason = () => {
+    if (upperStatus.includes('DISMISSED') || upperStatus.includes('ABANDONED')) {
+      return "Game Dismissed / Abandoned";
+    }
     if (upperStatus.includes('TIMEOUT')) {
       const loser = upperStatus.split('_')[1];
       return loser === orientation.toUpperCase() ? "You timed out!" : "Opponent timed out!";
@@ -245,7 +249,7 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
       <div className={`fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-xl transition-all duration-500 ${showGameOverModal ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
         <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-12 rounded-[3rem] shadow-2xl flex flex-col items-center text-center transition-transform duration-500 ${showGameOverModal ? 'scale-100' : 'scale-90'}`}>
           <div className="w-24 h-24 bg-yellow-500/10 rounded-full flex items-center justify-center mb-8 border border-yellow-500/20 ring-8 ring-yellow-500/5">
-            {upperStatus.includes('TIMEOUT') ? <AlertCircle size={48} className="text-yellow-500 animate-bounce" /> : <Trophy size={48} className="text-yellow-500 animate-bounce" />}
+            {upperStatus.includes('TIMEOUT') || upperStatus.includes('DISMISSED') || upperStatus.includes('ABANDONED') ? <AlertCircle size={48} className="text-yellow-500 animate-bounce" /> : <Trophy size={48} className="text-yellow-500 animate-bounce" />}
           </div>
           <h2 className="text-4xl font-black text-slate-900 dark:text-white mb-3 uppercase tracking-tighter italic">{getEndGameReason()}</h2>
           <div className="flex items-center gap-4 mt-4">
@@ -306,9 +310,20 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
       )}
 
       <div className="w-56 bg-slate-100 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700/50 rounded-2xl flex flex-col overflow-hidden transition-all shadow-inner h-[600px]">
-        <div className="w-full bg-slate-200/50 dark:bg-slate-800/50 p-2.5 border-b border-slate-200 dark:border-slate-700/50 flex items-center justify-center gap-2">
-            <Timer size={14} className="text-amber-500" />
-            <span className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">Clock</span>
+        <div className="w-full bg-slate-200/50 dark:bg-slate-800/50 p-2.5 border-b border-slate-200 dark:border-slate-700/50 flex items-center justify-between px-4">
+            <div className="flex items-center gap-2">
+              <Timer size={14} className="text-amber-500" />
+              <span className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">Clock</span>
+            </div>
+            {onDismissGame && !isGameOver && (
+              <button 
+                onClick={onDismissGame}
+                title="Dismiss Game"
+                className="text-rose-500 hover:text-rose-600 transition-colors p-1"
+              >
+                <LogOut size={14} />
+              </button>
+            )}
         </div>
 
         <div className="flex-1 w-full flex flex-col justify-between p-4">

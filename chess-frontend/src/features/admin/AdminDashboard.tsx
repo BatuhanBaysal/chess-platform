@@ -5,24 +5,33 @@ import {
     getActiveGames, 
     forceFinishGame, 
     triggerSandboxGame, 
+    getAuditLogs,
     type AdminUserResponseDTO, 
-    type AdminActiveGameResponseDTO 
+    type AdminActiveGameResponseDTO,
+    type AdminAuditLogResponseDTO
 } from '../../api/adminService';
 import { 
     Users, PlaySquare, Terminal, Trash2, ShieldAlert, 
-    RefreshCcw, ChevronLeft, ChevronRight, Play 
+    RefreshCcw, ChevronLeft, ChevronRight, Play, FileText 
 } from 'lucide-react';
 
 export default function AdminDashboard() {
     const [users, setUsers] = useState<AdminUserResponseDTO[]>([]);
     const [activeGames, setActiveGames] = useState<AdminActiveGameResponseDTO[]>([]);
+    const [auditLogs, setAuditLogs] = useState<AdminAuditLogResponseDTO[]>([]);
+    
     const [loadingUsers, setLoadingUsers] = useState(false);
     const [loadingGames, setLoadingGames] = useState(false);
+    const [loadingLogs, setLoadingLogs] = useState(false);
 
     const [currentPage, setCurrentPage] = useState<number>(0); 
     const [pageSize] = useState<number>(10);
     const [totalPages, setTotalPages] = useState<number>(1);
     const [totalElements, setTotalElements] = useState<number>(0);
+
+    const [auditPage, setAuditPage] = useState<number>(0);
+    const [auditTotalPages, setAuditTotalPages] = useState<number>(1);
+    const [auditTotalElements, setAuditTotalElements] = useState<number>(0);
 
     const [whiteId, setWhiteId] = useState<string>('');
     const [blackId, setBlackId] = useState<string>('');
@@ -54,16 +63,32 @@ export default function AdminDashboard() {
         }
     };
 
+    const fetchAuditLogsData = async (page: number) => {
+        setLoadingLogs(true);
+        try {
+            const data = await getAuditLogs(page, pageSize);
+            setAuditLogs(data.content);
+            setAuditTotalPages(data.totalPages || 1);
+            setAuditTotalElements(data.totalElements || data.content.length);
+        } catch (error) {
+            console.error("Failed to fetch audit logs:", error);
+        } finally {
+            setLoadingLogs(false);
+        }
+    };
+
     useEffect(() => {
         fetchUsersData(currentPage);
         fetchActiveGamesData();
-    }, [currentPage]);
+        fetchAuditLogsData(auditPage);
+    }, [currentPage, auditPage]);
 
     const handleDeleteUser = async (id: number) => {
         if (window.confirm("Are you sure you want to permanently delete this user account?")) {
             try {
                 await deleteUserAccount(id);
                 fetchUsersData(currentPage);
+                fetchAuditLogsData(auditPage);
             } catch (error) {
                 console.error("Failed to delete user:", error);
             }
@@ -75,6 +100,7 @@ export default function AdminDashboard() {
             try {
                 await forceFinishGame(gameId);
                 fetchActiveGamesData();
+                fetchAuditLogsData(auditPage);
             } catch (error) {
                 console.error("Failed to force finish game:", error);
             }
@@ -107,7 +133,7 @@ export default function AdminDashboard() {
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">System management, user auditing, and active game session panel.</p>
                 </div>
                 <button 
-                    onClick={() => { fetchUsersData(currentPage); fetchActiveGamesData(); }}
+                    onClick={() => { fetchUsersData(currentPage); fetchActiveGamesData(); fetchAuditLogsData(auditPage); }}
                     className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold transition-all text-slate-900 dark:text-white cursor-pointer"
                 >
                     <RefreshCcw size={14} /> Refresh
@@ -296,6 +322,98 @@ export default function AdminDashboard() {
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages - 1))}
                                     disabled={currentPage === totalPages - 1}
+                                    className="flex items-center gap-1 px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 disabled:opacity-30 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-slate-900 dark:text-white cursor-pointer"
+                                >
+                                    Next <ChevronRight size={16} />
+                                </button>
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
+
+            <div className="bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xl">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-bold flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                        <FileText size={20} /> Audit Logs ({auditTotalElements})
+                    </h2>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        Page {auditPage + 1} of {auditTotalPages}
+                    </span>
+                </div>
+
+                {loadingLogs ? (
+                    <p className="text-sm text-slate-500">Loading...</p>
+                ) : (
+                    <>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm border-collapse">
+                                <thead>
+                                    <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
+                                        <th className="py-3 px-4">ID</th>
+                                        <th className="py-3 px-4">Admin ID</th>
+                                        <th className="py-3 px-4">Action Type</th>
+                                        <th className="py-3 px-4">Details</th>
+                                        <th className="py-3 px-4">Timestamp</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-200 dark:divide-slate-800/50">
+                                    {auditLogs.length > 0 ? (
+                                        auditLogs.map((log: AdminAuditLogResponseDTO) => (
+                                            <tr key={log.id} className="hover:bg-slate-100 dark:hover:bg-slate-800/20">
+                                                <td className="py-3 px-4 text-slate-500 font-mono text-xs">#{log.id}</td>
+                                                <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{log.adminId ?? 'N/A'}</td>
+                                                <td className="py-3 px-4">
+                                                    <span className="px-2 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg text-xs font-bold">
+                                                        {log.actionType}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 px-4 text-slate-900 dark:text-white font-medium">{log.details}</td>
+                                                <td className="py-3 px-4 text-slate-500 text-xs">
+                                                    {log.createdAt ? new Date(log.createdAt).toLocaleString() : 'N/A'}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={5} className="text-center py-6 text-slate-500 text-xs uppercase tracking-wider">
+                                                No audit logs found.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {auditTotalPages > 1 && (
+                            <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+                                <button
+                                    onClick={() => setAuditPage(prev => Math.max(prev - 1, 0))}
+                                    disabled={auditPage === 0}
+                                    className="flex items-center gap-1 px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 disabled:opacity-30 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-slate-900 dark:text-white cursor-pointer"
+                                >
+                                    <ChevronLeft size={16} /> Previous
+                                </button>
+
+                                <div className="flex items-center gap-1">
+                                    {Array.from({ length: auditTotalPages }, (_, i) => i).map((pageIndex) => (
+                                        <button
+                                            key={pageIndex}
+                                            onClick={() => setAuditPage(pageIndex)}
+                                            className={`w-8 h-8 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                                auditPage === pageIndex 
+                                                    ? 'bg-blue-600 text-white' 
+                                                    : 'bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                                            }`}
+                                        >
+                                            {pageIndex + 1}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <button
+                                    onClick={() => setAuditPage(prev => Math.min(prev + 1, auditTotalPages - 1))}
+                                    disabled={auditPage === auditTotalPages - 1}
                                     className="flex items-center gap-1 px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 disabled:opacity-30 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-slate-900 dark:text-white cursor-pointer"
                                 >
                                     Next <ChevronRight size={16} />

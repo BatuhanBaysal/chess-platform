@@ -1,5 +1,6 @@
 package com.batuhan.chess.application.service.game;
 
+import com.batuhan.chess.api.config.audit.AuditableAction;
 import com.batuhan.chess.api.controller.GameWebSocketController;
 import com.batuhan.chess.api.dto.game.GameResponse;
 import com.batuhan.chess.api.exception.GameOperationException;
@@ -255,6 +256,7 @@ public class GameService {
     }
 
     @Transactional
+    @AuditableAction(actionType = "PLAYER_DISMISS_GAME")
     public void processPlayerDismiss(String gameId, Long userId) {
         Game game = activeGames.get(gameId);
         if (game == null || game.getStatus().isFinished()) {

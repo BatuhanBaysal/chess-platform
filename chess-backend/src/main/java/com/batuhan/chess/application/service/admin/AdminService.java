@@ -1,5 +1,6 @@
 package com.batuhan.chess.application.service.admin;
 
+import com.batuhan.chess.api.config.audit.AuditableAction;
 import com.batuhan.chess.api.dto.admin.AdminActiveGameResponseDTO;
 import com.batuhan.chess.api.dto.admin.AdminUserResponseDTO;
 import com.batuhan.chess.api.exception.GameOperationException;
@@ -46,6 +47,7 @@ public class AdminService {
     }
 
     @Transactional
+    @AuditableAction(actionType = "TOGGLE_USER_STATUS")
     public void deleteUser(Long id) {
         log.warn("Admin Service: Execution of soft-delete account termination for user ID: {}", id);
         UserEntity user = userRepository.findById(id)
@@ -79,6 +81,7 @@ public class AdminService {
     }
 
     @Transactional
+    @AuditableAction(actionType = "FORCE_FINISH_GAME")
     public void forceFinishGame(String gameId) {
         log.warn("Admin Service: Forcing emergency termination routine for game session: {}", gameId);
 

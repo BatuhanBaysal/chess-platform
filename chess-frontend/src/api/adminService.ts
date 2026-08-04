@@ -18,6 +18,15 @@ export interface AdminActiveGameResponseDTO {
     startTime?: string;
 }
 
+export interface AdminAuditLogResponseDTO {
+    id: number;
+    adminId: number;
+    adminUsername: string; 
+    actionType: string;
+    details: string;
+    createdAt: string;    
+}
+
 export interface Page<T> {
     content: T[];
     totalElements: number;
@@ -50,4 +59,11 @@ export const triggerSandboxGame = async (whiteId: number, blackId: number): Prom
     await api.post('/api/admin/sandbox/trigger-game', null, {
         params: { whiteId, blackId }
     });
+};
+
+export const getAuditLogs = async (page: number = 0, size: number = 10): Promise<Page<AdminAuditLogResponseDTO>> => {
+    const response = await api.get('/api/admin/audit-logs', {
+        params: { page, size }
+    });
+    return response.data;
 };

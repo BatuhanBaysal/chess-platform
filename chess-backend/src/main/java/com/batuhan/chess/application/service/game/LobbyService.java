@@ -62,28 +62,53 @@ public class LobbyService {
         return roomId;
     }
 
-    public boolean joinRoom(String roomId, Long userId, String username) {
+    public boolean cancelRoom(String roomId, Long userId) {
         synchronized (activeRooms) {
             GameRoom room = activeRooms.get(roomId);
+            if (room != null && room.getHostId().equals(userId)) {
+                activeRooms.remove(roomId);
+                messagingTemplate.convertAndSend("/topic/lobby", Map.of(
+                    "type", "LOBBY_CANCELLED",
+                    "roomId", roomId
+                ));
 
-            if (room != null && STATUS_WAITING.equals(room.getStatus())) {
-                if (room.getHostId().equals(userId)) {
-                    log.warn("User {} tried to join their own room {}", userId, roomId);
-                    return false;
-                }
-
-                room.setBlackPlayerId(userId);
-                room.setBlackPlayerName(username);
-                room.setStatus(STATUS_IN_PROGRESS);
-
-                gameService.createNewGameWithPlayers(roomId, room.getHostId(), userId);
-                notifyPlayers(room, username);
-
-                log.info("Match started in room: {}. White: {}, Black: {}", roomId, room.getHostId(), userId);
+                log.info("Room cancelled and removed: {} by host: {}", roomId, userId);
                 return true;
             }
         }
         return false;
+    }
+
+    public boolean joinRoom(String roomId, Long userId, String username) {
+        synchronized (activeRooms) {
+            GameRoom room = activeRooms.get(roomId);
+
+            if (room == null || !STATUS_WAITING.equals(room.getStatus())) {
+                log.warn("Attempt to join invalid or expired room: {} by user: {}", roomId, userId);
+                return false;
+            }
+
+            if (room.getHostId().equals(userId)) {
+                log.warn("User {} tried to join their own room {}", userId, roomId);
+                return false;
+            }
+
+            String activeGameId = gameService.getActiveGameIdByUserId(userId);
+            if (activeGameId != null) {
+                log.warn("User {} tried to join room {} while already in active game {}", userId, roomId, activeGameId);
+                return false;
+            }
+
+            room.setBlackPlayerId(userId);
+            room.setBlackPlayerName(username);
+            room.setStatus(STATUS_IN_PROGRESS);
+
+            gameService.createNewGameWithPlayers(roomId, room.getHostId(), userId);
+            notifyPlayers(room, username);
+
+            log.info("Match started in room: {}. White: {}, Black: {}", roomId, room.getHostId(), userId);
+            return true;
+        }
     }
 
     private void notifyPlayers(GameRoom room, String joinerName) {

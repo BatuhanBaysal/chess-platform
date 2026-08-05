@@ -58,4 +58,20 @@ public class LobbyController {
         }
         return ResponseEntity.ok(room);
     }
+
+    @DeleteMapping("/cancel/{roomId}")
+    public ResponseEntity<Boolean> cancelRoom(
+        @PathVariable String roomId,
+        @RequestParam Long userId) {
+
+        log.info("Lobby cancel request - Room: {}, User: {}", roomId, userId);
+        boolean cancelled = lobbyService.cancelRoom(roomId, userId);
+
+        if (!cancelled) {
+            log.warn("Cancel failed for Room: {} and User: {}", roomId, userId);
+            return ResponseEntity.badRequest().body(false);
+        }
+
+        return ResponseEntity.ok(true);
+    }
 }

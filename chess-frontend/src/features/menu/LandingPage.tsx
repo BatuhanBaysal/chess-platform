@@ -7,7 +7,7 @@ import ChessBoard from '../../components/chess/ChessBoard';
 import GlobalLeaderboard from './GlobalLeaderboard';
 import { useChess } from '../../hooks/useChess';
 import api from '../../api/axios';
-import { getActiveGame } from '../../api/gameService';
+import { getActiveGame, cancelLobby } from '../../api/gameService';
 import type { GameResponse } from '../../api/gameService';
 
 type ChessTheme = 'classic' | 'modern' | 'emerald';
@@ -16,7 +16,7 @@ type TimeControl = 3 | 10 | 30;
 interface GameRoom {
   roomId: string;
   hostName: string;
-  timeControl: number;
+  timeLimit?: number;
   theme?: ChessTheme;
 }
 
@@ -135,13 +135,50 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
           params: { roomId: room.roomId, userId: currentUser.id, username: currentUser.username }
         });
         if (room.theme) setSelectedTheme(room.theme);
-        setSelectedTime(room.timeControl as TimeControl);
-        handleStartGame(room.roomId, room.timeControl, room.theme);
+        setSelectedTime(room.timeLimit as TimeControl);
+        handleStartGame(room.roomId, room.timeLimit, room.theme);
       }
     } catch (e) {
       alert("Room is full or no longer exists.");
     }
   };
+
+  const handleCancelDeployment = async () => {
+    if (waitingRoomId && user?.id) {
+      try {
+        await cancelLobby(waitingRoomId, user.id);
+      } catch (e) {
+        console.error("Cancel lobby error:", e);
+      }
+    }
+    setWaitingRoomId(null);
+  };
+
+  useEffect(() => {
+    fetchRooms();
+    const lobbyInterval = setInterval(fetchRooms, 3000);
+    let matchInterval: ReturnType<typeof setInterval> | undefined;
+    
+    if (waitingRoomId) {
+      matchInterval = setInterval(async () => {
+        try {
+          const res = await api.get(`/api/lobby/status/${waitingRoomId}`);
+          if (!res.data || res.data.status === 'CANCELLED' || res.data.status === 'EXPIRED') {
+            setWaitingRoomId(null);
+          } else if (res.data.status === 'FULL' || res.data.status === 'IN_PROGRESS' || res.data.ready) {
+            handleStartGame(waitingRoomId);
+          }
+        } catch (e) {
+          setWaitingRoomId(null);
+        }
+      }, 2000);
+    }
+
+    return () => {
+      clearInterval(lobbyInterval);
+      if (matchInterval) clearInterval(matchInterval);
+    };
+  }, [waitingRoomId, handleStartGame]);
 
   if (activeGameId && game) {
     return (
@@ -251,7 +288,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
                </div>
             </div>
             <button 
-              onClick={() => setWaitingRoomId(null)}
+              onClick={handleCancelDeployment}
               className="text-[10px] font-black uppercase tracking-widest text-rose-500 hover:opacity-70 transition-opacity"
             >
               Cancel Deployment
@@ -315,21 +352,27 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
            </div>
            <div className="grow overflow-y-auto pr-2 space-y-3">
              {rooms.length > 0 ? (
-               rooms.map(room => (
-                 <div key={room.roomId} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/50 flex justify-between items-center group hover:border-blue-500 transition-all shadow-sm">
-                   <div>
-                     <p className="text-[10px] font-black opacity-60 uppercase tracking-widest text-slate-900 dark:text-white">{room.hostName}</p>
-                     <div className="flex items-center gap-2 mt-0.5">
-                         <Shield size={10} className="text-blue-500" />
-                         <p className="text-[10px] text-blue-600 dark:text-blue-400 font-bold">{room.timeControl} MIN</p>
-                     </div>
-                   </div>
-                   <button onClick={() => handleJoinRoom(room)} className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 shadow-md transition-all active:scale-95">
-                     Engage
-                   </button>
-                 </div>
-               ))
-             ) : (
+                rooms.map(room => (
+                  <div key={room.roomId} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/50 flex justify-between items-center group hover:border-blue-500 transition-all shadow-sm">
+                    <div>
+                      <p className="text-[10px] font-black opacity-60 uppercase tracking-widest text-slate-900 dark:text-white">{room.hostName}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                          <Shield size={10} className="text-blue-500" />
+                          <p className="text-[10px] text-blue-600 dark:text-blue-400 font-bold">
+                            {room.timeLimit} MIN {room.theme ? `• ${room.theme.toUpperCase()}` : ''}
+                          </p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => handleJoinRoom(room)} 
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 transition-all active:scale-95 flex items-center gap-1.5 group-hover:shadow-blue-600/40"
+                    >
+                      <span>Engage</span>
+                      <Sword size={11} className="transition-transform group-hover:translate-x-0.5" />
+                    </button>
+                  </div>
+                ))
+              ) : (
                <div className="h-full flex flex-col items-center justify-center opacity-40 text-slate-900 dark:text-white">
                  <Sword size={24} className="mb-2" />
                  <p className="text-[10px] font-black uppercase tracking-[0.2em]">No signals detected...</p>

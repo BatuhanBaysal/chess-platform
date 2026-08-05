@@ -57,6 +57,18 @@ export const joinRoom = async (roomId: string, userId: number, username: string)
     return response.data;
 };
 
+export const cancelLobby = async (roomId: string, userId: number) => {
+    try {
+        const response = await api.delete(`/api/lobby/cancel/${roomId}`, {
+            params: { userId }
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Lobby cancel failed:", error);
+        throw error;
+    }
+};
+
 export const getActiveRooms = async () => {
     try {
         const response = await api.get(`/api/lobby/rooms`);

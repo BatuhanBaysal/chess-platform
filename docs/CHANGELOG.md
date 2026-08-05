@@ -5,10 +5,52 @@ All notable changes to this project will be documented in this file. This projec
 > **Project Lifecycle Governance Note:**
 > All development milestones, release tags, and version history have been retroactively configured to align with our production-ready lifecycle. This project is developed using **Professional Agile methodologies**, utilizing **GitHub Projects (Kanban Board)** for end-to-end task management—encompassing the full scope from backlog refinement to continuous delivery and stable production releases.
 
-## [1.2.0] - 2026-07-23
+## 🚀 Development Roadmap
+
+- ✅ **Phase 1: Foundation** 🏗️ - Monorepo scaffolding, environment setup, and Spring Boot/React initialization.
+- ✅ **Phase 2: Domain Modeling** ♟️ - Piece-specific logic, board initialization, and DDD-based movement rules.
+- ✅ **Phase 3: Rule Engine** ⚖️ - Legal move validation (King safety, check/mate detection) and FIDE standards.
+- ✅ **Phase 4: Communication Layer** 📡 - WebSocket infrastructure using STOMP protocol and real-time event mapping.
+- ✅ **Phase 5: UI Integration & Local Play** 🖥️ - Interactive React 19 board, Pawn Promotion, and Castling UI.
+- ✅ **Phase 6: Visual Polish & UX** 🎨 - Dark/Light mode, theme support (Classic, Modern, Emerald), and Drag & Drop (`dnd-kit`).
+- ✅ **Phase 7: Identity & Persistence** 🔐 - Implemented **Spring Security + JWT**, User profiles, and PostgreSQL integration.
+- ✅ **Phase 8: Server-Side Authority** 🛡️ - Hardened backend validation for all moves and anti-cheat state management.
+- ✅ **Phase 9: Remote Multiplayer & Matchmaking** 🤝 - Global session management and real-time player pairing via WebSockets.
+- ✅ **Phase 10: Infrastructure & Containerization** 🐳 - Orchestrating services with **Docker & Docker Compose** and implementing **Liquibase** for DB versioning.
+- ✅ **Phase 11: Full-Stack Observability (LGTM)** 📈 - Implementing **Grafana, Loki, and Prometheus** for real-time logs, metrics, and system health.
+- ✅ **Phase 12: Quality Assurance & Code Integrity** 🏆 - Expanding **JUnit 5/Mockito** coverage and integrating **SonarQube** for automated "Zero Technical Debt" reporting.
+- ✅ **Phase 13: Scalability & Resilience** ⚡ - Implementing **Resilience4j** (Circuit Breaker) and **Distributed Locking** with Redis.
+- ✅ **Phase 14: Core Engine Refactoring & UX Optimization** ⚙️ - Server-authoritative timer logic and enhanced UI responsiveness/notation feed.
+- ✅ **Phase 15: Official Stable Release (v1.0.0)** 🚀 - Production-ready engine, OpenAPI/Swagger docs, and enhanced observability.
+- ✅ **Phase 16: User Experience & Dashboards (v1.1.0)** 📈 - Secure user profiles, RBAC authorization, and interactive performance analytics.
+- ✅ **Phase 17: Administration & Operations** 👑 - Developing an RBAC-integrated Admin Dashboard to manage users, monitor health, and oversee global platform operations.
+- ✅ **Phase 18: Security, Resilience & Quality** 🛡️ - Hardening game state integrity by enforcing a "Dismiss = Loss" policy within the WebSocket reconnection handler.
+- ⏳ **Phase 19: Advanced Intelligence** 🧠 - Integrating the Stockfish engine via UCI protocol to enable real-time move analysis, blunder detection, and hint mechanisms.
+- 🔜
+
+---
+
+## [1.2.0] - 2026-08-05
 
 ### 🚀 Phase 18: Security, Resilience & Quality 🛡️ (v1.2.0)
 > **Note:** Hardening game state integrity by enforcing a "Dismiss = Loss" policy within the WebSocket reconnection handler.
+
+- **2026-08-05:**
+    - **Lobby Management & Ghost Game Prevention (PR #106 | Issue #101):**
+        - Added the `cancelRoom` method to `LobbyService` to handle room cancellation and clean up active registry states.
+        - Strengthened `joinRoom` logic in `LobbyService` to prevent joining expired, cancelled, or non-waiting rooms, ensuring robust ghost game prevention.
+        - Created a DELETE `/api/lobby/cancel/{roomId}` endpoint in `LobbyController` to process room cancellation requests securely.
+        - Added comprehensive unit tests (`RoomCancellationTests` nested classes) in both `LobbyServiceTest` and `LobbyControllerTest` to validate successful cancellations and unauthorized security checks.
+        - Integrated `cancelLobby` API support within `gameService.ts` and standardized parameter naming to `timeLimit?: number` across the frontend landing interface.
+        - Implemented real-time lobby synchronization ensuring that cancelled rooms are immediately removed from the user interface menu to block unauthorized connections.
+
+- **2026-08-04:**
+    - **Administrative Audit Logging & Action Tracking (PR #105 | Issue #100):**
+        - Added an `audit_logs` database table via Liquibase migration to track all platform-wide administrative actions.
+        - Created the `AuditLog` entity, `AuditLogRepository`, and `AuditLogService` to support backend logging operations.
+        - Implemented an AOP `AuditLogAspect` component with the `@AuditableAction` annotation to automatically intercept sensitive admin operations (`TOGGLE_USER_STATUS`, `FORCE_FINISH_GAME`, and `PLAYER_DISMISS_GAME`).
+        - Exposed a secure, paginated, and filterable `GET /api/admin/audit-logs` endpoint via `AuditLogController` restricted to `ROLE_ADMIN` users.
+        - Integrated the audit logging service (`auditService.ts`) and added a dedicated, read-only "Audit Logs" tab with a paginated Data Grid inside the Admin Dashboard UI.
 
 - **2026-08-03:**
     - **Game Abandonment & Session Dismissal Logic (PR #104 | Issue #99):**
@@ -47,7 +89,7 @@ All notable changes to this project will be documented in this file. This projec
 - **2026-07-13:**
     - **Global Leaderboard Integration (PR #95 | Issue #88):**
         - Implemented a global leaderboard feature accessible via the main menu.
-        - Added backend ranking and analytics endpoints to support the "View All" scoreboard functionality[cite:
+        - Added backend ranking and analytics endpoints to support the "View All" scoreboard functionality
 
 - **2026-07-09:**
     - **Security & RBAC Architecture (PR #94 | Issue #93):**

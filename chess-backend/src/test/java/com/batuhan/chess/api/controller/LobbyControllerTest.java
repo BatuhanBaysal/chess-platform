@@ -1,6 +1,5 @@
 package com.batuhan.chess.api.controller;
 
-import com.batuhan.chess.api.controller.LobbyController;
 import com.batuhan.chess.application.service.game.LobbyService;
 import com.batuhan.chess.application.service.auth.JwtService;
 import org.junit.jupiter.api.DisplayName;
@@ -17,8 +16,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
@@ -137,6 +135,39 @@ class LobbyControllerTest {
             // Act & Assert
             mockMvc.perform(get("/api/lobby/status/invalid-id"))
                 .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("Room Cancellation Operations")
+    class RoomCancellationTests {
+
+        @Test
+        @DisplayName("Should return 200 OK and true when a room is cancelled successfully by host")
+        void shouldCancelRoomSuccessfully() throws Exception {
+            // Arrange
+            when(lobbyService.cancelRoom(anyString(), anyLong())).thenReturn(true);
+
+            // Act & Assert
+            mockMvc.perform(delete("/api/lobby/cancel/room1234")
+                    .param("userId", "1")
+                    .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().string("true"));
+        }
+
+        @Test
+        @DisplayName("Should return 400 Bad Request when cancelling a room fails (e.g., unauthorized user)")
+        void shouldReturnBadRequestWhenCancelFails() throws Exception {
+            // Arrange
+            when(lobbyService.cancelRoom(anyString(), anyLong())).thenReturn(false);
+
+            // Act & Assert
+            mockMvc.perform(delete("/api/lobby/cancel/room1234")
+                    .param("userId", "99")
+                    .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("false"));
         }
     }
 }

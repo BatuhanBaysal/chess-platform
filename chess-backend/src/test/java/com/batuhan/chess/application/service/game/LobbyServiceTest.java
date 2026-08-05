@@ -1,7 +1,5 @@
 package com.batuhan.chess.application.service.game;
 
-import com.batuhan.chess.application.service.game.GameService;
-import com.batuhan.chess.application.service.game.LobbyService;
 import com.batuhan.chess.application.service.game.LobbyService.GameRoom;
 import com.batuhan.chess.application.service.game.LobbyService.MatchFoundMessage;
 import org.junit.jupiter.api.DisplayName;
@@ -16,6 +14,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -155,6 +154,65 @@ class LobbyServiceTest {
                 .first()
                 .extracting(GameRoom::getRoomId)
                 .isEqualTo(room2);
+        }
+    }
+
+    @Nested
+    @DisplayName("Room Cancellation and Ghost Game Prevention")
+    class RoomCancellationTests {
+
+        @Test
+        @DisplayName("Should successfully cancel room, remove from active registry and broadcast cancellation event")
+        void shouldCancelRoomAndBroadcastEventSuccessfully() {
+            // Arrange
+            Long hostId = 1L;
+            String roomId = lobbyService.createRoom(hostId, "hostUser", 10);
+
+            // Act
+            boolean result = lobbyService.cancelRoom(roomId, hostId);
+
+            // Assert
+            assertThat(result).isTrue();
+            assertThat(lobbyService.getRoom(roomId)).isNull();
+            verify(messagingTemplate).convertAndSend(eq("/topic/lobby"), argThat((Object map) -> {
+                if (map instanceof Map<?, ?> m) {
+                    return "LOBBY_CANCELLED".equals(m.get("type")) && roomId.equals(m.get("roomId"));
+                }
+                return false;
+            }));
+        }
+
+        @Test
+        @DisplayName("Should fail to cancel room when requested by an unauthorized user who is not the host")
+        void shouldFailWhenUnauthorizedUserTriesToCancelRoom() {
+            // Arrange
+            Long hostId = 1L;
+            Long unauthorizedUserId = 99L;
+            String roomId = lobbyService.createRoom(hostId, "hostUser", 10);
+
+            // Act
+            boolean result = lobbyService.cancelRoom(roomId, unauthorizedUserId);
+
+            // Assert
+            assertThat(result).isFalse();
+            assertThat(lobbyService.getRoom(roomId)).isNotNull();
+            verify(messagingTemplate, never()).convertAndSend(anyString(), any(Object.class));
+        }
+
+        @Test
+        @DisplayName("Should prevent joining a cancelled or non-waiting room (Ghost game prevention)")
+        void shouldPreventJoiningCancelledOrExpiredRoom() {
+            // Arrange
+            Long hostId = 1L;
+            String roomId = lobbyService.createRoom(hostId, "hostUser", 10);
+            lobbyService.cancelRoom(roomId, hostId);
+
+            // Act
+            boolean result = lobbyService.joinRoom(roomId, 2L, "guestUser");
+
+            // Assert
+            assertThat(result).isFalse();
+            verifyNoInteractions(gameService);
         }
     }
 }

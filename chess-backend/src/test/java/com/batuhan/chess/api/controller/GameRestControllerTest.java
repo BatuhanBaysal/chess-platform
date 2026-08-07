@@ -213,4 +213,57 @@ class GameRestControllerTest {
                 .andExpect(jsonPath("$.length()").value(0));
         }
     }
+
+    @Nested
+    @DisplayName("AI Game Creation Operations")
+    class AiGameControllerTests {
+
+        @Test
+        @DisplayName("Should create a new AI game session and return its initial state when user plays as white")
+        void shouldCreateAiGameAsWhiteSuccessfully() throws Exception {
+            // Arrange
+            String gameId = "ai-game-1";
+            Game game = new Game(new Board());
+            GameResponse response = new GameResponse(
+                gameId, "rnbqkbnr", Color.WHITE, GameStatus.ACTIVE,
+                List.of(), List.of(), "", 1L, -1L, false, 300000L, 300000L, 300
+            );
+            when(gameService.createAiGame(1L, true)).thenReturn(gameId);
+            when(gameService.getGame(gameId)).thenReturn(game);
+            when(gameService.convertToResponse(gameId, game)).thenReturn(response);
+
+            // Act & Assert
+            mockMvc.perform(post("/api/games/vs-ai")
+                    .param("userId", "1")
+                    .param("playAsWhite", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.gameId").value(gameId))
+                .andExpect(jsonPath("$.whiteId").value(1))
+                .andExpect(jsonPath("$.blackId").value(-1));
+        }
+
+        @Test
+        @DisplayName("Should create a new AI game session when user plays as black with default parameter")
+        void shouldCreateAiGameAsBlackSuccessfully() throws Exception {
+            // Arrange
+            String gameId = "ai-game-2";
+            Game game = new Game(new Board());
+            GameResponse response = new GameResponse(
+                gameId, "rnbqkbnr", Color.WHITE, GameStatus.ACTIVE,
+                List.of(), List.of(), "", -1L, 2L, false, 300000L, 300000L, 300
+            );
+            when(gameService.createAiGame(2L, false)).thenReturn(gameId);
+            when(gameService.getGame(gameId)).thenReturn(game);
+            when(gameService.convertToResponse(gameId, game)).thenReturn(response);
+
+            // Act & Assert
+            mockMvc.perform(post("/api/games/vs-ai")
+                    .param("userId", "2")
+                    .param("playAsWhite", "false"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.gameId").value(gameId))
+                .andExpect(jsonPath("$.whiteId").value(-1))
+                .andExpect(jsonPath("$.blackId").value(2));
+        }
+    }
 }

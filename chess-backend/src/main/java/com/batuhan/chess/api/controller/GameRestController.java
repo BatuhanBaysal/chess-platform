@@ -56,6 +56,20 @@ public class GameRestController {
         return gameService.convertToResponse(gameId, game);
     }
 
+    @PostMapping("/vs-ai")
+    public GameResponse createAiGame(
+        @RequestParam("userId") Long userId,
+        @RequestParam(value = "playAsWhite", defaultValue = "true") boolean playAsWhite) {
+
+        String gameId = gameService.createAiGame(userId, playAsWhite);
+        Game game = gameService.getGame(gameId);
+
+        if (game == null) {
+            throw new ResourceNotFoundException("Failed to initialize AI game.");
+        }
+        return gameService.convertToResponse(gameId, game);
+    }
+
     @PostMapping("/{gameId}/finish")
     public ResponseEntity<Void> finishGame(@PathVariable String gameId) {
         log.info("[FINISH] End-of-game request received: {}", gameId);

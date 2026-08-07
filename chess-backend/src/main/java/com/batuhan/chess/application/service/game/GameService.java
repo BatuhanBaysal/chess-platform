@@ -49,6 +49,9 @@ public class GameService {
 
     private Counter moveCounter;
 
+    private static final Long AI_PLAYER_ID = -1L;
+    private final StockfishService stockfishService;
+
     public GameService(GameRepository gameRepository,
                        UserRepository userRepository,
                        EloService eloService,
@@ -56,6 +59,7 @@ public class GameService {
                        RedissonClient redissonClient,
                        LobbyService lobbyService,
                        GameWebSocketController webSocketController,
+                       StockfishService stockfishService,
                        @Lazy GameService self) {
         this.gameRepository = gameRepository;
         this.userRepository = userRepository;
@@ -64,6 +68,7 @@ public class GameService {
         this.redissonClient = redissonClient;
         this.lobbyService = lobbyService;
         this.webSocketController = webSocketController;
+        this.stockfishService = stockfishService;
         this.self = self;
     }
 
@@ -76,6 +81,24 @@ public class GameService {
     public String createGame(Long whiteId, Long blackId) {
         String gameId = UUID.randomUUID().toString().substring(0, 8);
         createNewGameWithPlayers(gameId, whiteId, blackId);
+        return gameId;
+    }
+
+    public String createAiGame(Long humanUserId, boolean playAsWhite) {
+        String gameId = UUID.randomUUID().toString().substring(0, 8);
+
+        Long whiteId = playAsWhite ? humanUserId : AI_PLAYER_ID;
+        Long blackId = playAsWhite ? AI_PLAYER_ID : humanUserId;
+
+        createNewGameWithPlayers(gameId, whiteId, blackId);
+
+        if (!playAsWhite) {
+            Game game = activeGames.get(gameId);
+            if (game != null) {
+                triggerAiMoveIfNeeded(gameId, game);
+            }
+        }
+
         return gameId;
     }
 
@@ -199,8 +222,40 @@ public class GameService {
             self.processGameFinish(gameId, determineResult(game, game.getStatus()), game.getStatus());
         } else {
             log.warn("DEBUG-MOVE: Status not finished, processGameFinish skipped!");
+            triggerAiMoveIfNeeded(gameId, game);
         }
         return moves;
+    }
+
+    private void triggerAiMoveIfNeeded(String gameId, Game game) {
+        if (game.getStatus().isFinished()) return;
+
+        Long nextPlayerId = (game.getCurrentTurn() == Color.WHITE) ? game.getWhitePlayerId() : game.getBlackPlayerId();
+
+        if (AI_PLAYER_ID.equals(nextPlayerId)) {
+            String bestMoveUci = stockfishService.getBestMove(game.getMoveHistory(), 10);
+
+            if (bestMoveUci != null && bestMoveUci.length() >= 4) {
+                log.info("AI (Stockfish) calculated best move for game {}: {}", gameId, bestMoveUci);
+
+                Position from = parseUciPosition(bestMoveUci.substring(0, 2));
+                Position to = parseUciPosition(bestMoveUci.substring(2, 4));
+
+                String promotionType = bestMoveUci.length() > 4 ? String.valueOf(bestMoveUci.charAt(4)).toUpperCase() : null;
+                game.makeMove(from, to, promotionType);
+                webSocketController.broadcastGameUpdate(gameId, game);
+
+                if (game.getStatus().isFinished()) {
+                    self.processGameFinish(gameId, determineResult(game, game.getStatus()), game.getStatus());
+                }
+            }
+        }
+    }
+
+    private Position parseUciPosition(String uciCoord) {
+        int col = uciCoord.charAt(0) - 'a';
+        int row = Character.getNumericValue(uciCoord.charAt(1)) - 1;
+        return new Position(row, col);
     }
 
     private boolean isTimeExpired(Game game) {

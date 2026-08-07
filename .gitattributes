@@ -1,16 +1,15 @@
 # Handle line endings automatically for files detected as text
 # and perform LF normalization.
 * text=auto
-
 # Force specific files to use LF (Unix) line endings for cross-platform compatibility.
 /mvnw text eol=lf
 *.cmd text eol=crlf
-
 # Ensure binary files (images, icons) are not modified during check-in.
 *.png binary
 *.jpg binary
 *.ico binary
-
 # --- Git LFS Rules ---
 *.mp4 filter=lfs diff=lfs merge=lfs -text
 *.gif filter=lfs diff=lfs merge=lfs -text
+*.exe filter=lfs diff=lfs merge=lfs -text
+chess-backend/src/main/resources/engine/stockfish filter=lfs diff=lfs merge=lfs -text

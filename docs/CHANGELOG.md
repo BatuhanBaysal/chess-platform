@@ -25,8 +25,23 @@ All notable changes to this project will be documented in this file. This projec
 - ✅ **Phase 16: User Experience & Dashboards (v1.1.0)** 📈 - Secure user profiles, RBAC authorization, and interactive performance analytics.
 - ✅ **Phase 17: Administration & Operations** 👑 - Developing an RBAC-integrated Admin Dashboard to manage users, monitor health, and oversee global platform operations.
 - ✅ **Phase 18: Security, Resilience & Quality** 🛡️ - Hardening game state integrity by enforcing a "Dismiss = Loss" policy within the WebSocket reconnection handler.
-- ⏳ **Phase 19: Advanced Intelligence** 🧠 - Integrating the Stockfish engine via UCI protocol to enable real-time move analysis, blunder detection, and hint mechanisms.
+- ⏳ **Phase 19: AI Integration & Training Ecosystem** 🤖 - Integrating the Stockfish engine via UCI protocol to enable real-time move analysis, blunder detection, and hint mechanisms.
 - 🔜
+
+---
+
+## [2.0.0] - 2026-08-07
+
+### 🚀 Phase 19: AI Integration & Training Ecosystem 🤖 (v2.0.0)
+> **Note:** Expanding the training ecosystem with automated computer opponent capabilities powered by the Stockfish chess engine.
+
+- **2026-08-07:**
+    - **Stockfish Chess Engine Integration (PR #111 | Issue #107):**
+        - Implemented `StockfishService` to manage UCI protocol communication, process lifecycle, and engine execution.
+        - Bundled the Stockfish binary (`chess-backend/src/main/resources/engine/stockfish.exe`) into backend resources for robust local and environment-agnostic support.
+        - Integrated AI move triggers into `GameService` to automatically calculate and respond with best moves during single-player sessions.
+        - Created the `/api/games/vs-ai` endpoint to initialize player-vs-AI game sessions with selectable player colors.
+        - Added comprehensive unit and integration tests across `StockfishServiceTest`, `GameServiceTest`, and `GameRestControllerTest` to validate move accuracy, process lifecycle, and controller workflows.
 
 ---
 

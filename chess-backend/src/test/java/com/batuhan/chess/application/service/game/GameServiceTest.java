@@ -46,6 +46,7 @@ class GameServiceTest {
     @Mock private RedissonClient redissonClient;
     @Mock private RLock rLock;
     @Mock private GameWebSocketController webSocketController;
+    @Mock private StockfishService stockfishService;
 
     @Spy
     private MeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -69,7 +70,7 @@ class GameServiceTest {
         GameService realService = new GameService(
             gameRepository, userRepository, eloService,
             meterRegistry, redissonClient, lobbyService,
-            webSocketController, null
+            webSocketController, stockfishService, null
         );
         gameService = spy(realService);
 
@@ -284,6 +285,65 @@ class GameServiceTest {
 
             // Assert
             verify(gameService, never()).processGameFinish(anyString(), any(), any());
+        }
+    }
+
+    @Nested
+    @DisplayName("AI Game Integration Tests")
+    class AiGameTests {
+
+        @Test
+        @DisplayName("Should initialize AI game correctly when human plays as white")
+        void shouldCreateAiGameAsWhite() {
+            // Act
+            String aiGameId = gameService.createAiGame(whiteId, true);
+
+            // Assert
+            assertThat(aiGameId).isNotBlank();
+            assertThat(gameService.getGame(aiGameId)).satisfies(game -> {
+                assertThat(game.getWhitePlayerId()).isEqualTo(whiteId);
+                assertThat(game.getBlackPlayerId()).isEqualTo(-1L);
+            });
+        }
+
+        @Test
+        @DisplayName("Should initialize AI game and trigger immediate AI move when human plays as black")
+        void shouldCreateAiGameAsBlackAndTriggerAiMove() {
+            // Arrange
+            when(stockfishService.getBestMove(anyList(), anyInt())).thenReturn("e2e4");
+
+            // Act
+            String aiGameId = gameService.createAiGame(blackId, false);
+
+            // Assert
+            assertThat(aiGameId).isNotBlank();
+            assertThat(gameService.getGame(aiGameId)).satisfies(game -> {
+                assertThat(game.getWhitePlayerId()).isEqualTo(-1L);
+                assertThat(game.getBlackPlayerId()).isEqualTo(blackId);
+            });
+
+            verify(stockfishService, atLeastOnce()).getBestMove(anyList(), eq(10));
+        }
+
+        @Test
+        @DisplayName("Should trigger AI move automatically after human makes a move against AI")
+        void shouldTriggerAiMoveAfterHumanMove() {
+            // Arrange
+            String aiGameId = gameService.createAiGame(whiteId, true);
+            gameService.setPlayerReady(aiGameId, whiteId);
+            gameService.setPlayerReady(aiGameId, -1L);
+
+            when(stockfishService.getBestMove(anyList(), anyInt())).thenReturn("e7e5");
+
+            Position from = new Position(4, 1);
+            Position to = new Position(4, 3);
+
+            // Act
+            List<GameResponse.ExecutedMove> moves = gameService.makeMove(aiGameId, from, to, null);
+
+            // Assert
+            assertThat(moves).isNotEmpty();
+            verify(stockfishService, atLeastOnce()).getBestMove(anyList(), eq(10));
         }
     }
 }

@@ -2,21 +2,21 @@
 
 > *A Production-Ready Real-Time Chess Ecosystem Powered by Hexagonal Architecture and the LGTM Stack.*
 
-![Status](https://img.shields.io/badge/Status-Active-brightgreen) ![Version](https://img.shields.io/badge/Version-v1.2.0-blue) ![License](https://img.shields.io/badge/License-MIT-yellow)
+![Status](https://img.shields.io/badge/Status-Active-brightgreen) ![Version](https://img.shields.io/badge/Version-v2.0.0-blue) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ---
 
 ## 📖 Overview
 **Chess Platform** is a professional-grade, real-time multiplayer chess ecosystem. Designed as a **single source of truth** for game state, the platform synchronizes complex board interactions between the server and client with sub-millisecond precision.
 
-> **In simple terms:** Think of this as a "referee-in-the-cloud" chess game. By keeping all the core business logic, validation rules, and timers on the server, we ensure that client-side manipulation is impossible, the game remains perfectly synced for both sides, and your match progress is safe—even if you experience a temporary network drop, page refresh, or unexpected WebSocket disconnection.
+> **In simple terms:** Think of this as a "referee-in-the-cloud" chess game. By keeping all the core business logic, validation rules, and timers on the server, we ensure that client-side manipulation is impossible and the game remains perfectly synced.
 
 ### 🎯 What We Do
-* **Secure Onboarding:** A robust authentication, JWT-based security, and registration flow ensuring that every player interaction is verified.
-* **Server-Authoritative Architecture:** The game logic and FIDE rule engine reside entirely on the backend (acting as a thin-client UI). Every move is strictly validated server-side before reaching the board.
-* **Real-Time Synchronization:** Using a reactive, event-driven architecture powered by WebSockets, the platform guarantees that board states and session timers are instantly synchronized across players.
-* **Dynamic User Experience:** A high-performance React (v19) frontend providing a seamless transition from lobby navigation to fluid, low-latency match play with intuitive interactions.
-* **Resilient Infrastructure & Session Persistence:** Engineered to handle network interruptions gracefully with automated state recovery and connection management, ensuring your game state is never lost.
+* **Secure Onboarding:** A robust authentication, JWT-based security, and registration flow.
+* **Server-Authoritative Rule Engine:** **Developed entirely in-house using Java.** We do not rely on third-party APIs for game rules. Every move (Castling, En Passant, Promotion) is validated server-side by our custom domain logic to ensure 100% integrity.
+* **Real-Time Multiplayer:** A reactive, event-driven architecture using WebSockets for seamless player-vs-player matches.
+* **Integrated AI Training Mode:** Leveraging the industry-standard **Stockfish engine** as a local sidecar, allowing users to play against a powerful AI opponent in single-player sessions, while still utilizing our core server-authoritative logic for move validation.
+* **Resilient Infrastructure:** Automated state recovery and connection management to handle network interruptions gracefully.
 
 ---
 
@@ -25,6 +25,8 @@
 
 > **Real-Time Multiplayer Synchronization:** A demonstration of the platform's reactive architecture. The side-by-side view shows a game session synchronized across two independent browser sessions, highlighting instant state updates, server-authoritative move validation, and low-latency WebSocket communication.
 
+* **Multiplayer Duel:** Real-time matches powered by our custom-built FIDE-compliant Java engine.
+* **🤖 Player vs. AI (Stockfish Engine):** Integrated UCI-protocol-based engine support. Users can initiate single-player matches against a high-performance AI, managed by our robust backend lifecycle controller.
 * **System Demonstrations:** You can explore the [Authentication Workflow](docs/assets/videos/v1-auth-workflow.mp4) 🔐, [Lobby & Navigation](docs/assets/videos/v1-lobby-navigation.mp4) 🧭, and [Board Interactivity](docs/assets/videos/v1-gameplay-board.mp4) ♟️ video guides.
 * **System Snapshots:** Check out the [Dashboard Assets](docs/assets/dashboards/) 📊, [Infrastructure Snapshots](docs/assets/screenshots/01-infrastructure/) 🏗️, [UI & UX Highlights](docs/assets/screenshots/02-gameplay-features/) ♟️, and [Test Reports & Swagger UI](docs/assets/screenshots/03-api-testing/) 🧪 for a complete visual overview.
 
@@ -80,13 +82,14 @@ The entire application ecosystem is managed using **Docker Compose** to ensure a
 
 ---
 
-## 🎯 Engineering Highlights
+## 🏗️ Engineering Highlights
 
-* **🧩 Clean Architecture & Domain-Driven Design (DDD):** Core game logic is encapsulated in a pure Java domain layer, strictly decoupled from infrastructure layers (Spring Boot, WebSockets, and persistence).
-* **⚡ Robust Native Rule Engine:** Full FIDE compliance (Castling, En Passant, Promotion) implemented via a native Java domain layer leveraging **sealed classes** and **immutability**, ensuring 100% control over game rules without external third-party engine dependencies.
-* **🔄 Full-Stack Observability & Tracing:** Real-time system health, centralized logging, and distributed tracing managed end-to-end by the **LGTM stack** (Loki, Grafana, Tempo, Prometheus).
-* **🖥️ Modern React (v19) Stack:** High-performance UI utilizing Tailwind CSS and custom hooks designed for fluid, low-latency, real-time board interactions.
-* **🏆 Zero Technical Debt & Quality Gates:** CI/CD-driven mechanized quality standards, maintaining high test coverage and strict code health thresholds enforced via integrated **SonarQube** gates.
+* **🧩 Custom FIDE Rule Engine:** Core game logic is encapsulated in a pure Java domain layer, ensuring complete control and zero reliance on external APIs for multiplayer validation.
+* **🧠 Stockfish AI Integration:** Advanced AI support for single-player training, allowing users to challenge the Stockfish engine via our dedicated `StockfishService` which manages UCI communication and process lifecycle.
+* **⚡ Robust Architecture:** A clean, hexagonal approach that separates our custom-built rule engine from infrastructure components like WebSockets, Persistence, and the AI Engine sidecar.
+* **🔄 Full-Stack Observability & Tracing:** Real-time system health, centralized logging, and distributed tracing managed end-to-end by the **LGTM stack**.
+* **🖥️ Modern React (v19) Stack:** High-performance UI utilizing Tailwind CSS designed for low-latency, real-time interaction.
+* **🏆 Zero Technical Debt & Quality Gates:** CI/CD-driven quality standards enforced via **SonarQube**.
 
 ---
 

@@ -38,6 +38,7 @@ public class StockfishService {
             log.info("Stockfish engine successfully started using binary: {}", engineResourcePath);
         } catch (IOException e) {
             log.error("Failed to start Stockfish engine: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to start Stockfish engine", e);
         }
     }
 

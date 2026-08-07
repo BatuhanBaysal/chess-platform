@@ -24,8 +24,19 @@ jobs:
                   distribution: 'corretto'
                   cache: maven
 
+            - name: Set up Maven
+              uses: stCarolas/setup-maven@v5
+              with:
+                  maven-version: '3.9.6'
+
+            - name: Grant execute permission for Stockfish binary
+              run: chmod +x chess-backend/src/main/resources/engine/*
+
             - name: Build & Test Backend
               run: mvn -B clean install --file chess-backend/pom.xml
+
+            - name: Install Stockfish on Ubuntu
+              run: sudo apt-get update && sudo apt-get install -y stockfish
 
     frontend-build:
         runs-on: ubuntu-latest

@@ -9,6 +9,7 @@ import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -78,6 +79,11 @@ class StockfishServiceTest {
             assertThat(initialProcess).isNotNull();
 
             initialProcess.destroyForcibly();
+            org.awaitility.Awaitility.await()
+                .atMost(Duration.ofSeconds(3))
+                .pollInterval(Duration.ofMillis(100))
+                .until(() -> !initialProcess.isAlive());
+
             String bestMove = stockfishService.getBestMove(List.of("e2e4"), 3);
 
             // Assert

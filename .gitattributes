@@ -12,3 +12,4 @@
 *.mp4 filter=lfs diff=lfs merge=lfs -text
 *.gif filter=lfs diff=lfs merge=lfs -text
 *.exe filter=lfs diff=lfs merge=lfs -text
+chess-backend/src/main/resources/engine/stockfish filter=lfs diff=lfs merge=lfs -text

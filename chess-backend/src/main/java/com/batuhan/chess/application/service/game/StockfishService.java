@@ -22,14 +22,12 @@ public class StockfishService {
         try {
             ProcessBuilder builder;
             String osName = System.getProperty("os.name").toLowerCase();
+            String engineResourcePath = osName.contains("win")
+                ? "engine/stockfish.exe"
+                : "engine/stockfish";
 
-            if (osName.contains("win")) {
-                File tempEngineFile = extractEngineToTemp();
-                builder = new ProcessBuilder(tempEngineFile.getAbsolutePath());
-            } else {
-                builder = new ProcessBuilder("/usr/bin/stockfish");
-                builder.environment().put("PATH", "/usr/bin:/bin");
-            }
+            File tempEngineFile = extractEngineToTemp(engineResourcePath);
+            builder = new ProcessBuilder(tempEngineFile.getAbsolutePath());
 
             process = builder.start();
             reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -37,22 +35,24 @@ public class StockfishService {
 
             sendCommand("uci");
             sendCommand("isready");
-            log.info("Stockfish engine successfully started.");
+            log.info("Stockfish engine successfully started using binary: {}", engineResourcePath);
         } catch (IOException e) {
             log.error("Failed to start Stockfish engine: {}", e.getMessage(), e);
         }
     }
 
-    private File extractEngineToTemp() throws IOException {
-        try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("engine/stockfish.exe")) {
+    private File extractEngineToTemp(String resourcePath) throws IOException {
+        try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
             if (inputStream == null) {
-                throw new FileNotFoundException("Stockfish binary not found in resources/engine/stockfish.exe");
+                throw new FileNotFoundException("Stockfish binary not found in resources/" + resourcePath);
             }
 
             Path userTemp = Path.of(System.getProperty("java.io.tmpdir"));
             Path tempDir = Files.createDirectories(userTemp.resolve("chess-engine-" + System.currentTimeMillis()));
 
-            File tempFile = tempDir.resolve("stockfish.exe").toFile();
+            String fileName = resourcePath.contains("win") ? "stockfish.exe" : "stockfish";
+            File tempFile = tempDir.resolve(fileName).toFile();
+
             Files.copy(inputStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
             boolean isExecutableSet = tempFile.setExecutable(true);

@@ -35,7 +35,7 @@ services:
 
     backend:
         build: ./chess-backend
-        profiles: ["core"]
+        profiles: [ "core" ]
         container_name: chess-server
         restart: always
         ports:
@@ -62,11 +62,11 @@ services:
             redis:
                 condition: service_healthy
         healthcheck:
-            test: [ "CMD-SHELL", "nc -z localhost 8080 || exit 1" ]
+            test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8080/actuator/health" ]
             interval: 10s
             timeout: 5s
             retries: 10
-            start_period: 60s
+            start_period: 40s
 
     frontend:
         build: ./chess-frontend

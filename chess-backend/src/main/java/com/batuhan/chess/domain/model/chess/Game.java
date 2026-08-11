@@ -116,6 +116,11 @@ public class Game {
         this.lastMoveTimestamp = System.currentTimeMillis();
     }
 
+    public boolean isAiGame() {
+        return (this.whitePlayerId != null && this.whitePlayerId.equals(-1L)) ||
+            (this.blackPlayerId != null && this.blackPlayerId.equals(-1L));
+    }
+
     private List<GameResponse.ExecutedMove> prepareExecutedMoves(Position start, Position end, Piece piece, String promotionType) {
         List<GameResponse.ExecutedMove> moves = new ArrayList<>();
         String pieceName = (promotionType != null && validator.isPromotionSituation(piece, end))

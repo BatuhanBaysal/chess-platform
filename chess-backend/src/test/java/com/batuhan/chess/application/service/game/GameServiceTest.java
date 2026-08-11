@@ -296,7 +296,7 @@ class GameServiceTest {
         @DisplayName("Should initialize AI game correctly when human plays as white")
         void shouldCreateAiGameAsWhite() {
             // Act
-            String aiGameId = gameService.createAiGame(whiteId, true);
+            String aiGameId = gameService.createAiGame(whiteId, true, 3, 10);
 
             // Assert
             assertThat(aiGameId).isNotBlank();
@@ -313,23 +313,23 @@ class GameServiceTest {
             when(stockfishService.getBestMove(anyList(), anyInt())).thenReturn("e2e4");
 
             // Act
-            String aiGameId = gameService.createAiGame(blackId, false);
+            String aiGameId = gameService.createAiGame(whiteId, false, 3, 10);
 
             // Assert
             assertThat(aiGameId).isNotBlank();
             assertThat(gameService.getGame(aiGameId)).satisfies(game -> {
                 assertThat(game.getWhitePlayerId()).isEqualTo(-1L);
-                assertThat(game.getBlackPlayerId()).isEqualTo(blackId);
+                assertThat(game.getBlackPlayerId()).isEqualTo(whiteId);
             });
 
-            verify(stockfishService, atLeastOnce()).getBestMove(anyList(), eq(10));
+            verify(stockfishService, atLeastOnce()).getBestMove(anyList(), eq(3));
         }
 
         @Test
         @DisplayName("Should trigger AI move automatically after human makes a move against AI")
-        void shouldTriggerAiMoveAfterHumanMove() {
+        void shouldTriggerAiMoveAfterHumanMove() throws Exception {
             // Arrange
-            String aiGameId = gameService.createAiGame(whiteId, true);
+            String aiGameId = gameService.createAiGame(whiteId, true, 3, 10);
             gameService.setPlayerReady(aiGameId, whiteId);
             gameService.setPlayerReady(aiGameId, -1L);
 
@@ -340,6 +340,7 @@ class GameServiceTest {
 
             // Act
             List<GameResponse.ExecutedMove> moves = gameService.makeMove(aiGameId, from, to, null);
+            Thread.sleep(5500);
 
             // Assert
             assertThat(moves).isNotEmpty();

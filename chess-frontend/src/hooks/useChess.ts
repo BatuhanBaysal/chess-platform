@@ -49,6 +49,7 @@ export const useChess = () => {
   const [playerColor, setPlayerColor] = useState<'WHITE' | 'BLACK' | null>(null);
   const [displayTime, setDisplayTime] = useState({ white: 0, black: 0 });
   const [gameOverResult, setGameOverResult] = useState<string | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   const stompClientRef = useRef<Client | null>(null);
   const lobbyClientRef = useRef<Client | null>(null);
@@ -340,6 +341,34 @@ export const useChess = () => {
       }
   }, [disconnectWebSocket, disconnectLobby, gameOverResult]);
 
+  const startAiGame = async (playAsWhite: boolean = true, difficulty: number = 3, timeLimit: number = 10) => {
+    try {
+      setIsAiLoading(true);
+      const { userId, headers } = getAuthDetails();
+      if (!userId) {
+        throw new Error("User not authenticated");
+      }
+
+      const response = await fetch(`${API_URL}/games/vs-ai?userId=${userId}&playAsWhite=${playAsWhite}&difficulty=${difficulty}&timeLimit=${timeLimit}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...headers } as HeadersInit
+      });
+
+      if (!response.ok) throw new Error("Failed to start AI game");
+      
+      const data: GameState = await response.json();
+      setGame(data);
+      syncPlayerColor(data);
+      connectWebSocket(data.gameId);
+      return data.gameId;
+    } catch (err) {
+      console.error("AI game start error:", err);
+      setError("Failed to start AI game.");
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
   return {
     game,
     displayTime,
@@ -348,6 +377,7 @@ export const useChess = () => {
     isLobbyConnected,
     playerColor,
     gameOverResult,
+    isAiLoading,
     connectWebSocket,
     disconnectWebSocket,
     connectLobby,
@@ -357,6 +387,7 @@ export const useChess = () => {
     fetchLegalMoves,
     getBoardMatrix,
     startNewGame,
+    startAiGame,
     resetChessState
   };
 };

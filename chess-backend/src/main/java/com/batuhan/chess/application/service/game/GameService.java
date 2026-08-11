@@ -84,31 +84,58 @@ public class GameService {
         return gameId;
     }
 
-    public String createAiGame(Long humanUserId, boolean playAsWhite) {
+    public String createAiGame(Long humanUserId, boolean playAsWhite, int difficulty, Integer timeLimit) {
         String gameId = UUID.randomUUID().toString().substring(0, 8);
 
         Long whiteId = playAsWhite ? humanUserId : AI_PLAYER_ID;
         Long blackId = playAsWhite ? AI_PLAYER_ID : humanUserId;
 
-        createNewGameWithPlayers(gameId, whiteId, blackId);
+        createNewGameWithPlayers(gameId, whiteId, blackId, timeLimit != null ? timeLimit : 10);
 
         if (!playAsWhite) {
             Game game = activeGames.get(gameId);
             if (game != null) {
-                triggerAiMoveIfNeeded(gameId, game);
+                triggerAiMoveIfNeededWithDifficulty(gameId, game, difficulty);
             }
         }
 
         return gameId;
     }
 
+    private void triggerAiMoveIfNeededWithDifficulty(String gameId, Game game, int difficulty) {
+        if (game.getStatus().isFinished()) return;
+        Long nextPlayerId = (game.getCurrentTurn() == Color.WHITE) ? game.getWhitePlayerId() : game.getBlackPlayerId();
+
+        if (AI_PLAYER_ID.equals(nextPlayerId)) {
+            String bestMoveUci = stockfishService.getBestMove(game.getMoveHistory(), difficulty);
+
+            if (bestMoveUci != null && bestMoveUci.length() >= 4) {
+                log.info("AI (Stockfish - With Difficulty) calculated best move for game {}: {}", gameId, bestMoveUci);
+
+                Position from = parseUciPosition(bestMoveUci.substring(0, 2));
+                Position to = parseUciPosition(bestMoveUci.substring(2, 4));
+
+                String promotionType = bestMoveUci.length() > 4 ? String.valueOf(bestMoveUci.charAt(4)).toUpperCase() : null;
+                game.makeMove(from, to, promotionType);
+                webSocketController.broadcastGameUpdate(gameId, game);
+
+                if (game.getStatus().isFinished()) {
+                    self.processGameFinish(gameId, determineResult(game, game.getStatus()), game.getStatus());
+                }
+            }
+        }
+    }
+
     public void createNewGameWithPlayers(String roomId, Long whiteId, Long blackId) {
+        LobbyService.GameRoom room = lobbyService.getRoom(roomId);
+        int timeLimit = (room != null) ? room.getTimeLimit() : 10;
+        createNewGameWithPlayers(roomId, whiteId, blackId, timeLimit);
+    }
+
+    public void createNewGameWithPlayers(String roomId, Long whiteId, Long blackId, int timeLimit) {
         activeGames.remove(roomId);
         readyPlayers.remove(roomId);
         cancelTimeoutTask(roomId);
-
-        LobbyService.GameRoom room = lobbyService.getRoom(roomId);
-        int timeLimit = (room != null) ? room.getTimeLimit() : 10;
 
         Game newGame = new Game(new Board());
         newGame.setWhitePlayerId(whiteId);
@@ -127,9 +154,16 @@ public class GameService {
         if (game == null) return false;
 
         playerHeartbeats.computeIfAbsent(gameId, k -> new ConcurrentHashMap<>()).put(userId, System.currentTimeMillis());
-
         Set<Long> playersInRoom = readyPlayers.get(gameId);
-        boolean bothReady = playersInRoom != null && playersInRoom.contains(game.getWhitePlayerId()) && playersInRoom.contains(game.getBlackPlayerId());
+
+        boolean bothReady;
+        if (game.isAiGame()) {
+            bothReady = playersInRoom != null && playersInRoom.contains(userId);
+        } else {
+            bothReady = playersInRoom != null &&
+                playersInRoom.contains(game.getWhitePlayerId()) &&
+                playersInRoom.contains(game.getBlackPlayerId());
+        }
 
         if (bothReady && game.getLastMoveTimestamp() == null) {
             LobbyService.GameRoom room = lobbyService.getRoom(gameId);
@@ -137,7 +171,13 @@ public class GameService {
 
             game.startClock(timeLimit);
             scheduleTimeoutTask(gameId, timeLimit * 60 * 1000L);
+
+            if (game.isAiGame() && AI_PLAYER_ID.equals(game.getBlackPlayerId()) && game.getCurrentTurn() == Color.BLACK) {
+                triggerAiMoveIfNeeded(gameId, game);
+            }
         }
+
+        webSocketController.broadcastGameUpdate(gameId, game);
         return bothReady;
     }
 
@@ -161,8 +201,16 @@ public class GameService {
 
     public boolean isGameStarted(String gameId) {
         Game game = activeGames.get(gameId);
+        if (game == null) return false;
+
         Set<Long> ready = readyPlayers.get(gameId);
-        return game != null && ready != null && ready.size() >= 2;
+        if (ready == null || ready.isEmpty()) return false;
+
+        if (game.isAiGame()) {
+            return true;
+        }
+
+        return ready.size() >= 2;
     }
 
     @Transactional
@@ -233,29 +281,44 @@ public class GameService {
         Long nextPlayerId = (game.getCurrentTurn() == Color.WHITE) ? game.getWhitePlayerId() : game.getBlackPlayerId();
 
         if (AI_PLAYER_ID.equals(nextPlayerId)) {
-            String bestMoveUci = stockfishService.getBestMove(game.getMoveHistory(), 10);
-
-            if (bestMoveUci != null && bestMoveUci.length() >= 4) {
-                log.info("AI (Stockfish) calculated best move for game {}: {}", gameId, bestMoveUci);
-
-                Position from = parseUciPosition(bestMoveUci.substring(0, 2));
-                Position to = parseUciPosition(bestMoveUci.substring(2, 4));
-
-                String promotionType = bestMoveUci.length() > 4 ? String.valueOf(bestMoveUci.charAt(4)).toUpperCase() : null;
-                game.makeMove(from, to, promotionType);
-                webSocketController.broadcastGameUpdate(gameId, game);
-
-                if (game.getStatus().isFinished()) {
-                    self.processGameFinish(gameId, determineResult(game, game.getStatus()), game.getStatus());
-                }
-            }
+            long randomDelay = ThreadLocalRandom.current().nextLong(2000, 5001);
+            log.info("AI for game {} will think for {} ms before moving.", gameId, randomDelay);
+            scheduler.schedule(() -> executeAiMove(gameId, game), randomDelay, TimeUnit.MILLISECONDS);
         }
+    }
+
+    private void executeAiMove(String gameId, Game game) {
+        if (game.getStatus().isFinished()) return;
+
+        String bestMoveUci = stockfishService.getBestMove(game.getMoveHistory(), 10);
+        if (bestMoveUci == null || bestMoveUci.length() < 4) return;
+
+        log.info("AI (Stockfish - Delayed) calculated best move for game {}: {}", gameId, bestMoveUci);
+
+        Position from = parseUciPosition(bestMoveUci.substring(0, 2));
+        Position to = extractToPosition(bestMoveUci);
+        String promotionType = extractPromotionType(bestMoveUci);
+
+        game.makeMove(from, to, promotionType);
+        webSocketController.broadcastGameUpdate(gameId, game);
+
+        if (game.getStatus().isFinished()) {
+            self.processGameFinish(gameId, determineResult(game, game.getStatus()), game.getStatus());
+        }
+    }
+
+    private Position extractToPosition(String bestMoveUci) {
+        return parseUciPosition(bestMoveUci.substring(2, 4));
+    }
+
+    private String extractPromotionType(String bestMoveUci) {
+        return bestMoveUci.length() > 4 ? String.valueOf(bestMoveUci.charAt(4)).toUpperCase() : null;
     }
 
     private Position parseUciPosition(String uciCoord) {
         int col = uciCoord.charAt(0) - 'a';
         int row = Character.getNumericValue(uciCoord.charAt(1)) - 1;
-        return new Position(row, col);
+        return new Position(col, row);
     }
 
     private boolean isTimeExpired(Game game) {

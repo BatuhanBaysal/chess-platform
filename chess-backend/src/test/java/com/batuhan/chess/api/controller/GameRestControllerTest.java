@@ -228,7 +228,7 @@ class GameRestControllerTest {
                 gameId, "rnbqkbnr", Color.WHITE, GameStatus.ACTIVE,
                 List.of(), List.of(), "", 1L, -1L, false, 300000L, 300000L, 300
             );
-            when(gameService.createAiGame(1L, true)).thenReturn(gameId);
+            when(gameService.createAiGame(eq(1L), eq(true), eq(3), eq(10))).thenReturn(gameId);
             when(gameService.getGame(gameId)).thenReturn(game);
             when(gameService.convertToResponse(gameId, game)).thenReturn(response);
 
@@ -252,7 +252,7 @@ class GameRestControllerTest {
                 gameId, "rnbqkbnr", Color.WHITE, GameStatus.ACTIVE,
                 List.of(), List.of(), "", -1L, 2L, false, 300000L, 300000L, 300
             );
-            when(gameService.createAiGame(2L, false)).thenReturn(gameId);
+            when(gameService.createAiGame(eq(2L), eq(false), eq(3), eq(10))).thenReturn(gameId);
             when(gameService.getGame(gameId)).thenReturn(game);
             when(gameService.convertToResponse(gameId, game)).thenReturn(response);
 

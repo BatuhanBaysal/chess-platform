@@ -50,6 +50,13 @@ export const createLobby = async (userId: number, username: string, timeControl:
     return response.data;
 };
 
+export const createAiGame = async (userId: number, playAsWhite: boolean = true, difficulty: number = 3): Promise<GameResponse> => {
+    const response = await api.post(`/api/games/vs-ai`, null, {
+        params: { userId, playAsWhite, difficulty }
+    });
+    return response.data;
+};
+
 export const joinRoom = async (roomId: string, userId: number, username: string) => {
     const response = await api.post(`/api/lobby/join`, null, {
         params: { roomId, userId, username }

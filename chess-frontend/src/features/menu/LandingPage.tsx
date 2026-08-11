@@ -41,6 +41,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
   const [waitingRoomId, setWaitingRoomId] = useState<string | null>(null);
   const [activeGameId, setActiveGameId] = useState<string | null>(null);
   const [reconnectGame, setReconnectGame] = useState<GameResponse | null>(null);
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [aiPlayAsWhite, setAiPlayAsWhite] = useState(true);
+  const [aiDifficulty, setAiDifficulty] = useState(3);
 
   const { 
     game, 
@@ -48,7 +51,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
     playerColor, 
     makeMove, 
     fetchLegalMoves, 
-    startNewGame, 
+    startNewGame,
+    startAiGame,
+    isAiLoading, 
     resetChessState 
   } = useChess();
 
@@ -84,6 +89,22 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
     startNewGame(roomId);
     onStart(theme || selectedTheme, (time as TimeControl) || selectedTime, roomId);
   }, [onStart, selectedTheme, selectedTime, startNewGame]);
+
+  const handleStartAiMatch = async () => {
+    try {
+      let currentUser = user || await loginAsGuest();
+      if (currentUser?.id) {
+        const gameId = await startAiGame(aiPlayAsWhite, aiDifficulty, selectedTime);
+        if (gameId) {
+          setShowAiModal(false);
+          setActiveGameId(gameId);
+          onStart(selectedTheme, selectedTime, gameId);
+        }
+      }
+    } catch (e) {
+      alert("Could not start AI game.");
+    }
+  };
 
   const checkMatchStatus = async (roomId: string) => {
     try {
@@ -336,22 +357,102 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
               {isCreating ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />} 
               Initialize Match
             </button>
+
+            <button 
+              onClick={() => setShowAiModal(true)}
+              className="w-full py-5 flex items-center justify-center gap-3 rounded-3xl font-black uppercase tracking-[0.3em] text-xs transition-all bg-blue-600 text-white hover:bg-blue-500 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-blue-600/20"
+            >
+              <Sword size={16} />
+              Play vs AI
+            </button>
           </div>
         </div>
 
+        {showAiModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/90 dark:bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
+            <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-200 dark:border-blue-500/30 shadow-2xl text-center max-w-sm w-[90%] space-y-6">
+              <div className="flex items-center justify-center gap-3 text-blue-500 mb-2">
+                <Sword size={30} />
+                <h2 className="text-xl font-black tracking-tighter uppercase text-slate-900 dark:text-white">Configure AI Match</h2>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Time Control (Selected: {selectedTime} MIN)</label>
+                <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Using menu setting: <span className="text-blue-500">{selectedTime} Minutes</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Choose Your Side</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={() => setAiPlayAsWhite(true)}
+                    className={`py-3 rounded-xl text-[10px] font-black uppercase transition-all border ${aiPlayAsWhite ? 'bg-blue-600 border-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
+                  >
+                    White (First)
+                  </button>
+                  <button 
+                    onClick={() => setAiPlayAsWhite(false)}
+                    className={`py-3 rounded-xl text-[10px] font-black uppercase transition-all border ${!aiPlayAsWhite ? 'bg-blue-600 border-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
+                  >
+                    Black (AI First)
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Difficulty Level</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[1, 3, 5].map((lvl) => (
+                    <button
+                      key={lvl}
+                      onClick={() => setAiDifficulty(lvl)}
+                      className={`py-2 rounded-xl text-[10px] font-black uppercase transition-all border ${
+                        aiDifficulty === lvl 
+                          ? 'bg-blue-600 border-blue-600 text-white' 
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                      }`}
+                    >
+                      Level {lvl}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button 
+                  onClick={() => setShowAiModal(false)}
+                  className="flex-1 py-3 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleStartAiMatch}
+                  disabled={isAiLoading}
+                  className="flex-1 py-3 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 disabled:opacity-50"
+                >
+                  {isAiLoading && <Loader2 className="animate-spin" size={14} />}
+                  Start Match
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800/60 bg-white dark:bg-slate-900/40 backdrop-blur-3xl shadow-sm flex flex-col">
            <div className="flex items-center justify-between mb-6">
-             <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3">
                <Users className="text-blue-600" size={20} />
                <h2 className="text-lg font-black uppercase tracking-widest text-slate-900 dark:text-white">Active Channels</h2>
-             </div>
-             <div className="flex items-center gap-2">
-                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                 <span className="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{rooms.length} Active</span>
-             </div>
+              </div>
+              <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                  <span className="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{rooms.length} Active</span>
+              </div>
            </div>
            <div className="grow overflow-y-auto pr-2 space-y-3">
-             {rooms.length > 0 ? (
+              {rooms.length > 0 ? (
                 rooms.map(room => (
                   <div key={room.roomId} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/50 flex justify-between items-center group hover:border-blue-500 transition-all shadow-sm">
                     <div>
@@ -374,10 +475,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
                 ))
               ) : (
                <div className="h-full flex flex-col items-center justify-center opacity-40 text-slate-900 dark:text-white">
-                 <Sword size={24} className="mb-2" />
-                 <p className="text-[10px] font-black uppercase tracking-[0.2em]">No signals detected...</p>
+                  <Sword size={24} className="mb-2" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em]">No signals detected...</p>
                </div>
-             )}
+              )}
            </div>
         </div>
       </div>

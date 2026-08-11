@@ -59,9 +59,11 @@ public class GameRestController {
     @PostMapping("/vs-ai")
     public GameResponse createAiGame(
         @RequestParam("userId") Long userId,
-        @RequestParam(value = "playAsWhite", defaultValue = "true") boolean playAsWhite) {
+        @RequestParam(value = "playAsWhite", defaultValue = "true") boolean playAsWhite,
+        @RequestParam(value = "difficulty", defaultValue = "3") int difficulty,
+        @RequestParam(value = "timeLimit", defaultValue = "10") Integer timeLimit) {
 
-        String gameId = gameService.createAiGame(userId, playAsWhite);
+        String gameId = gameService.createAiGame(userId, playAsWhite, difficulty, timeLimit);
         Game game = gameService.getGame(gameId);
 
         if (game == null) {

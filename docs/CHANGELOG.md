@@ -30,13 +30,20 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
-## [2.0.0] - 2026-08-07
+## [2.0.0] - 2026-08-11
 
 ### 🚀 Phase 19: AI Integration & Training Ecosystem 🤖 (v2.0.0)
 > **Note:** Expanding the training ecosystem with automated computer opponent capabilities powered by the Stockfish chess engine.
 
+- **2026-08-11:**
+    - **Play vs AI Time Control & Enhancements (PR #115 | Issue #112):**
+        - Updated the `/api/games/vs-ai` backend endpoint and `GameService` to accept and enforce custom `timeLimit` parameters (e.g., 3, 10, or 30 minutes) selected from the main menu.
+        - Refined backend AI trigger methods and lobby time resolution logic to ensure single-player sessions initialize with accurate user-configured durations.
+        - Updated the frontend `useChess` hook and `LandingPage` components to securely forward time control and difficulty settings to the AI initialization pipeline.
+        - Fixed and aligned unit test parameter definitions to match the updated service method signatures.
+
 - **2026-08-07:**
-    - **Stockfish Chess Engine Integration (PR #111 | Issue #107):**
+    - **Stockfish Chess Engine Integration (PR #108 | Issue #107):**
         - Implemented `StockfishService` to manage UCI protocol communication, process lifecycle, and engine execution.
         - Bundled the Stockfish binary (`chess-backend/src/main/resources/engine/stockfish.exe`) into backend resources for robust local and environment-agnostic support.
         - Integrated AI move triggers into `GameService` to automatically calculate and respond with best moves during single-player sessions.

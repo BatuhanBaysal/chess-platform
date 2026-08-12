@@ -53,7 +53,7 @@ public class Game {
             return List.of();
         }
 
-        if (!validator.isMoveLegal(start, end, board, currentTurn, this.lastMove)) {
+        if (!validator.isMoveLegal(start, end, board, currentTurn, this.lastMove, promotionType)) {
             updateErrorMessage(currentTurn);
             return List.of();
         }
@@ -66,7 +66,7 @@ public class Game {
         executor.execute(start, end, piece, promotionType, board, validator);
 
         updateDrawMetrics(piece, isCapture);
-        recordMove(start, end, piece, isCapture);
+        recordMove(start, end, piece, isCapture, promotionType);
 
         this.lastMove = new Move(start, end, piece);
         this.currentTurn = currentTurn.opposite();
@@ -126,17 +126,17 @@ public class Game {
         String pieceName = (promotionType != null && validator.isPromotionSituation(piece, end))
             ? promotionType.toUpperCase() : piece.getType().name();
 
-        moves.add(new GameResponse.ExecutedMove(start.file(), start.rank(), end.file(), end.rank(), pieceName));
+        moves.add(new GameResponse.ExecutedMove(start.file(), start.rank(), end.file(), end.rank(), pieceName, null, null));
 
         if (validator.isCastlingAttempt(piece, start, end)) {
             int dir = (end.file() > start.file()) ? 1 : -1;
             int rookStartFile = (dir == 1) ? 7 : 0;
             int rookEndFile = (dir == 1) ? 5 : 3;
-            moves.add(new GameResponse.ExecutedMove(rookStartFile, start.rank(), rookEndFile, start.rank(), "ROOK"));
+            moves.add(new GameResponse.ExecutedMove(rookStartFile, start.rank(), rookEndFile, start.rank(), "ROOK", null, null));
         }
 
         if (validator.isEnPassantAttempt(piece, end, board)) {
-            moves.add(new GameResponse.ExecutedMove(end.file(), start.rank(), -1, -1, "NONE"));
+            moves.add(new GameResponse.ExecutedMove(end.file(), start.rank(), -1, -1, "NONE", null, null));
         }
         return moves;
     }
@@ -151,9 +151,14 @@ public class Game {
         boardHistory.add(board.toString() + "|" + currentTurn.opposite().name());
     }
 
-    private void recordMove(Position s, Position e, Piece p, boolean isCap) {
+    private void recordMove(Position s, Position e, Piece p, boolean isCap, String promotionType) {
         String notation = String.format("%s%s%s%s", p.getType().getSymbol(), s, isCap ? "x" : "→", e);
-        moveHistory.add(s.toString() + e.toString());
+        String uciMove = s.toString() + e.toString();
+        if (validator.isPromotionSituation(p, e) && promotionType != null && !promotionType.isBlank()) {
+            uciMove += promotionType.toLowerCase(java.util.Locale.ROOT).substring(0, 1);
+        }
+
+        moveHistory.add(uciMove);
         humanReadableHistory.add(notation);
     }
 

@@ -20,14 +20,16 @@ public class PieceFactory {
     }
 
     public static Piece createPromotedPiece(String type, Color color, Position position) {
-        String normalizedType = (type == null || type.isBlank())
-            ? "QUEEN"
-            : type.trim().toUpperCase(Locale.ROOT);
+        if (type == null || type.isBlank()) {
+            return new Queen(color, position);
+        }
+
+        String normalizedType = type.trim().toLowerCase(Locale.ROOT);
 
         return switch (normalizedType) {
-            case "ROOK" -> new Rook(color, position);
-            case "BISHOP" -> new Bishop(color, position);
-            case "KNIGHT" -> new Knight(color, position);
+            case "r", "rook" -> new Rook(color, position);
+            case "b", "bishop" -> new Bishop(color, position);
+            case "n", "knight" -> new Knight(color, position);
             default -> new Queen(color, position);
         };
     }

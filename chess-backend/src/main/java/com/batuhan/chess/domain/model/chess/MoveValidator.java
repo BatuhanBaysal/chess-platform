@@ -2,22 +2,40 @@ package com.batuhan.chess.domain.model.chess;
 
 public class MoveValidator {
 
-    public boolean isMoveLegal(Position start, Position end, Board board, Color currentTurn, Game.Move lastMove) {
+    public boolean isMoveLegal(Position start, Position end, Board board, Color currentTurn, Game.Move lastMove, String promotionType) {
         return board.getPiece(start)
             .filter(piece -> piece.getColor() == currentTurn)
-            .filter(piece -> isBaseMoveValid(piece, end, board, lastMove))
+            .filter(piece -> isBaseMoveValid(piece, end, board, lastMove, promotionType))
             .filter(piece -> isMoveSafe(start, end, piece, board, currentTurn))
             .isPresent();
     }
 
-    private boolean isBaseMoveValid(Piece piece, Position end, Board board, Game.Move lastMove) {
+    public boolean isMoveLegal(Position start, Position end, Board board, Color currentTurn, Game.Move lastMove) {
+        return isMoveLegal(start, end, board, currentTurn, lastMove, null);
+    }
+
+    private boolean isBaseMoveValid(Piece piece, Position end, Board board, Game.Move lastMove, String promotionType) {
         if (isEnPassantAttempt(piece, end, board)) {
             return canEnPassant(piece.getPosition(), end, lastMove, piece.getColor());
         }
         if (isCastlingAttempt(piece, piece.getPosition(), end)) {
             return canCastle(piece.getPosition(), end, board, piece.getColor());
         }
+
+        if (isPromotionSituation(piece, end)) {
+            return piece.isPseudoLegalMove(end, board) && isValidPromotionType(promotionType);
+        }
+
         return piece.isPseudoLegalMove(end, board);
+    }
+
+    private boolean isValidPromotionType(String promotionType) {
+        if (promotionType == null || promotionType.trim().isEmpty()) {
+            return true;
+        }
+        String type = promotionType.toUpperCase();
+        return type.equals("QUEEN") || type.equals("ROOK") || type.equals("BISHOP") || type.equals("KNIGHT") ||
+            type.equals("Q") || type.equals("R") || type.equals("B") || type.equals("N");
     }
 
     public boolean isMoveSafe(Position start, Position end, Piece piece, Board board, Color turn) {

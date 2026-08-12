@@ -20,5 +20,13 @@ public record GameResponse(
     long blackRemainingTimeMs,
     Integer timeLimit
 ) {
-    public record ExecutedMove(int fromFile, int fromRank, int toFile, int toRank, String pieceType) {}
+    public record ExecutedMove(
+        int fromFile,
+        int fromRank,
+        int toFile,
+        int toRank,
+        String pieceType,
+        Integer evaluation,
+        String moveQuality
+    ) {}
 }

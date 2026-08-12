@@ -30,10 +30,17 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
-## [2.0.0] - 2026-08-11
+## [2.0.0] - 2026-08-12
 
 ### 🚀 Phase 19: AI Integration & Training Ecosystem 🤖 (v2.0.0)
 > **Note:** Expanding the training ecosystem with automated computer opponent capabilities powered by the Stockfish chess engine.
+
+- **2026-08-12:**
+    - **Stockfish Engine Evaluation, Hints & Move Quality Tagging (PR #116 | Issue #113):**
+        - Implemented Stockfish engine evaluation and hint mechanisms across backend services, controllers, and frontend analytics UI.
+        - Added automated blunder, mistake, and inaccuracy indicators directly into the move notation history list.
+        - Introduced the `EvaluationBar` component for visual centipawn and mate score representation.
+        - Added comprehensive unit and integration tests (`EvaluationTests`, `EngineHintTests`, and `EngineHintControllerTests`) to validate engine evaluation and hint features.
 
 - **2026-08-11:**
     - **Play vs AI Time Control & Enhancements (PR #115 | Issue #112):**

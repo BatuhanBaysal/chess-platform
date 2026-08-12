@@ -43,7 +43,11 @@ function App() {
     fetchLegalMoves, 
     startNewGame, 
     playerColor, 
-    resetChessState 
+    resetChessState,
+    hintData,
+    isHintLoading,
+    fetchHint,
+    evaluation
   } = useChess();
 
   useEffect(() => {
@@ -172,7 +176,7 @@ function App() {
     <Layout 
       colorMode={colorMode} 
       setColorMode={setColorMode}
-      view={view}            
+      view={view}           
       onBackToMenu={handleBackToMenu}
       onNavigateToProfile={handleNavigateToProfile}
     >
@@ -225,6 +229,13 @@ function App() {
                   orientation={playerColor || 'WHITE'}
                   whiteRemainingTimeMs={game?.whiteRemainingTimeMs ?? (gameConfig.timeControl * 60 * 1000)}
                   blackRemainingTimeMs={game?.blackRemainingTimeMs ?? (gameConfig.timeControl * 60 * 1000)}
+                  hintData={hintData}
+                  isHintLoading={isHintLoading}
+                  onGetHint={() => fetchHint(10)} 
+                  evaluationScore={evaluation.score}            
+                  evaluationType={evaluation.type}
+                  isMyTurn={game?.currentTurn?.toUpperCase() === (playerColor || 'WHITE').toUpperCase()}
+                  game={game}
                 />
               </div>
             </main>

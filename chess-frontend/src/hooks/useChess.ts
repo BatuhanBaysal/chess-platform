@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Client, StompHeaders } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import type { HintResponse } from '@/api/gameService';
 
 interface ExecutedMove {
   fromFile: number;
@@ -8,6 +9,8 @@ interface ExecutedMove {
   toFile: number;
   toRank: number;
   pieceType: string;
+  evaluation?: number;
+  moveQuality?: string;
 }
 
 interface GameState {
@@ -50,7 +53,10 @@ export const useChess = () => {
   const [displayTime, setDisplayTime] = useState({ white: 0, black: 0 });
   const [gameOverResult, setGameOverResult] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
-
+  const [hintData, setHintData] = useState<HintResponse | null>(null);
+  const [isHintLoading, setIsHintLoading] = useState(false);
+  const [evaluation, setEvaluation] = useState<{ score: number; type: 'CP' | 'MATE' }>({ score: 0, type: 'CP' });
+  
   const stompClientRef = useRef<Client | null>(null);
   const lobbyClientRef = useRef<Client | null>(null);
   const gameIdRef = useRef<string | null>(null);
@@ -180,6 +186,17 @@ export const useChess = () => {
             const gameState = body as GameState;
             setGame(gameState);
             syncPlayerColor(gameState);
+            setHintData(null);
+
+            if (gameState.lastMoves && gameState.lastMoves.length > 0) {
+              const lastMove = gameState.lastMoves[gameState.lastMoves.length - 1];
+              if (lastMove.evaluation !== undefined) {
+                const score = lastMove.evaluation;
+                const type = Math.abs(score) > 9000 ? 'MATE' : 'CP';
+                setEvaluation({ score, type });
+              }
+            }
+
             if (gameState.status && FINISHED_STATUSES.includes(gameState.status.toUpperCase())) {
               if (heartbeatIntervalRef.current) {
                 clearInterval(heartbeatIntervalRef.current);
@@ -246,6 +263,8 @@ export const useChess = () => {
     const client = stompClientRef.current;
     if (!game || !client?.connected || !roomId) return;
     const { headers } = getAuthDetails();
+    const normalizedPromotion = promotionPiece ? promotionPiece.toUpperCase() : 'QUEEN';
+
     client.publish({
       destination: '/app/move',
       body: JSON.stringify({
@@ -254,7 +273,7 @@ export const useChess = () => {
         fromRank,
         toFile,
         toRank,
-        promotionType: promotionPiece || 'QUEEN'
+        promotionType: normalizedPromotion
       }),
       headers: headers as StompHeaders
     });
@@ -295,6 +314,9 @@ export const useChess = () => {
 
   const startNewGame = useCallback(async (existingGameId?: string) => {
     try {
+      setHintData(null);
+      setEvaluation({ score: 0, type: 'CP' });
+
       const { userId, headers } = getAuthDetails();
       const url = existingGameId ? `${API_URL}/games/${existingGameId}?userId=${userId}` : `${API_URL}/games?userId=${userId}&whiteId=${userId}`;
       const res = await fetch(url, { method: existingGameId ? 'GET' : 'POST', headers: { 'Content-Type': 'application/json', ...headers } as HeadersInit });
@@ -316,15 +338,16 @@ export const useChess = () => {
 
   const resetChessState = useCallback(async () => {
       try {
+          setHintData(null);
+          setEvaluation({ score: 0, type: 'CP' });
+
           if (gameIdRef.current && gameOverResult) { 
               const response = await fetch(`${API_URL}/games/${gameIdRef.current}/finish`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' }
               });
               
-              if (response.ok) {
-                  await new Promise(resolve => setTimeout(resolve, 800));
-              } else {
+              if (!response.ok) {
                   console.warn("The backend did not confirm the completion or returned an error.");
               }
           }
@@ -344,6 +367,9 @@ export const useChess = () => {
   const startAiGame = async (playAsWhite: boolean = true, difficulty: number = 3, timeLimit: number = 10) => {
     try {
       setIsAiLoading(true);
+      setHintData(null);
+      setEvaluation({ score: 0, type: 'CP' });
+
       const { userId, headers } = getAuthDetails();
       if (!userId) {
         throw new Error("User not authenticated");
@@ -369,6 +395,33 @@ export const useChess = () => {
     }
   };
 
+  const fetchHint = useCallback(async (depth: number = 10) => {
+    if (!gameIdRef.current) return;
+    try {
+      setIsHintLoading(true);
+      const { headers } = getAuthDetails();
+      const response = await fetch(`${API_URL}/games/${gameIdRef.current}/hint?depth=${depth}`, {
+        headers: headers as HeadersInit
+      });
+      if (response.ok) {
+        const data: HintResponse = await response.json();
+        setHintData(data);
+        
+        if (data.evaluationScore !== undefined) {
+          const score = data.evaluationScore;
+          const type = Math.abs(score) > 9000 ? 'MATE' : 'CP';
+          setEvaluation({ score, type });
+        }
+
+        return data;
+      }
+    } catch (err) {
+      console.error("Failed to fetch engine hint:", err);
+    } finally {
+      setIsHintLoading(false);
+    }
+  }, [getAuthDetails]);
+
   return {
     game,
     displayTime,
@@ -378,6 +431,9 @@ export const useChess = () => {
     playerColor,
     gameOverResult,
     isAiLoading,
+    hintData,
+    isHintLoading,
+    evaluation,
     connectWebSocket,
     disconnectWebSocket,
     connectLobby,
@@ -388,6 +444,7 @@ export const useChess = () => {
     getBoardMatrix,
     startNewGame,
     startAiGame,
+    fetchHint,
     resetChessState
   };
 };

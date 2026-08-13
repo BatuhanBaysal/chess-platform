@@ -12,6 +12,8 @@ import {
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'; 
 import { CSS } from '@dnd-kit/utilities';
 import { Trophy, ArrowLeft, Loader2, History as HistoryIcon, Activity, Timer, ChevronUp, AlertCircle, LogOut } from 'lucide-react';
+import type { HintResponse } from '@/api/gameService';
+import { AnalyticsSidebar } from './AnalyticsSidebar';
 
 interface ChessBoardProps {
   boardRepresentation: string;
@@ -30,6 +32,15 @@ interface ChessBoardProps {
   orientation: 'WHITE' | 'BLACK';
   whiteRemainingTimeMs?: number;
   blackRemainingTimeMs?: number;
+  hintData?: HintResponse | null;
+  isHintLoading?: boolean;
+  onGetHint?: () => void;
+  evaluationScore?: number;
+  evaluationType?: 'CP' | 'MATE';
+  isMyTurn?: boolean;
+  game?: {
+    lastMoves?: { moveQuality?: string }[];
+  };
 }
 
 const PIECE_IMAGES: { [key: string]: string } = {
@@ -54,7 +65,7 @@ const PIECE_VALUES: { [key: string]: number } = {
 
 const BOARD_THEMES = {
   classic: { dark: 'bg-[#b58863]', light: 'bg-[#f0d9b5]', textDark: 'text-[#b58863]', textLight: 'text-[#f0d9b5]' },
-  modern: { dark: 'bg-[#4b7399]', light: 'bg-[#eae9d2]', textDark: 'bg-[#4b7399]', textLight: 'bg-[#eae9d2]' },
+  modern: { dark: 'bg-[#4b7399]', light: 'bg-[#eae9d2]', textDark: 'bg-[#4b7399]', textLight: 'text-[#eae9d2]' },
   emerald: { dark: 'bg-[#6a8d5c]', light: 'bg-[#eceed1]', textDark: 'text-[#6a8d5c]', textLight: 'text-[#eceed1]' }
 };
 
@@ -96,7 +107,9 @@ const DroppableSquare: React.FC<{ index: number; children: React.ReactNode; clas
 const ChessBoard: React.FC<ChessBoardProps> = ({ 
   boardRepresentation, isStarted, gameStatus, currentTurn, moveHistory, lastMoveMessage,
   onMove, fetchLegalMoves, onBackToMenu, onDismissGame, theme, orientation,
-  whiteRemainingTimeMs, blackRemainingTimeMs
+  whiteRemainingTimeMs, blackRemainingTimeMs,
+  hintData = null, isHintLoading = false, onGetHint = () => {}, evaluationScore = 0, evaluationType = 'CP',
+  game
 }) => {
   const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
   const [promotionPending, setPromotionPending] = useState<{ from: number, to: number } | null>(null);
@@ -104,6 +117,8 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
   const [logs, setLogs] = useState<{text: string, turn: string, time: string}[]>([]);
   const [activePiece, setActivePiece] = useState<{char: string, index: number} | null>(null);
   const [showGameOverModal, setShowGameOverModal] = useState(false);
+
+  const [moveQualities, setMoveQualities] = useState<Record<number, string>>({});
 
   const lastProcessedMessage = useRef<string | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -122,14 +137,32 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
   const getActualIndex = useCallback((visualIndex: number) => orientation === 'WHITE' ? visualIndex : 63 - visualIndex, [orientation]);
   const getCoordsFromIndex = (index: number) => ({ file: index % 8, rank: 7 - Math.floor(index / 8) });
   
+  useEffect(() => {
+    if (moveHistory && moveHistory.length > 0 && game?.lastMoves?.[0]?.moveQuality) {
+      const latestMoveIndex = moveHistory.length - 1;
+      setMoveQualities(prev => ({
+        ...prev,
+        [latestMoveIndex]: game.lastMoves![0].moveQuality!
+      }));
+    }
+  }, [moveHistory, game?.lastMoves]);
+
   const pairedMoves = useMemo(() => {
     const pairs = [];
     const history = moveHistory || [];
     for (let i = 0; i < history.length; i += 2) {
-      pairs.push({ index: Math.floor(i / 2) + 1, white: history[i], black: history[i + 1] || null });
+      pairs.push({ 
+        index: Math.floor(i / 2) + 1, 
+        white: history[i], 
+        whiteIndex: i,
+        whiteQuality: moveQualities[i],
+        black: history[i + 1] || null,
+        blackIndex: i + 1,
+        blackQuality: moveQualities[i + 1]
+      });
     }
     return pairs.reverse(); 
-  }, [moveHistory]);
+  }, [moveHistory, moveQualities]);
 
   const getEndGameReason = () => {
     if (upperStatus.includes('DISMISSED') || upperStatus.includes('ABANDONED')) {
@@ -243,7 +276,7 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
   };
 
   return (
-    <div className="flex flex-col xl:flex-row items-stretch justify-center gap-6 p-8 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-[1400px] transition-all relative">
+    <div className="flex flex-col xl:flex-row items-center justify-center gap-6 p-8 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-[1750px] mx-auto w-fit transition-all relative">
       <style>{`.custom-scroll::-webkit-scrollbar { width: 5px; } .custom-scroll::-webkit-scrollbar-track { background: transparent; } .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; } .dark .custom-scroll::-webkit-scrollbar-thumb { background: #334155; }`}</style>
       
       <div className={`fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-xl transition-all duration-500 ${showGameOverModal ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
@@ -309,11 +342,21 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
         </div>
       )}
 
-      <div className="w-56 bg-slate-100 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700/50 rounded-2xl flex flex-col overflow-hidden transition-all shadow-inner h-[600px]">
+      <div className="flex flex-row xl:flex-col gap-4 h-auto xl:h-[600px] w-full xl:w-72">
+        <AnalyticsSidebar 
+          score={evaluationScore}
+          evaluationType={evaluationType}
+          hintData={hintData}
+          isHintLoading={isHintLoading}
+          onGetHint={() => { if (isMyTurn) onGetHint(); }} 
+        />
+      </div>
+
+      <div className="w-full xl:w-72 bg-slate-100 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700/50 rounded-2xl flex flex-col overflow-hidden transition-all shadow-inner h-auto xl:h-[600px]">
         <div className="w-full bg-slate-200/50 dark:bg-slate-800/50 p-2.5 border-b border-slate-200 dark:border-slate-700/50 flex items-center justify-between px-4">
             <div className="flex items-center gap-2">
               <Timer size={14} className="text-amber-500" />
-              <span className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">Clock</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Clock</span>
             </div>
             {onDismissGame && !isGameOver && (
               <button 
@@ -331,17 +374,21 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
                 <div className={`text-[13px] font-black font-mono px-3 py-1.5 rounded-lg border transition-all ${currentTurn?.toUpperCase() === (orientation === 'WHITE' ? 'BLACK' : 'WHITE') ? (orientation === 'WHITE' ? 'text-rose-600 border-rose-500 bg-rose-500/10 animate-pulse' : 'text-blue-600 border-blue-500 bg-blue-500/10 animate-pulse') : 'text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm'}`}>
                     {formatTime(orientation === 'WHITE' ? (blackRemainingTimeMs || 0) : (whiteRemainingTimeMs || 0))}
                 </div>
-                <span className="text-[8px] font-black uppercase mt-1 tracking-widest text-center" style={{ color: orientation === 'WHITE' ? '#f43f5e' : '#3b82f6' }}>
+                <span className="text-[9px] font-black uppercase mt-1 tracking-widest text-center" style={{ color: orientation === 'WHITE' ? '#f43f5e' : '#3b82f6' }}>
                     {orientation === 'WHITE' ? 'BLACK' : 'WHITE'}
                 </span>
             </div>
 
             <div className="flex-1 w-full flex flex-col justify-center py-4 border-y border-slate-200 dark:border-slate-800/50 overflow-y-auto custom-scroll my-4 px-2 gap-4">
-                <div className="grid grid-cols-4 gap-1 opacity-60">
-                    {(orientation === 'WHITE' ? blackCaptured : whiteCaptured).map((p, i) => (<img key={i} src={PIECE_IMAGES[p]} className="w-7 h-7 grayscale" alt="cap" />))}
+                <div className="grid grid-cols-4 gap-2 bg-slate-200/60 dark:bg-slate-800/70 p-2.5 rounded-xl border border-slate-300/50 dark:border-slate-700/60 shadow-sm">
+                    {(orientation === 'WHITE' ? blackCaptured : whiteCaptured).map((p, i) => (
+                      <img key={i} src={PIECE_IMAGES[p]} className="w-7 h-7 drop-shadow-md transition-transform hover:scale-110" alt="cap" />
+                    ))}
                 </div>
-                <div className="grid grid-cols-4 gap-1 opacity-60">
-                    {(orientation === 'WHITE' ? whiteCaptured : blackCaptured).map((p, i) => (<img key={i} src={PIECE_IMAGES[p]} className="w-7 h-7 grayscale" alt="cap" />))}
+                <div className="grid grid-cols-4 gap-2 bg-slate-200/60 dark:bg-slate-800/70 p-2.5 rounded-xl border border-slate-300/50 dark:border-slate-700/60 shadow-sm">
+                    {(orientation === 'WHITE' ? whiteCaptured : blackCaptured).map((p, i) => (
+                      <img key={i} src={PIECE_IMAGES[p]} className="w-7 h-7 drop-shadow-md transition-transform hover:scale-110" alt="cap" />
+                    ))}
                 </div>
             </div>
 
@@ -349,14 +396,14 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
               <div className={`text-[13px] font-black font-mono px-3 py-1.5 rounded-lg border transition-all ${currentTurn?.toUpperCase() === (orientation === 'WHITE' ? 'WHITE' : 'BLACK') ? (orientation === 'WHITE' ? 'text-blue-600 border-blue-500 bg-blue-500/10 animate-pulse' : 'text-rose-600 border-rose-500 bg-rose-500/10 animate-pulse') : 'text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm'}`}>
                   {formatTime(orientation === 'WHITE' ? (whiteRemainingTimeMs || 0) : (blackRemainingTimeMs || 0))}
               </div>
-              <span className="text-[8px] font-black uppercase mt-1 tracking-widest text-center" style={{ color: orientation === 'WHITE' ? '#3b82f6' : '#f43f5e' }}>
+              <span className="text-[9px] font-black uppercase mt-1 tracking-widest text-center" style={{ color: orientation === 'WHITE' ? '#3b82f6' : '#f43f5e' }}>
                   {orientation === 'WHITE' ? 'WHITE' : 'BLACK'}
               </span>
             </div>
         </div>
       </div>
 
-      <div className="relative">
+      <div className="relative flex justify-center">
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="grid grid-cols-8 grid-rows-8 border-[12px] border-slate-200 dark:border-slate-900 bg-slate-200 dark:bg-slate-900 rounded-xl overflow-hidden shadow-2xl transition-colors" style={{ width: '600px', height: '600px' }}>
             {Array.from({ length: 64 }).map((_, visualIndex) => {
@@ -369,8 +416,8 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
               const isKingInDanger = isCheck && ((currentTurn?.toUpperCase() === 'WHITE' && char === 'K') || (currentTurn?.toUpperCase() === 'BLACK' && char === 'k'));
               return (
                 <DroppableSquare key={visualIndex} index={visualIndex} onClick={() => handleSquareClick(actualIndex)} className={`relative flex items-center justify-center aspect-square ${isDark ? currentTheme.dark : currentTheme.light} ${isSelected ? 'ring-4 ring-blue-500/50 z-30' : ''} ${isKingInDanger ? 'bg-red-600/90 animate-pulse' : ''}`}>
-                  {col === (orientation === 'WHITE' ? 0 : 7) && <span className={`absolute left-1 top-0.5 text-[9px] font-black opacity-30 ${isDark ? currentTheme.textLight : currentTheme.textDark}`}>{displayRank + 1}</span>}
-                  {displayRank === (orientation === 'WHITE' ? 0 : 7) && <span className={`absolute right-1 bottom-0.5 text-[9px] font-black opacity-30 ${isDark ? currentTheme.textLight : currentTheme.textDark}`}>{String.fromCharCode(97 + col)}</span>}
+                  {col === (orientation === 'WHITE' ? 0 : 7) && <span className="absolute left-1 top-0.5 text-sm font-black text-black z-10 drop-shadow-sm">{displayRank + 1}</span>}
+                  {displayRank === (orientation === 'WHITE' ? 0 : 7) && <span className="absolute right-1 bottom-0.5 text-sm font-black text-black z-10 drop-shadow-sm">{String.fromCharCode(97 + col)}</span>}
                   {isLegalTarget && <div className="absolute inset-0 flex items-center justify-center z-20"><div className="w-4 h-4 bg-black/10 rounded-full" /></div>}
                   {char !== '.' && (
                     <DraggablePiece char={char} index={visualIndex} isSelected={isSelected} disabled={Boolean(!isStarted || !isMyTurn || isGameOver || ((orientation === 'WHITE' && char === char.toLowerCase()) || (orientation === 'BLACK' && char === char.toUpperCase())))} />
@@ -389,43 +436,70 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
         </DndContext>
       </div>
 
-      <div className="flex flex-row gap-4 h-[600px] w-full xl:w-[480px]">
+      <div className="flex flex-row gap-4 h-[600px] w-full xl:w-auto">
         <div className="w-72 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl flex flex-col overflow-hidden transition-colors shadow-inner">
           <div className="bg-slate-200/50 dark:bg-slate-800/50 p-3 border-b border-slate-200 dark:border-slate-700/50 flex items-center gap-2">
-            <Activity size={14} className="text-blue-500 animate-pulse" />
-            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Telemetry</span>
+            <Activity size={16} className="text-blue-500 animate-pulse" />
+            <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-600 dark:text-slate-300">Telemetry</span>
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scroll">
             {logs.map((log, i) => (
-            <div key={i} className={`text-[10px] p-2 rounded-xl border-l-2 ${log.text.includes("Game started") ? "border-emerald-500 bg-emerald-500/5" : log.turn === 'WHITE' ? "border-blue-500 bg-blue-500/5" : "border-rose-500 bg-rose-500/5"}`}>
+            <div key={i} className={`text-[11px] p-2.5 rounded-xl border-l-2 ${log.text.includes("Game started") ? "border-emerald-500 bg-emerald-500/5" : log.turn === 'WHITE' ? "border-blue-500 bg-blue-500/5" : "border-rose-500 bg-rose-500/5"}`}>
               <div className="flex justify-between items-center mb-1">
                 <span className="text-[10px] font-mono font-black text-slate-500 dark:text-slate-400">{log.time}</span>
-                {!log.text.includes("Game started") && (<span className={`text-[7px] font-black uppercase ${log.turn === 'WHITE' ? "text-blue-600 dark:text-blue-400" : "text-rose-600 dark:text-rose-400"}`}>{log.turn}</span>)}
+                {!log.text.includes("Game started") && (<span className={`text-[9px] font-black uppercase ${log.turn === 'WHITE' ? "text-blue-600 dark:text-blue-400" : "text-rose-600 dark:text-rose-400"}`}>{log.turn}</span>)}
               </div>
-              <span className={`font-bold leading-tight block text-slate-800 dark:text-slate-200 ${log.text.includes("Game started") ? "dark:text-emerald-400" : ""}`}>{log.text}</span>
+              <span className={`font-bold leading-tight block text-slate-900 dark:text-slate-100 ${log.text.includes("Game started") ? "dark:text-emerald-400" : ""}`}>{log.text}</span>
             </div>
           ))}
           </div>
         </div>
-        <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl overflow-hidden flex flex-col shadow-inner transition-colors">
-          <div className="bg-slate-200/50 dark:bg-slate-800/50 p-3 border-b border-slate-200 dark:border-slate-700/50 flex items-center gap-2"><HistoryIcon size={14} className="text-indigo-500" /><span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Notation</span></div>
+
+        <div className="w-72 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl overflow-hidden flex flex-col shadow-inner transition-colors">
+          <div className="bg-slate-200/50 dark:bg-slate-800/50 p-3 border-b border-slate-200 dark:border-slate-700/50 flex items-center gap-2">
+            <HistoryIcon size={14} className="text-indigo-500" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Notation</span>
+          </div>
           <div className="flex-1 overflow-y-auto custom-scroll">
-            <table className="w-full text-[10px] border-separate border-spacing-0">
+            <table className="w-full text-[12px] border-separate border-spacing-0">
               <thead className="sticky top-0 bg-slate-200 dark:bg-[#0f172a] z-10">
                 <tr className="text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
-                  <th className="py-2 px-3 text-left font-black w-8 italic opacity-40">#</th>
-                  <th className="py-2 px-3 text-left font-black uppercase tracking-tighter text-blue-500">White</th>
-                  <th className="py-2 px-3 text-left font-black uppercase tracking-tighter text-rose-500">Black</th>
+                  <th className="py-2.5 px-3 text-left font-black w-10 italic opacity-40">#</th>
+                  <th className="py-2.5 px-3 text-left font-black uppercase tracking-tighter text-blue-500">White</th>
+                  <th className="py-2.5 px-3 text-left font-black uppercase tracking-tighter text-rose-500">Black</th>
                 </tr>
               </thead>
               <tbody className="font-mono">
-                {pairedMoves.map((pair) => (
-                  <tr key={pair.index} className="border-b border-slate-200/50 dark:border-slate-800/30 hover:bg-slate-200/30 dark:hover:bg-white/5 transition-colors">
-                    <td className="py-2 px-3 text-slate-400 dark:text-slate-600 font-bold italic">{pair.index}.</td>
-                    <td className="py-2 px-3 text-blue-700 dark:text-blue-300 font-black">{pair.white}</td>
-                    <td className="py-2 px-3">{pair.black ? (<span className="text-rose-700 dark:text-rose-300 font-black">{pair.black}</span>) : (<span className="opacity-10 italic">...</span>)}</td>
-                  </tr>
-                ))}
+                {pairedMoves.map((pair) => {
+                  const getQualityBadge = (quality?: string) => {
+                    switch (quality) {
+                      case 'BLUNDER': return <span className="ml-1.5 text-[9px] bg-rose-500/20 text-rose-500 px-1.5 py-0.5 rounded font-bold" title="Blunder">??</span>;
+                      case 'MISTAKE': return <span className="ml-1.5 text-[9px] bg-amber-500/20 text-amber-500 px-1.5 py-0.5 rounded font-bold" title="Mistake">?</span>;
+                      case 'INACCURACY': return <span className="ml-1.5 text-[9px] bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded font-bold" title="Inaccuracy">?!</span>;
+                      default: return null;
+                    }
+                  };
+
+                  return (
+                    <tr key={pair.index} className="border-b border-slate-200/50 dark:border-slate-800/30 hover:bg-slate-200/30 dark:hover:bg-white/5 transition-colors">
+                      <td className="py-2 px-3 text-slate-400 dark:text-slate-600 font-bold italic">{pair.index}.</td>
+                      <td className="py-2 px-3 text-blue-700 dark:text-blue-300 font-black">
+                        {pair.white}
+                        {getQualityBadge(pair.whiteQuality)}
+                      </td>
+                      <td className="py-2 px-3">
+                        {pair.black ? (
+                          <span className="text-rose-700 dark:text-rose-300 font-black">
+                            {pair.black}
+                            {getQualityBadge(pair.blackQuality)}
+                          </span>
+                        ) : (
+                          <span className="opacity-10 italic">...</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

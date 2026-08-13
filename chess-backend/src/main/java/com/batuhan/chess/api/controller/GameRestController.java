@@ -2,6 +2,7 @@ package com.batuhan.chess.api.controller;
 
 import com.batuhan.chess.api.dto.game.GameHistory;
 import com.batuhan.chess.api.dto.game.GameResponse;
+import com.batuhan.chess.api.dto.game.HintResponse;
 import com.batuhan.chess.api.exception.ResourceNotFoundException;
 import com.batuhan.chess.application.service.game.GameService;
 import com.batuhan.chess.domain.model.chess.Game;
@@ -112,6 +113,15 @@ public class GameRestController {
 
         Position startPos = new Position(file, rank);
         return game.getLegalMovesForSquare(startPos);
+    }
+
+    @GetMapping("/{gameId}/hint")
+    public ResponseEntity<HintResponse> getEngineHint(
+        @PathVariable("gameId") String gameId,
+        @RequestParam(value = "depth", defaultValue = "10") int depth) {
+
+        HintResponse response = gameService.getEngineHint(gameId, depth);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/history/{userId}")

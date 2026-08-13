@@ -39,6 +39,12 @@ export interface LegalMove {
     rank: number;
 }
 
+export interface HintResponse {
+    bestMoveUci: string;
+    evaluationScore: number;
+    message: string;
+}
+
 export const loginAsGuest = async () => {
     return (await api.post('/api/auth/guest')).data;
 };
@@ -53,6 +59,13 @@ export const createLobby = async (userId: number, username: string, timeControl:
 export const createAiGame = async (userId: number, playAsWhite: boolean = true, difficulty: number = 3): Promise<GameResponse> => {
     const response = await api.post(`/api/games/vs-ai`, null, {
         params: { userId, playAsWhite, difficulty }
+    });
+    return response.data;
+};
+
+export const getEngineHint = async (gameId: string, depth: number = 10): Promise<HintResponse> => {
+    const response = await api.get(`/api/games/${gameId}/hint`, {
+        params: { depth }
     });
     return response.data;
 };

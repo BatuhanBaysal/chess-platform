@@ -1,6 +1,7 @@
 package com.batuhan.chess.api.controller;
 
 import com.batuhan.chess.api.dto.game.GameResponse;
+import com.batuhan.chess.api.dto.game.HintResponse;
 import com.batuhan.chess.application.service.auth.JwtService;
 import com.batuhan.chess.application.service.game.GameService;
 import com.batuhan.chess.domain.model.chess.*;
@@ -228,7 +229,7 @@ class GameRestControllerTest {
                 gameId, "rnbqkbnr", Color.WHITE, GameStatus.ACTIVE,
                 List.of(), List.of(), "", 1L, -1L, false, 300000L, 300000L, 300
             );
-            when(gameService.createAiGame(eq(1L), eq(true), eq(3), eq(10))).thenReturn(gameId);
+            when(gameService.createAiGame(1L,true,3,10)).thenReturn(gameId);
             when(gameService.getGame(gameId)).thenReturn(game);
             when(gameService.convertToResponse(gameId, game)).thenReturn(response);
 
@@ -252,7 +253,7 @@ class GameRestControllerTest {
                 gameId, "rnbqkbnr", Color.WHITE, GameStatus.ACTIVE,
                 List.of(), List.of(), "", -1L, 2L, false, 300000L, 300000L, 300
             );
-            when(gameService.createAiGame(eq(2L), eq(false), eq(3), eq(10))).thenReturn(gameId);
+            when(gameService.createAiGame(2L, false, 3, 10)).thenReturn(gameId);
             when(gameService.getGame(gameId)).thenReturn(game);
             when(gameService.convertToResponse(gameId, game)).thenReturn(response);
 
@@ -264,6 +265,28 @@ class GameRestControllerTest {
                 .andExpect(jsonPath("$.gameId").value(gameId))
                 .andExpect(jsonPath("$.whiteId").value(-1))
                 .andExpect(jsonPath("$.blackId").value(2));
+        }
+    }
+
+    @Nested
+    @DisplayName("Engine Hint Operations")
+    class EngineHintControllerTests {
+
+        @Test
+        @DisplayName("Should return engine hint successfully for valid game")
+        void shouldReturnEngineHintSuccessfully() throws Exception {
+            // Arrange
+            String gameId = "hint-game";
+            HintResponse hintResponse = new HintResponse("e2e4", 35, "Engine calculated best move.");
+            when(gameService.getEngineHint(gameId, 10)).thenReturn(hintResponse);
+
+            // Act & Assert
+            mockMvc.perform(get("/api/games/{gameId}/hint", gameId)
+                    .param("depth", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.bestMoveUci").value("e2e4"))
+                .andExpect(jsonPath("$.evaluationScore").value(35))
+                .andExpect(jsonPath("$.message").value("Engine calculated best move."));
         }
     }
 }

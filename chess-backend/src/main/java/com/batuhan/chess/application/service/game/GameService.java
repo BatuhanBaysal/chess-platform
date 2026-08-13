@@ -3,6 +3,7 @@ package com.batuhan.chess.application.service.game;
 import com.batuhan.chess.api.config.audit.AuditableAction;
 import com.batuhan.chess.api.controller.GameWebSocketController;
 import com.batuhan.chess.api.dto.game.GameResponse;
+import com.batuhan.chess.api.dto.game.HintResponse;
 import com.batuhan.chess.api.exception.GameOperationException;
 import com.batuhan.chess.domain.model.chess.*;
 import com.batuhan.chess.domain.model.history.GameEntity;
@@ -100,6 +101,29 @@ public class GameService {
         }
 
         return gameId;
+    }
+
+    public HintResponse getEngineHint(String gameId, int depth) {
+        Game game = activeGames.get(gameId);
+        if (game == null) {
+            throw new GameOperationException("Game not found");
+        }
+
+        List<String> sanitizedHistory = game.getMoveHistory().stream().map(move -> {
+            if (move != null && move.length() > 4) {
+                return move.substring(0, 4) + move.substring(4).toLowerCase(Locale.ROOT);
+            }
+            return move;
+        }).toList();
+
+        String bestMove = stockfishService.getBestMove(sanitizedHistory, depth > 0 ? depth : 10);
+        int eval = stockfishService.getEvaluation(sanitizedHistory, depth > 0 ? depth : 10);
+
+        if (bestMove == null) {
+            throw new GameOperationException("Failed to calculate hint from engine");
+        }
+
+        return new HintResponse(bestMove, eval, "Engine calculated best move.");
     }
 
     private void triggerAiMoveIfNeededWithDifficulty(String gameId, Game game, int difficulty) {
@@ -297,8 +321,8 @@ public class GameService {
 
         Position from = parseUciPosition(bestMoveUci.substring(0, 2));
         Position to = extractToPosition(bestMoveUci);
-        String promotionType = extractPromotionType(bestMoveUci);
 
+        String promotionType = extractPromotionType(bestMoveUci);
         game.makeMove(from, to, promotionType);
         webSocketController.broadcastGameUpdate(gameId, game);
 
@@ -312,7 +336,10 @@ public class GameService {
     }
 
     private String extractPromotionType(String bestMoveUci) {
-        return bestMoveUci.length() > 4 ? String.valueOf(bestMoveUci.charAt(4)).toUpperCase() : null;
+        if (bestMoveUci.length() > 4) {
+            return String.valueOf(bestMoveUci.charAt(4)).toLowerCase(Locale.ROOT);
+        }
+        return null;
     }
 
     private Position parseUciPosition(String uciCoord) {
@@ -491,9 +518,64 @@ public class GameService {
 
     public GameResponse convertToResponse(String gameId, Game game) {
         LobbyService.GameRoom room = lobbyService.getRoom(gameId);
-        return new GameResponse(gameId, game.getBoard().toString(), game.getCurrentTurn(), game.getStatus(), Collections.emptyList(),
-            game.getHumanReadableHistory(), game.getLastMoveMessage(), game.getWhitePlayerId(), game.getBlackPlayerId(),
-            isGameStarted(gameId), game.getWhiteRemainingTimeMs(), game.getBlackRemainingTimeMs(), (room != null) ? room.getTimeLimit() : 10);
+        List<GameResponse.ExecutedMove> lastMovesList = new ArrayList<>();
+        List<String> history = game.getMoveHistory();
+
+        if (history != null && !history.isEmpty()) {
+            String lastMoveUci = history.get(history.size() - 1);
+
+            if (lastMoveUci != null && lastMoveUci.length() >= 4) {
+                int fromCol = lastMoveUci.charAt(0) - 'a';
+                int fromRow = Character.getNumericValue(lastMoveUci.charAt(1)) - 1;
+                int toCol = lastMoveUci.charAt(2) - 'a';
+                int toRow = Character.getNumericValue(lastMoveUci.charAt(3)) - 1;
+                int currentEval = stockfishService.getEvaluation(history, 10);
+
+                int previousEval = 0;
+                if (history.size() > 1) {
+                    List<String> previousHistory = history.subList(0, history.size() - 1);
+                    previousEval = stockfishService.getEvaluation(previousHistory, 10);
+                }
+
+                Color playerWhoMoved = game.getCurrentTurn().opposite();
+                String quality = classifyMove(previousEval, currentEval, playerWhoMoved);
+
+                lastMovesList.add(new GameResponse.ExecutedMove(
+                    fromCol,
+                    fromRow,
+                    toCol,
+                    toRow,
+                    "UNKNOWN",
+                    currentEval,
+                    quality
+                ));
+            }
+        }
+
+        return new GameResponse(
+            gameId,
+            game.getBoard().toString(),
+            game.getCurrentTurn(),
+            game.getStatus(),
+            lastMovesList,
+            game.getHumanReadableHistory(),
+            game.getLastMoveMessage(),
+            game.getWhitePlayerId(),
+            game.getBlackPlayerId(),
+            isGameStarted(gameId),
+            game.getWhiteRemainingTimeMs(),
+            game.getBlackRemainingTimeMs(),
+            (room != null) ? room.getTimeLimit() : 10
+        );
+    }
+
+    private String classifyMove(int previousEval, int currentEval, Color turn) {
+        int diff = (turn == Color.WHITE) ? (previousEval - currentEval) : (currentEval - previousEval);
+
+        if (diff > 300) return "BLUNDER";
+        if (diff > 150) return "MISTAKE";
+        if (diff > 75) return "INACCURACY";
+        return "GOOD";
     }
 
     public void recordHeartbeat(String gameId, Long userId) {

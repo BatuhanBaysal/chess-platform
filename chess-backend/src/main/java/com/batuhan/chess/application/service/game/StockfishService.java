@@ -99,6 +99,67 @@ public class StockfishService {
         }
     }
 
+    public synchronized int getEvaluation(List<String> moveHistory, int depth) {
+        if (process == null || !process.isAlive()) {
+            startEngine();
+        }
+
+        try {
+            sendEvaluationCommands(moveHistory, depth);
+            return readEvaluationResult();
+        } catch (IOException e) {
+            log.error("Error getting evaluation from Stockfish: {}", e.getMessage(), e);
+        }
+        return 0;
+    }
+
+    private void sendEvaluationCommands(List<String> moveHistory, int depth) throws IOException {
+        String positionCmd = "position startpos";
+        if (moveHistory != null && !moveHistory.isEmpty()) {
+            positionCmd += " moves " + String.join(" ", moveHistory);
+        }
+
+        sendCommand(positionCmd);
+        sendCommand("go depth " + depth);
+    }
+
+    private int readEvaluationResult() throws IOException {
+        int currentScore = 0;
+        String line;
+        while ((line = reader.readLine()) != null) {
+            if (line.contains("score cp")) {
+                currentScore = parseCentipawnScore(line);
+            } else if (line.contains("score mate")) {
+                currentScore = parseMateScore(line);
+            }
+            if (line.startsWith("bestmove")) {
+                break;
+            }
+        }
+        return currentScore;
+    }
+
+    private int parseCentipawnScore(String line) {
+        String[] parts = line.split(" ");
+        for (int i = 0; i < parts.length; i++) {
+            if ("cp".equals(parts[i]) && i + 1 < parts.length) {
+                return Integer.parseInt(parts[i + 1]);
+            }
+        }
+        return 0;
+    }
+
+    private int parseMateScore(String line) {
+        String[] parts = line.split(" ");
+        for (int i = 0; i < parts.length; i++) {
+            if ("mate".equals(parts[i]) && i + 1 < parts.length) {
+                int mateIn = Integer.parseInt(parts[i + 1]);
+                return mateIn > 0 ? 10000 - (mateIn * 100) : -10000 - (mateIn * 100);
+            }
+        }
+        return 0;
+    }
+
     @PreDestroy
     public synchronized void stopEngine() {
         if (process != null) {

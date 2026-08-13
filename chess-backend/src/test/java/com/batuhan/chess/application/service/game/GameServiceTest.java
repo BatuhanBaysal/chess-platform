@@ -347,4 +347,39 @@ class GameServiceTest {
             verify(stockfishService, atLeastOnce()).getBestMove(anyList(), eq(10));
         }
     }
+
+    @Nested
+    @DisplayName("Engine Hint & Analysis Integration Tests")
+    class EngineHintTests {
+
+        @Test
+        @DisplayName("Should return engine hint successfully for active game")
+        void shouldReturnEngineHintSuccessfully() {
+            // Arrange
+            when(stockfishService.getBestMove(anyList(), anyInt())).thenReturn("e2e4");
+            when(stockfishService.getEvaluation(anyList(), anyInt())).thenReturn(35);
+
+            // Act
+            var hint = gameService.getEngineHint(gameId, 10);
+
+            // Assert
+            assertThat(hint).isNotNull();
+            assertThat(hint.bestMoveUci()).isEqualTo("e2e4");
+            assertThat(hint.evaluationScore()).isEqualTo(35);
+            verify(stockfishService).getBestMove(anyList(), eq(10));
+            verify(stockfishService).getEvaluation(anyList(), eq(10));
+        }
+
+        @Test
+        @DisplayName("Should throw GameOperationException when requesting hint for non-existent game")
+        void shouldThrowExceptionWhenGameNotFoundForHint() {
+            // Arrange
+            String nonExistentGameId = "invalid-game-id";
+
+            // Act & Assert
+            assertThatThrownBy(() -> gameService.getEngineHint(nonExistentGameId, 10))
+                .isInstanceOf(GameOperationException.class)
+                .hasMessageContaining("Game not found");
+        }
+    }
 }

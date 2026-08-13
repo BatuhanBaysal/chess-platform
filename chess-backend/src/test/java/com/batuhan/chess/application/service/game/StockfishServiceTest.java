@@ -105,4 +105,39 @@ class StockfishServiceTest {
             assertThat(ReflectionTestUtils.getField(stockfishService, "process")).isNull();
         }
     }
+
+    @Nested
+    @DisplayName("Engine Evaluation Tests")
+    class EvaluationTests {
+
+        @Test
+        @DisplayName("Should return valid centipawn or mate evaluation score for given move history")
+        void shouldReturnEvaluationScore() {
+            // Act
+            int evaluation = stockfishService.getEvaluation(List.of("e2e4"), 5);
+
+            // Assert
+            assertThat(evaluation).isBetween(-10000, 10000);
+        }
+
+        @Test
+        @DisplayName("Should handle empty move history gracefully and return initial position evaluation")
+        void shouldHandleEmptyHistoryForEvaluation() {
+            // Act
+            int evaluation = stockfishService.getEvaluation(List.of(), 5);
+
+            // Assert
+            assertThat(evaluation).isBetween(-10000, 10000);
+        }
+
+        @Test
+        @DisplayName("Should handle null move history gracefully during evaluation")
+        void shouldHandleNullHistoryForEvaluation() {
+            // Act
+            int evaluation = stockfishService.getEvaluation(null, 5);
+
+            // Assert
+            assertThat(evaluation).isBetween(-10000, 10000);
+        }
+    }
 }

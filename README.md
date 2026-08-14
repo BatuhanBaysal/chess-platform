@@ -1,8 +1,8 @@
 # ♟️ Chess Platform
 
-> *A Production-Ready Real-Time Chess Ecosystem Powered by Hexagonal Architecture and the LGTM Stack.*
+> *An Enterprise-Grade, Full-Stack Chess Ecosystem Featuring Server-Authoritative Logic, AI Integration, and Robust Security.*
 
-![Status](https://img.shields.io/badge/Status-Active-brightgreen) ![Version](https://img.shields.io/badge/Version-v2.0.0-blue) ![License](https://img.shields.io/badge/License-MIT-yellow)
+![Status](https://img.shields.io/badge/Status-Active-brightgreen) ![Version](https://img.shields.io/badge/Version-v2.0.0-blue) ![Milestone](https://img.shields.io/badge/Milestone-v2.1.0_Refactoring-orange) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ---
 
@@ -11,8 +11,11 @@
 
 > **In simple terms:** Think of this as a "referee-in-the-cloud" chess game. By keeping all the core business logic, validation rules, and timers on the server, we ensure that client-side manipulation is impossible and the game remains perfectly synced.
 
+> 💡 **Current Project Status & Next Milestone:**
+> The core chess ecosystem is fully stable and operational at **v2.0.0**. The platform has entered an active optimization and enterprise refactoring phase (**v2.1.0 Milestone**). During this period, the codebase is undergoing rigorous vertical-slice architectural refactoring, performance tuning, and security audits to achieve production-grade excellence. You can track our active tasks and roadmap via the [Chess Platform Kanban Board](https://github.com/users/BatuhanBaysal/projects/2).
+
 ### 🎯 What We Do
-* **Secure Onboarding:** A robust authentication, JWT-based security, and registration flow.
+* **Secure Onboarding & RBAC:** A robust authentication flow featuring **Spring Security, JWT, and Role-Based Access Control (Admin vs. User)** with dedicated administrative dashboards.
 * **Server-Authoritative Rule Engine:** **Developed entirely in-house using Java.** We do not rely on third-party APIs for game rules. Every move (Castling, En Passant, Promotion) is validated server-side by our custom domain logic to ensure 100% integrity.
 * **Real-Time Multiplayer:** A reactive, event-driven architecture using WebSockets for seamless player-vs-player matches.
 * **Integrated AI Training Mode:** Leveraging the industry-standard **Stockfish engine** as a local sidecar, allowing users to play against a powerful AI opponent in single-player sessions, while still utilizing our core server-authoritative logic for move validation.
@@ -20,14 +23,35 @@
 
 ---
 
+## 🏗️ Engineering Highlights
+
+* **🧩 Custom FIDE Rule Engine:** Core game logic is encapsulated in a pure Java domain layer, ensuring complete control and zero reliance on external APIs for multiplayer validation.
+* **🧠 Decoupled AI Sidecar & Telemetry Throttling:** Engine analysis integrated via the **UCI protocol** using a sidecar pattern. Features thread-safe concurrency management and throttled state broadcasting (`150ms`) to protect WebSocket throughput under heavy telemetry streams.
+* **⚡ Robust Architecture:** A clean, hexagonal approach that separates our custom-built rule engine from infrastructure components like WebSockets, Persistence, and the AI Engine sidecar.
+* **🔄 Full-Stack Observability & Tracing:** Real-time system health, centralized logging, and distributed tracing managed end-to-end by the **LGTM stack**.
+* **🖥️ Modern React (v19) Stack & UI/UX:** High-performance user interface utilizing Tailwind CSS, interactive dashboards, and modular components designed for low-latency, real-time interaction.
+* **🛡️ Server-Authoritative State Machine & RBAC:** Granular role-based access control protecting administrative operations via stateless JWT architecture, alongside decoupled business rules enforcing strict server-side validation to eliminate client-side tampering and race conditions.
+* **🏆 Zero Technical Debt & Quality Gates:** CI/CD-driven quality standards enforced via **SonarQube**.
+
+---
+
 ### 🎬 Feature Highlights
-<img src="docs/assets/videos/v1-gameplay-highlight.gif" style="max-width: 100%; height: auto;" alt="Gameplay Highlight">
+
+#### 👥 Multiplayer Mode
+<img src="docs/assets/videos/v2-gameplay-highlight.gif" style="max-width: 100%; height: auto;" alt="Multiplayer Gameplay Highlight">
 
 > **Real-Time Multiplayer Synchronization:** A demonstration of the platform's reactive architecture. The side-by-side view shows a game session synchronized across two independent browser sessions, highlighting instant state updates, server-authoritative move validation, and low-latency WebSocket communication.
 
-* **Multiplayer Duel:** Real-time matches powered by our custom-built FIDE-compliant Java engine.
-* **🤖 Player vs. AI (Stockfish Engine):** Integrated UCI-protocol-based engine support. Users can initiate single-player matches against a high-performance AI, managed by our robust backend lifecycle controller.
-* **System Demonstrations:** You can explore the [Authentication Workflow](docs/assets/videos/v1-auth-workflow.mp4) 🔐, [Lobby & Navigation](docs/assets/videos/v1-lobby-navigation.mp4) 🧭, and [Board Interactivity](docs/assets/videos/v1-gameplay-board.mp4) ♟️ video guides.
+---
+
+#### 🤖 Player vs. AI (Stockfish Engine) Mode
+<img src="docs/assets/videos/v2-stockfish-ai-match.gif" style="max-width: 100%; height: auto;" alt="AI Stockfish Gameplay Highlight">
+
+> **Engine Analysis & AI Match:** A demonstration of single-player training mode against the Stockfish AI opponent. This view highlights real-time move evaluations, live centipawn/mate scores via the evaluation bar, and intelligent engine hint suggestions guiding optimal move choices under high-frequency telemetry.
+
+* **Multiplayer Duel:** Real-time matches powered by our custom-built FIDE-compliant Java engine and server-authoritative architecture.
+* **🤖 Player vs. AI (Stockfish Engine):** Integrated UCI-protocol-based engine support with real-time telemetry optimization. Users can initiate single-player matches against a high-performance AI, featuring throttled state broadcasting (`150ms`) and thread-safe data structures for seamless, stutter-free performance under heavy data streams.
+* **System Demonstrations:** You can explore the [Authentication Workflow](docs/assets/videos/v1-auth-workflow.mp4) 🔐, [Lobby & Navigation](docs/assets/videos/v1-lobby-navigation.mp4) 🧭, and [Board Interactivity & AI Modes](docs/assets/videos/v2-stockfish-ai-match.gif) ♟️ video guides.
 * **System Snapshots:** Check out the [Dashboard Assets](docs/assets/dashboards/) 📊, [Infrastructure Snapshots](docs/assets/screenshots/01-infrastructure/) 🏗️, [UI & UX Highlights](docs/assets/screenshots/02-gameplay-features/) ♟️, and [Test Reports & Swagger UI](docs/assets/screenshots/03-api-testing/) 🧪 for a complete visual overview.
 
 ---
@@ -82,17 +106,6 @@ The entire application ecosystem is managed using **Docker Compose** to ensure a
 
 ---
 
-## 🏗️ Engineering Highlights
-
-* **🧩 Custom FIDE Rule Engine:** Core game logic is encapsulated in a pure Java domain layer, ensuring complete control and zero reliance on external APIs for multiplayer validation.
-* **🧠 Stockfish AI Integration:** Advanced AI support for single-player training, allowing users to challenge the Stockfish engine via our dedicated `StockfishService` which manages UCI communication and process lifecycle.
-* **⚡ Robust Architecture:** A clean, hexagonal approach that separates our custom-built rule engine from infrastructure components like WebSockets, Persistence, and the AI Engine sidecar.
-* **🔄 Full-Stack Observability & Tracing:** Real-time system health, centralized logging, and distributed tracing managed end-to-end by the **LGTM stack**.
-* **🖥️ Modern React (v19) Stack:** High-performance UI utilizing Tailwind CSS designed for low-latency, real-time interaction.
-* **🏆 Zero Technical Debt & Quality Gates:** CI/CD-driven quality standards enforced via **SonarQube**.
-
----
-
 ## 📋 Project Governance & Workflow
 We maintain a strict professional workflow to ensure code quality, automated validation, and project transparency:
 
@@ -102,6 +115,17 @@ We maintain a strict professional workflow to ensure code quality, automated val
 * **Automation & Standardisation:** Our repository is governed by standardized contribution templates for issue reporting and pull requests.
     * **Issue Tracking:** Use our pre-defined templates for [Bug Reports](https://github.com/BatuhanBaysal/chess-platform/issues/new?assignees=&labels=bug&template=bug_report.md) and [Feature Requests](https://github.com/BatuhanBaysal/chess-platform/issues/new?assignees=&labels=enhancement&template=feature_request.md).
     * **Pull Requests:** All contributions follow a strictly reviewed and automated PR verification process using our standard [Pull Request Template](https://github.com/BatuhanBaysal/chess-platform/blob/main/.github/pull_request_template.md).
+
+---
+
+## 💡 Behind the Code: My Journey with This Project
+
+> *“This platform is the culmination of a continuous learning curve that started during my corporate internship in the summer of 2024, where I first laid hands on Java, Spring Boot, React, and PostgreSQL.”*
+
+After graduation, through dedicated self-study, online programs, and hands-on GitHub development, I wanted to build something that goes beyond standard CRUD applications. This project stands as my most comprehensive and production-grade work to date:
+* **The Stack Evolution:** Building upon my prior secure full-stack applications, I elevated my workflow by incorporating containerization with **Docker** and full-stack observability via the **LGTM stack**.
+* **Pushing Technical Boundaries:** To build the multiplayer feature, I moved past conventional request-response cycles to master **WebSockets** for event-driven real-time synchronization. Integrating the **Stockfish engine** also gave me hands-on experience with UCI protocols, sidecar patterns, and thread-safe telemetry handling.
+* **Engineering Discipline:** Rather than treating this as a casual hobby project, I managed its lifecycle with strict enterprise governance—leveraging GitHub Issues, PR workflows, Milestones, Tags, Releases, and comprehensive documentation.
 
 ---
 

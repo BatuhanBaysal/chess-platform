@@ -16,6 +16,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.annotation.Observed;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -46,6 +47,10 @@ public class GameService {
     private final Map<String, Set<Long>> readyPlayers = new ConcurrentHashMap<>();
     private final Map<String, ScheduledFuture<?>> timeoutTasks = new ConcurrentHashMap<>();
     private final Map<String, ConcurrentHashMap<Long, Long>> playerHeartbeats = new ConcurrentHashMap<>();
+
+    private final Map<String, Long> lastBroadcastTimes = new ConcurrentHashMap<>();
+    private static final long BROADCAST_THROTTLE_MS = 150;
+
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
 
     private Counter moveCounter;
@@ -77,6 +82,21 @@ public class GameService {
     public void initMetrics() {
         meterRegistry.gauge("chess.games.active", activeGames, Map::size);
         moveCounter = Counter.builder("chess.moves.total").register(meterRegistry);
+    }
+
+    @PreDestroy
+    public void shutdownScheduler() {
+        scheduler.shutdownNow();
+    }
+
+    private void throttledBroadcast(String gameId, Game game) {
+        long now = System.currentTimeMillis();
+        Long lastTime = lastBroadcastTimes.get(gameId);
+
+        if (lastTime == null || (now - lastTime) >= BROADCAST_THROTTLE_MS) {
+            lastBroadcastTimes.put(gameId, now);
+            webSocketController.broadcastGameUpdate(gameId, game);
+        }
     }
 
     public String createGame(Long whiteId, Long blackId) {
@@ -141,7 +161,7 @@ public class GameService {
 
                 String promotionType = bestMoveUci.length() > 4 ? String.valueOf(bestMoveUci.charAt(4)).toUpperCase() : null;
                 game.makeMove(from, to, promotionType);
-                webSocketController.broadcastGameUpdate(gameId, game);
+                throttledBroadcast(gameId, game);
 
                 if (game.getStatus().isFinished()) {
                     self.processGameFinish(gameId, determineResult(game, game.getStatus()), game.getStatus());
@@ -159,6 +179,7 @@ public class GameService {
     public void createNewGameWithPlayers(String roomId, Long whiteId, Long blackId, int timeLimit) {
         activeGames.remove(roomId);
         readyPlayers.remove(roomId);
+        lastBroadcastTimes.remove(roomId);
         cancelTimeoutTask(roomId);
 
         Game newGame = new Game(new Board());
@@ -201,7 +222,7 @@ public class GameService {
             }
         }
 
-        webSocketController.broadcastGameUpdate(gameId, game);
+        throttledBroadcast(gameId, game);
         return bothReady;
     }
 
@@ -286,14 +307,11 @@ public class GameService {
             game.getLastMove()
         );
 
-        log.info("DEBUG-MOVE: GameId: {}, Detected Status: {}, IsFinished: {}", gameId, currentStatus, currentStatus.isFinished());
         game.setStatus(currentStatus);
 
         if (game.getStatus().isFinished()) {
-            log.info("DEBUG-MOVE: Checkmate triggered, calling processGameFinish!");
             self.processGameFinish(gameId, determineResult(game, game.getStatus()), game.getStatus());
         } else {
-            log.warn("DEBUG-MOVE: Status not finished, processGameFinish skipped!");
             triggerAiMoveIfNeeded(gameId, game);
         }
         return moves;
@@ -306,7 +324,6 @@ public class GameService {
 
         if (AI_PLAYER_ID.equals(nextPlayerId)) {
             long randomDelay = ThreadLocalRandom.current().nextLong(2000, 5001);
-            log.info("AI for game {} will think for {} ms before moving.", gameId, randomDelay);
             scheduler.schedule(() -> executeAiMove(gameId, game), randomDelay, TimeUnit.MILLISECONDS);
         }
     }
@@ -317,14 +334,12 @@ public class GameService {
         String bestMoveUci = stockfishService.getBestMove(game.getMoveHistory(), 10);
         if (bestMoveUci == null || bestMoveUci.length() < 4) return;
 
-        log.info("AI (Stockfish - Delayed) calculated best move for game {}: {}", gameId, bestMoveUci);
-
         Position from = parseUciPosition(bestMoveUci.substring(0, 2));
         Position to = extractToPosition(bestMoveUci);
 
         String promotionType = extractPromotionType(bestMoveUci);
         game.makeMove(from, to, promotionType);
-        webSocketController.broadcastGameUpdate(gameId, game);
+        throttledBroadcast(gameId, game);
 
         if (game.getStatus().isFinished()) {
             self.processGameFinish(gameId, determineResult(game, game.getStatus()), game.getStatus());
@@ -363,39 +378,30 @@ public class GameService {
         if (game == null) return;
 
         if (game.getStatus() == GameStatus.CLOSING) {
-            log.warn("Game {} is already closing, skipping duplicate finish.", gameId);
             return;
         }
 
-        log.info("Processing finish for game: {}, method: {}, result: {}", gameId, finishMethod, result);
         game.setStatus(GameStatus.CLOSING);
-
         cancelTimeoutTask(gameId);
         self.handleFinishLogic(gameId, game, result, finishMethod);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleFinishLogic(String gameId, Game game, GameResult result, GameStatus finishMethod) {
-        log.info("--- [DEBUG] handleFinishLogic started. GameId: {}", gameId);
         try {
             game.setStatus(finishMethod);
             UserEntity white = findUserSafe(game.getWhitePlayerId());
             UserEntity black = findUserSafe(game.getBlackPlayerId());
 
-            log.info("--- [DEBUG] Players found. White: {}, Black: {}", white != null ? white.getId() : "NULL", black != null ? black.getId() : "NULL");
             GameEntity history = buildGameEntity(game, white, black, result, finishMethod);
-
-            log.info("--- [DEBUG] Entering Elo calculation...");
             applyEloChanges(white, black, result, history);
-            log.info("--- [DEBUG] Elo calculated.");
             gameRepository.saveAndFlush(history);
-            log.info("--- [DEBUG] Written to database!");
 
             webSocketController.broadcastGameUpdate(gameId, game);
             webSocketController.sendGameOver(gameId, result);
             scheduler.schedule(() -> self.cleanupSession(gameId), 30, TimeUnit.SECONDS);
         } catch (Exception e) {
-            log.error("--- [DEBUG] CRITICAL ERROR! Game {} could not be saved. Error: {}", gameId, e.getMessage(), e);
+            log.error("Critical error saving finished game {}: {}", gameId, e.getMessage(), e);
             throw e;
         }
     }
@@ -407,8 +413,6 @@ public class GameService {
         if (game == null || game.getStatus().isFinished()) {
             return;
         }
-
-        log.info("Player {} explicitly dismissed/abandoned game: {}", userId, gameId);
 
         GameResult result;
         if (userId.equals(game.getWhitePlayerId())) {
@@ -429,7 +433,9 @@ public class GameService {
         cancelTimeoutTask(gameId);
         activeGames.remove(gameId);
         readyPlayers.remove(gameId);
-        log.info("Session cleaned up for game: {}", gameId);
+        lastBroadcastTimes.remove(gameId);
+        playerHeartbeats.remove(gameId);
+        log.info("Session and resources cleaned up for game: {}", gameId);
     }
 
     private GameEntity buildGameEntity(Game game, UserEntity white, UserEntity black, GameResult result, GameStatus method) {
@@ -471,8 +477,6 @@ public class GameService {
 
             history.setWhiteEloGain(wGain);
             history.setBlackEloGain(bGain);
-            log.info("Stats and Elo updated. White: {} ({} wins), Black: {} ({} wins)",
-                white.getUsername(), white.getTotalWins(), black.getUsername(), black.getTotalWins());
         }
     }
 
@@ -592,10 +596,9 @@ public class GameService {
                     synchronized (game) {
                         game.updateTime();
                         if (isTimeExpired(game)) {
-                            log.info("Global timer triggered timeout for game: {}", entry.getKey());
                             self.processGameFinish(entry.getKey(), determineResult(game, GameStatus.TIMEOUT), GameStatus.TIMEOUT);
                         } else {
-                            webSocketController.broadcastGameUpdate(entry.getKey(), game);
+                            throttledBroadcast(entry.getKey(), game);
                         }
                     }
                 }
@@ -645,7 +648,6 @@ public class GameService {
         if (playerId != null && timestamps.containsKey(playerId)) {
             long lastHeartbeat = timestamps.get(playerId);
             if (now - lastHeartbeat > threshold) {
-                log.warn("Watchdog: Player (Id: {}) timed out due to missing heartbeat in game: {}", playerId, gameId);
                 self.processGameFinish(gameId, result, GameStatus.ABANDONED);
                 playerHeartbeats.remove(gameId);
                 return true;

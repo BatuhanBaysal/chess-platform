@@ -9,6 +9,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -17,6 +19,19 @@ public class StockfishService {
     private Process process;
     private BufferedReader reader;
     private OutputStreamWriter writer;
+
+    private final Map<String, CachedEvaluation> evaluationCache = new ConcurrentHashMap<>();
+    private static final long THROTTLE_INTERVAL_MS = 250;
+
+    private static class CachedEvaluation {
+        int score;
+        long timestamp;
+
+        CachedEvaluation(int score, long timestamp) {
+            this.score = score;
+            this.timestamp = timestamp;
+        }
+    }
 
     public synchronized void startEngine() {
         try {
@@ -100,17 +115,28 @@ public class StockfishService {
     }
 
     public synchronized int getEvaluation(List<String> moveHistory, int depth) {
+        String cacheKey = (moveHistory == null || moveHistory.isEmpty()) ? "startpos" : String.join(",", moveHistory);
+        long now = System.currentTimeMillis();
+
+        CachedEvaluation cached = evaluationCache.get(cacheKey);
+        if (cached != null && (now - cached.timestamp) < THROTTLE_INTERVAL_MS) {
+            return cached.score;
+        }
+
         if (process == null || !process.isAlive()) {
             startEngine();
         }
 
         try {
             sendEvaluationCommands(moveHistory, depth);
-            return readEvaluationResult();
+            int score = readEvaluationResult();
+
+            evaluationCache.put(cacheKey, new CachedEvaluation(score, now));
+            return score;
         } catch (IOException e) {
             log.error("Error getting evaluation from Stockfish: {}", e.getMessage(), e);
         }
-        return 0;
+        return cached != null ? cached.score : 0;
     }
 
     private void sendEvaluationCommands(List<String> moveHistory, int depth) throws IOException {
@@ -175,6 +201,7 @@ public class StockfishService {
                 process = null;
                 writer = null;
                 reader = null;
+                evaluationCache.clear();
             }
         }
     }

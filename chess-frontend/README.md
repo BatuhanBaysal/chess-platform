@@ -50,6 +50,7 @@ This frontend follows a **"Type-Safe Domain Mirroring"** approach to maintain pe
 * **Contract-First Development:** API and WebSocket payloads are strictly governed by shared TypeScript models, preventing runtime serialization errors.
 * **Atomic State Management:** UI is decomposed into small, reusable atoms, ensuring that state transitions are predictable and easily testable.
 * **Resilient Connectivity:** Implements automatic reconnection strategies and heartbeat monitoring for STOMP to ensure seamless real-time play.
+* **High-Frequency Telemetry Handling:** Optimized the `useChess` hook and dynamic components (such as `EvaluationBar`) to handle heavy WebSocket streams smoothly without stuttering or frame drops under high-frequency Stockfish evaluation outputs.
 
 ---
 
@@ -130,6 +131,7 @@ To maintain high performance and code quality, please follow these guidelines:
 * **Rendering Performance:** Use `React.memo` within `DraggablePiece` to ensure only specific squares re-render during moves, preventing unnecessary full-board updates.
 * **Accessibility:** When using `@dnd-kit`, remember to configure keyboard sensors within `DndContext` to ensure inclusive navigation.
 * **State Synchronization:** Always maintain strict synchronization between `useChess` and the server-side authority to prevent lag-induced state mismatches.
+* **Rendering Performance:** Use `React.memo` within `DraggablePiece` and lightweight state update strategies to ensure smooth rendering under heavy WebSocket data streams and real-time engine evaluations.
 
 ---
 

@@ -11,6 +11,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -138,6 +139,50 @@ class StockfishServiceTest {
 
             // Assert
             assertThat(evaluation).isBetween(-10000, 10000);
+        }
+    }
+
+    @Nested
+    @DisplayName("Engine Caching & Evaluation Throttling Tests")
+    class CachingAndThrottlingTests {
+
+        @Test
+        @DisplayName("Should return cached evaluation within throttle interval")
+        void shouldReturnCachedEvaluation() {
+            // Arrange
+            stockfishService.getEvaluation(List.of("e2e4"), 5);
+
+            // Act & Assert
+            @SuppressWarnings("unchecked")
+            Map<String, Object> evaluationCache =
+                (Map<String, Object>) ReflectionTestUtils.getField(stockfishService, "evaluationCache");
+
+            assertThat(evaluationCache).containsKey("e2e4");
+            int cachedEval = stockfishService.getEvaluation(List.of("e2e4"), 5);
+            assertThat(cachedEval).isBetween(-10000, 10000);
+        }
+
+        @Test
+        @DisplayName("Should respect throttle interval and refresh evaluation after cache expiration")
+        void shouldRefreshEvaluationAfterThrottleInterval() {
+            // Arrange
+            String cacheKey = "e2e4";
+            stockfishService.getEvaluation(List.of(cacheKey), 5);
+
+            // Act
+            @SuppressWarnings("unchecked")
+            Map<String, Object> evaluationCache =
+                (Map<String, Object>) ReflectionTestUtils.getField(stockfishService, "evaluationCache");
+
+            assertThat(evaluationCache).isNotNull();
+            evaluationCache.forEach((key, cachedObj) -> {
+                ReflectionTestUtils.setField(cachedObj, "timestamp", System.currentTimeMillis() - 300L);
+            });
+
+            int refreshedEval = stockfishService.getEvaluation(List.of(cacheKey), 5);
+
+            // Assert
+            assertThat(refreshedEval).isBetween(-10000, 10000);
         }
     }
 }

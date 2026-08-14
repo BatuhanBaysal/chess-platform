@@ -59,6 +59,7 @@ The project leverages industry-standard libraries to provide a robust, resilient
 | Category | Technology | Purpose |
 | :--- | :--- | :--- |
 | **Core** | Spring Boot 3.4.6, Java 17 | Modern and type-safe business logic. |
+| **Chess Engine** | Stockfish UCI | AI opponent and move analysis/evaluation. |
 | **Database** | PostgreSQL, Liquibase | Schema management and versioning. |
 | **Security** | Spring Security, JJWT | Secure authentication and authorization. |
 | **Resilience** | Resilience4j | Fault tolerance (Circuit Breaker, Rate Limiter). |
@@ -166,6 +167,8 @@ src/main/
 │                    └── ChessBackendApplication     # Main application entry point                                
 └── resources/
     ├── application.yaml                        # Main application configuration properties
+    ├── engine/
+    │   └── stockfish.exe                       # Bundled Stockfish UCI binary
     └── db.changelog/                           # Liquibase database migration configuration root
         ├── changes/                            # Contains individual SQL migration scripts
         │   └── 001-initial-schema.sql          # Initial database schema definition file

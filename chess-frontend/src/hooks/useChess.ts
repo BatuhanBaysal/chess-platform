@@ -62,6 +62,8 @@ export const useChess = () => {
   const gameIdRef = useRef<string | null>(null);
   const lastUpdateRef = useRef<{ time: number; white: number; black: number }>({ time: 0, white: 0, black: 0 });
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingGameStateRef = useRef<GameState | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (game) {
@@ -131,6 +133,10 @@ export const useChess = () => {
       clearInterval(heartbeatIntervalRef.current);
       heartbeatIntervalRef.current = null;
     }
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
     if (stompClientRef.current) {
       stompClientRef.current.deactivate();
       stompClientRef.current = null;
@@ -145,6 +151,39 @@ export const useChess = () => {
       setIsLobbyConnected(false);
     }
   }, []);
+
+  const scheduleGameStateUpdate = useCallback((gameState: GameState) => {
+    pendingGameStateRef.current = gameState;
+    
+    if (!animationFrameRef.current) {
+      animationFrameRef.current = requestAnimationFrame(() => {
+        if (pendingGameStateRef.current) {
+          const latestState = pendingGameStateRef.current;
+          setGame(latestState);
+          syncPlayerColor(latestState);
+          setHintData(null);
+
+          if (latestState.lastMoves && latestState.lastMoves.length > 0) {
+            const lastMove = latestState.lastMoves[latestState.lastMoves.length - 1];
+            if (lastMove.evaluation !== undefined) {
+              const score = lastMove.evaluation;
+              const type = Math.abs(score) > 9000 ? 'MATE' : 'CP';
+              setEvaluation({ score, type });
+            }
+          }
+
+          if (latestState.status && FINISHED_STATUSES.includes(latestState.status.toUpperCase())) {
+            if (heartbeatIntervalRef.current) {
+              clearInterval(heartbeatIntervalRef.current);
+              heartbeatIntervalRef.current = null;
+            }
+            setGameOverResult(latestState.status);
+          }
+        }
+        animationFrameRef.current = null;
+      });
+    }
+  }, [syncPlayerColor]);
 
   const connectWebSocket = useCallback((gameId: string) => {
     if (!gameId) return;
@@ -183,27 +222,7 @@ export const useChess = () => {
               heartbeatIntervalRef.current = null;
             }
           } else {
-            const gameState = body as GameState;
-            setGame(gameState);
-            syncPlayerColor(gameState);
-            setHintData(null);
-
-            if (gameState.lastMoves && gameState.lastMoves.length > 0) {
-              const lastMove = gameState.lastMoves[gameState.lastMoves.length - 1];
-              if (lastMove.evaluation !== undefined) {
-                const score = lastMove.evaluation;
-                const type = Math.abs(score) > 9000 ? 'MATE' : 'CP';
-                setEvaluation({ score, type });
-              }
-            }
-
-            if (gameState.status && FINISHED_STATUSES.includes(gameState.status.toUpperCase())) {
-              if (heartbeatIntervalRef.current) {
-                clearInterval(heartbeatIntervalRef.current);
-                heartbeatIntervalRef.current = null;
-              }
-              setGameOverResult(gameState.status);
-            }
+            scheduleGameStateUpdate(body as GameState);
           }
         });
         client.subscribe('/user/queue/errors', (message) => {
@@ -235,7 +254,7 @@ export const useChess = () => {
     client.activate();
     stompClientRef.current = client;
     gameIdRef.current = gameId;
-  }, [disconnectWebSocket, getAuthDetails, syncPlayerColor]);
+  }, [disconnectWebSocket, getAuthDetails, scheduleGameStateUpdate]);
 
   const connectLobby = useCallback((roomId: string, onMatchFound: (gameId: string) => void) => {
     disconnectLobby();

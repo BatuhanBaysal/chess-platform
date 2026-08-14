@@ -27,13 +27,20 @@ import org.redisson.api.RedissonClient;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Game Service Core Business Logic Tests")
@@ -380,6 +387,98 @@ class GameServiceTest {
             assertThatThrownBy(() -> gameService.getEngineHint(nonExistentGameId, 10))
                 .isInstanceOf(GameOperationException.class)
                 .hasMessageContaining("Game not found");
+        }
+    }
+
+    @Nested
+    @DisplayName("WebSocket Streaming & Throttling Optimization Tests")
+    class WebSocketOptimizationTests {
+
+        @Test
+        @DisplayName("Should throttle WebSocket broadcasts (max 1 update per 150ms)")
+        void shouldThrottleWebSocketBroadcasts() {
+            // Arrange
+            String testGameId = "throttle-game";
+            gameService.createNewGameWithPlayers(testGameId, 1L, 2L);
+            Game game = gameService.getGame(testGameId);
+
+            // Act 1
+            ReflectionTestUtils.invokeMethod(gameService, "throttledBroadcast", testGameId, game);
+            verify(webSocketController, times(1)).broadcastGameUpdate(testGameId, game);
+
+            // Act 2
+            for (int i = 0; i < 5; i++) {
+                ReflectionTestUtils.invokeMethod(gameService, "throttledBroadcast", testGameId, game);
+            }
+            verify(webSocketController, times(1)).broadcastGameUpdate(testGameId, game);
+
+            // Act 3
+            @SuppressWarnings("unchecked")
+            Map<String, Long> lastBroadcastTimes =
+                (Map<String, Long>) ReflectionTestUtils.getField(gameService, "lastBroadcastTimes");
+
+            if (lastBroadcastTimes != null) {
+                lastBroadcastTimes.put(testGameId, System.currentTimeMillis() - 200L);
+            }
+
+            // Act 4
+            ReflectionTestUtils.invokeMethod(gameService, "throttledBroadcast", testGameId, game);
+
+            // Assert
+            verify(webSocketController, times(2)).broadcastGameUpdate(testGameId, game);
+        }
+
+        @Test
+        @DisplayName("Backend manages concurrent WebSocket sessions under load without exceptions")
+        void shouldHandleConcurrentBroadcastsSafely() throws InterruptedException {
+            // Arrange
+            String testGameId = "concurrent-game";
+            gameService.createNewGameWithPlayers(testGameId, 1L, 2L);
+            Game game = gameService.getGame(testGameId);
+
+            int threadCount = 50;
+            ExecutorService executor = Executors.newFixedThreadPool(10);
+            CountDownLatch latch = new CountDownLatch(threadCount);
+
+            // Act
+            for (int i = 0; i < threadCount; i++) {
+                executor.submit(() -> {
+                    try {
+                        ReflectionTestUtils.invokeMethod(gameService, "throttledBroadcast", testGameId, game);
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+            }
+
+            boolean completed = latch.await(5, TimeUnit.SECONDS);
+            executor.shutdown();
+
+            // Assert
+            assertThat(completed).isTrue();
+            verify(webSocketController, atLeastOnce()).broadcastGameUpdate(eq(testGameId), any(Game.class));
+            verify(webSocketController, atMost(15)).broadcastGameUpdate(eq(testGameId), any(Game.class));
+        }
+
+        @Test
+        @DisplayName("Graceful handling of inactive streams to prevent memory leaks")
+        void shouldCleanUpBroadcastTimesOnSessionCleanup() {
+            // Arrange
+            String testGameId = "cleanup-game";
+            gameService.createNewGameWithPlayers(testGameId, 1L, 2L);
+            Game game = gameService.getGame(testGameId);
+
+            ReflectionTestUtils.invokeMethod(gameService, "throttledBroadcast", testGameId, game);
+
+            // Act
+            gameService.cleanupSession(testGameId);
+
+            // Assert
+            @SuppressWarnings("unchecked")
+            Map<String, Long> lastBroadcastTimes =
+                (Map<String, Long>) ReflectionTestUtils.getField(gameService, "lastBroadcastTimes");
+
+            assertThat(lastBroadcastTimes).doesNotContainKey(testGameId);
         }
     }
 }

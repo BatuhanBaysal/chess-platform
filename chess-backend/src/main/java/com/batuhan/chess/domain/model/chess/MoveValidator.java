@@ -21,19 +21,17 @@ public class MoveValidator {
         if (isCastlingAttempt(piece, piece.getPosition(), end)) {
             return canCastle(piece.getPosition(), end, board, piece.getColor());
         }
-
         if (isPromotionSituation(piece, end)) {
             return piece.isPseudoLegalMove(end, board) && isValidPromotionType(promotionType);
         }
-
         return piece.isPseudoLegalMove(end, board);
     }
 
     private boolean isValidPromotionType(String promotionType) {
-        if (promotionType == null || promotionType.trim().isEmpty()) {
+        if (promotionType == null || promotionType.isBlank()) {
             return true;
         }
-        String type = promotionType.toUpperCase();
+        String type = promotionType.toUpperCase().trim();
         return type.equals("QUEEN") || type.equals("ROOK") || type.equals("BISHOP") || type.equals("KNIGHT") ||
             type.equals("Q") || type.equals("R") || type.equals("B") || type.equals("N");
     }
@@ -51,9 +49,29 @@ public class MoveValidator {
         tempBoard.removePiece(start);
         Piece tempPiece = PieceFactory.createPiece(piece.getType(), piece.getColor(), end);
         tempPiece.setHasMoved(piece.hasMoved());
-
         tempBoard.setPieceAt(end, tempPiece);
         return !isInCheck(turn, tempBoard);
+    }
+
+    public boolean isInCheck(Color color, Board board) {
+        return board.findKing(color)
+            .map(k -> isSquareAttacked(k.getPosition(), color.opposite(), board))
+            .orElse(false);
+    }
+
+    public boolean isSquareAttacked(Position pos, Color attackerColor, Board board) {
+        return board.findPiecesByColor(attackerColor).stream().anyMatch(p -> {
+            if (p.getType() == PieceType.KING) {
+                return Math.abs(pos.file() - p.getPosition().file()) <= 1 &&
+                    Math.abs(pos.rank() - p.getPosition().rank()) <= 1;
+            }
+            if (p.getType() == PieceType.PAWN) {
+                int dir = (p.getColor() == Color.WHITE) ? 1 : -1;
+                return Math.abs(pos.file() - p.getPosition().file()) == 1 &&
+                    (pos.rank() - p.getPosition().rank()) == dir;
+            }
+            return p.isPseudoLegalMove(pos, board);
+        });
     }
 
     public boolean canCastle(Position start, Position end, Board board, Color turn) {
@@ -69,9 +87,8 @@ public class MoveValidator {
             }
         }
 
-        if (direction == -1) {
-            Position bSquare = new Position(1, start.rank());
-            if (board.getPiece(bSquare).isPresent()) return false;
+        if (direction == -1 && board.getPiece(new Position(1, start.rank())).isPresent()) {
+            return false;
         }
 
         Position rookPos = new Position((direction == 1) ? 7 : 0, start.rank());
@@ -100,29 +117,6 @@ public class MoveValidator {
 
     public boolean isCastlingAttempt(Piece piece, Position start, Position end) {
         return piece != null && piece.getType() == PieceType.KING && Math.abs(end.file() - start.file()) == 2;
-    }
-
-    public boolean isInCheck(Color color, Board board) {
-        return board.findKing(color)
-            .map(k -> isSquareAttacked(k.getPosition(), color.opposite(), board))
-            .orElse(false);
-    }
-
-    public boolean isSquareAttacked(Position pos, Color attackerColor, Board board) {
-        return board.findPiecesByColor(attackerColor).stream().anyMatch(p -> {
-            if (p.getType() == PieceType.KING) {
-                return Math.abs(pos.file() - p.getPosition().file()) <= 1 &&
-                    Math.abs(pos.rank() - p.getPosition().rank()) <= 1;
-            }
-
-            if (p.getType() == PieceType.PAWN) {
-                int dir = (p.getColor() == Color.WHITE) ? 1 : -1;
-                return Math.abs(pos.file() - p.getPosition().file()) == 1 &&
-                    (pos.rank() - p.getPosition().rank()) == dir;
-            }
-
-            return p.isPseudoLegalMove(pos, board);
-        });
     }
 
     public boolean isPromotionSituation(Piece piece, Position end) {

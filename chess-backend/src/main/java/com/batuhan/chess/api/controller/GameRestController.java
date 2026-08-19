@@ -5,6 +5,7 @@ import com.batuhan.chess.api.dto.game.GameResponse;
 import com.batuhan.chess.api.dto.game.HintResponse;
 import com.batuhan.chess.api.exception.ResourceNotFoundException;
 import com.batuhan.chess.application.service.game.GameService;
+import com.batuhan.chess.application.service.game.GameTimerService;
 import com.batuhan.chess.domain.model.chess.Game;
 import com.batuhan.chess.domain.model.chess.Position;
 import com.batuhan.chess.domain.model.history.GameEntity;
@@ -23,6 +24,7 @@ import java.util.List;
 public class GameRestController {
 
     private final GameService gameService;
+    private final GameTimerService timerService;
 
     @GetMapping("/{gameId}")
     public GameResponse getGame(@PathVariable String gameId) {
@@ -87,7 +89,7 @@ public class GameRestController {
         if (!game.getStatus().isFinished()) {
             gameService.processGameFinish(
                 gameId,
-                gameService.determineResult(game, game.getStatus()),
+                timerService.determineResult(game, game.getStatus()),
                 game.getStatus()
             );
             log.info("[FINISH] The game has been successfully saved to the database: {}", gameId);

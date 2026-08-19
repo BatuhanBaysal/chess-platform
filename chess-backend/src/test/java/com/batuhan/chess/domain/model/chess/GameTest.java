@@ -1,6 +1,5 @@
 package com.batuhan.chess.domain.model.chess;
 
-import com.batuhan.chess.api.dto.game.GameResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -41,7 +40,7 @@ class GameTest {
             Position end = new Position(4, 3);
 
             // Act
-            List<GameResponse.ExecutedMove> moves = game.makeMove(start, end, null);
+            List<Game.ExecutedMoveData> moves = game.makeMove(start, end, null);
 
             // Assert
             assertThat(moves).isNotEmpty();
@@ -56,7 +55,7 @@ class GameTest {
             Position end = new Position(4, 4);
 
             // Act
-            List<GameResponse.ExecutedMove> moves = game.makeMove(start, end, null);
+            List<Game.ExecutedMoveData> moves = game.makeMove(start, end, null);
 
             // Assert
             assertThat(moves).isEmpty();
@@ -80,7 +79,7 @@ class GameTest {
             game.getBoard().setPieceAt(new Position(4, 7), new King(Color.BLACK, new Position(4, 7)));
 
             // Act
-            List<GameResponse.ExecutedMove> moves = game.makeMove(kingStart, new Position(6, 0), null);
+            List<Game.ExecutedMoveData> moves = game.makeMove(kingStart, new Position(6, 0), null);
 
             // Assert
             assertThat(moves).hasSize(2);
@@ -98,7 +97,7 @@ class GameTest {
             game.makeMove(new Position(3, 6), new Position(3, 4), null);
 
             // Act
-            List<GameResponse.ExecutedMove> moves = game.makeMove(new Position(4, 4), new Position(3, 5), null);
+            List<Game.ExecutedMoveData> moves = game.makeMove(new Position(4, 4), new Position(3, 5), null);
 
             // Assert
             assertThat(moves).isNotEmpty();

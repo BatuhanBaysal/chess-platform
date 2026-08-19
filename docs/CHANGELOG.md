@@ -30,6 +30,20 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [2.1.0] - 2026-08-19
+
+### 🚀 Phase 20: Enterprise Refactoring & Production Readiness 🏗️ (v2.1.0)
+> **Note:** Elevating backend architecture through domain-driven vertical slicing, decoupling monolithic services, and ensuring real-time production reliability.
+
+- **2026-08-19:**
+    - **Enterprise Refactoring, Domain Modularization & Real-Time Synchronization (PR #124 | Issue #120):**
+        - Refactored the monolithic `GameService` God class into modular, single-responsibility components (`GameTimerService`, `GameSessionManager`, `GamePersistenceService`, `GameEngineService`, and `GameBroadcastManager`) adhering to the Single Responsibility Principle.
+        - Integrated `GameBroadcastManager` into the global timer loop to support continuous, throttled WebSocket updates (`150ms`) for active match timers and UI state synchronization.
+        - Stabilized real-time clock countdowns and prevented premature UI rendering resets or unexpected closures of private features like the AI assistant hint panel during active matches.
+        - Expanded comprehensive unit and integration test suites to validate refactored game domain services, concurrent move safety, and ACID compliance under simultaneous user interactions.
+
+---
+
 ## [2.0.0] - 2026-08-14
 
 ### 🚀 Phase 19: AI Integration & Training Ecosystem 🤖 (v2.0.0)

@@ -70,7 +70,6 @@ public class Board {
                     Piece copyPiece = createPieceCopy(original, pos);
                     copyPiece.setHasMoved(original.hasMoved());
                     newBoard.setPieceAt(pos, copyPiece);
-                    copyPiece.setHasMoved(original.hasMoved());
                 }
             }
         }

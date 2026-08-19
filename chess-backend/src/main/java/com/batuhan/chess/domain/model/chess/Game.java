@@ -1,15 +1,12 @@
 package com.batuhan.chess.domain.model.chess;
 
-import com.batuhan.chess.api.dto.game.GameResponse;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
 @Getter
-@Setter
 public class Game {
 
     private final Board board;
@@ -40,7 +37,28 @@ public class Game {
         this.boardHistory.add(board.toString() + "|WHITE");
     }
 
-    public synchronized List<GameResponse.ExecutedMove> makeMove(Position start, Position end, String promotionType) {
+    public synchronized void setWhitePlayerId(Long whitePlayerId) {
+        this.whitePlayerId = whitePlayerId;
+    }
+
+    public synchronized void setBlackPlayerId(Long blackPlayerId) {
+        this.blackPlayerId = blackPlayerId;
+    }
+
+    public synchronized void setRemainingTimes(long whiteMs, long blackMs) {
+        this.whiteRemainingTimeMs = Math.max(0, whiteMs);
+        this.blackRemainingTimeMs = Math.max(0, blackMs);
+    }
+
+    public synchronized void setStatus(GameStatus status) {
+        this.status = status;
+    }
+
+    public synchronized void setHalfMoveClock(int halfMoveClock) {
+        this.halfMoveClock = halfMoveClock;
+    }
+
+    public synchronized List<ExecutedMoveData> makeMove(Position start, Position end, String promotionType) {
         if (status.isFinished()) {
             return List.of();
         }
@@ -62,7 +80,7 @@ public class Game {
         boolean isEnPassant = validator.isEnPassantAttempt(piece, end, board);
         boolean isCapture = board.getPiece(end).isPresent() || isEnPassant;
 
-        List<GameResponse.ExecutedMove> executedMoves = prepareExecutedMoves(start, end, piece, promotionType);
+        List<ExecutedMoveData> executedMoves = prepareExecutedMoves(start, end, piece, promotionType);
         executor.execute(start, end, piece, promotionType, board, validator);
 
         updateDrawMetrics(piece, isCapture);
@@ -83,10 +101,6 @@ public class Game {
         return executedMoves;
     }
 
-    private void updateErrorMessage(Color color) {
-        this.lastMoveMessage = validator.isInCheck(color, board) ? "Invalid move: King in check!" : "Illegal move.";
-    }
-
     public synchronized List<Position> getLegalMovesForSquare(Position start) {
         return board.getPiece(start)
             .filter(p -> p.getColor() == currentTurn)
@@ -96,8 +110,8 @@ public class Game {
             .orElse(List.of());
     }
 
-    public void updateTime() {
-        if (lastMoveTimestamp == null) return;
+    public synchronized void updateTime() {
+        if (lastMoveTimestamp == null || status.isFinished()) return;
         long now = System.currentTimeMillis();
         long elapsed = now - lastMoveTimestamp;
 
@@ -109,7 +123,7 @@ public class Game {
         this.lastMoveTimestamp = now;
     }
 
-    public void startClock(int timeLimitMinutes) {
+    public synchronized void startClock(int timeLimitMinutes) {
         long timeLimitMs = (long) timeLimitMinutes * 60 * 1000;
         this.whiteRemainingTimeMs = timeLimitMs;
         this.blackRemainingTimeMs = timeLimitMs;
@@ -121,22 +135,26 @@ public class Game {
             (this.blackPlayerId != null && this.blackPlayerId.equals(-1L));
     }
 
-    private List<GameResponse.ExecutedMove> prepareExecutedMoves(Position start, Position end, Piece piece, String promotionType) {
-        List<GameResponse.ExecutedMove> moves = new ArrayList<>();
+    private void updateErrorMessage(Color color) {
+        this.lastMoveMessage = validator.isInCheck(color, board) ? "Invalid move: King in check!" : "Illegal move.";
+    }
+
+    private List<ExecutedMoveData> prepareExecutedMoves(Position start, Position end, Piece piece, String promotionType) {
+        List<ExecutedMoveData> moves = new ArrayList<>();
         String pieceName = (promotionType != null && validator.isPromotionSituation(piece, end))
             ? promotionType.toUpperCase() : piece.getType().name();
 
-        moves.add(new GameResponse.ExecutedMove(start.file(), start.rank(), end.file(), end.rank(), pieceName, null, null));
+        moves.add(new ExecutedMoveData(start.file(), start.rank(), end.file(), end.rank(), pieceName));
 
         if (validator.isCastlingAttempt(piece, start, end)) {
             int dir = (end.file() > start.file()) ? 1 : -1;
             int rookStartFile = (dir == 1) ? 7 : 0;
             int rookEndFile = (dir == 1) ? 5 : 3;
-            moves.add(new GameResponse.ExecutedMove(rookStartFile, start.rank(), rookEndFile, start.rank(), "ROOK", null, null));
+            moves.add(new ExecutedMoveData(rookStartFile, start.rank(), rookEndFile, start.rank(), "ROOK"));
         }
 
         if (validator.isEnPassantAttempt(piece, end, board)) {
-            moves.add(new GameResponse.ExecutedMove(end.file(), start.rank(), -1, -1, "NONE", null, null));
+            moves.add(new ExecutedMoveData(end.file(), start.rank(), -1, -1, "NONE"));
         }
         return moves;
     }
@@ -171,4 +189,6 @@ public class Game {
     }
 
     public record Move(Position start, Position end, Piece piece) {}
+
+    public record ExecutedMoveData(int startFile, int startRank, int endFile, int endRank, String pieceType) {}
 }

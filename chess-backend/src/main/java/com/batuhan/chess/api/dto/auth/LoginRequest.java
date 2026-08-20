@@ -3,6 +3,9 @@ package com.batuhan.chess.api.dto.auth;
 import jakarta.validation.constraints.NotBlank;
 
 public record LoginRequest(
-    @NotBlank String username,
-    @NotBlank String password
+    @NotBlank(message = "Username or Email is required")
+    String usernameOrEmail,
+
+    @NotBlank(message = "Password is required")
+    String password
 ) {}

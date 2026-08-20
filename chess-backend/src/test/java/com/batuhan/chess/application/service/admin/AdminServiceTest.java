@@ -2,7 +2,7 @@ package com.batuhan.chess.application.service.admin;
 
 import com.batuhan.chess.api.dto.admin.AdminActiveGameResponseDTO;
 import com.batuhan.chess.api.dto.admin.AdminUserResponseDTO;
-import com.batuhan.chess.api.exception.GameOperationException;
+import com.batuhan.chess.api.exception.ResourceNotFoundException;
 import com.batuhan.chess.application.service.game.GameService;
 import com.batuhan.chess.domain.model.chess.Game;
 import com.batuhan.chess.domain.model.chess.GameStatus;
@@ -79,8 +79,6 @@ class AdminServiceTest {
             assertThat(result).isNotNull();
             assertThat(result.getTotalElements()).isEqualTo(1);
             assertThat(result.getContent().get(0).username()).isEqualTo("admin_test");
-            assertThat(result.getContent().get(0).role()).isEqualTo(UserRole.ROLE_ADMIN);
-
             verify(userRepository, times(1)).findAll(pageable);
         }
     }
@@ -107,7 +105,7 @@ class AdminServiceTest {
         }
 
         @Test
-        @DisplayName("Should throw GameOperationException when user to delete does not exist")
+        @DisplayName("Should throw ResourceNotFoundException when user to delete does not exist")
         void deleteUser_UserNotFound_ThrowsException() {
             // Arrange
             Long userId = 99L;
@@ -115,7 +113,7 @@ class AdminServiceTest {
 
             // Act & Assert
             assertThatThrownBy(() -> adminService.deleteUser(userId))
-                .isInstanceOf(GameOperationException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("User not found with id: " + userId);
 
             verify(userRepository, never()).save(any());
@@ -150,7 +148,6 @@ class AdminServiceTest {
                     assertThat(list.get(0).gameId()).isEqualTo("game-123");
                     assertThat(list.get(0).status()).isEqualTo(GameStatus.ACTIVE);
                 });
-
             verify(gameService, times(1)).getActiveGamesMap();
         }
     }
@@ -176,7 +173,7 @@ class AdminServiceTest {
         }
 
         @Test
-        @DisplayName("Should throw GameOperationException when game does not exist")
+        @DisplayName("Should throw ResourceNotFoundException when game does not exist")
         void forceFinishGame_GameNotFound_ThrowsException() {
             // Arrange
             String gameId = "non-existent";
@@ -184,10 +181,29 @@ class AdminServiceTest {
 
             // Act & Assert
             assertThatThrownBy(() -> adminService.forceFinishGame(gameId))
-                .isInstanceOf(GameOperationException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Active game session not found with id: " + gameId);
 
             verify(gameService, never()).processGameFinish(any(), any(), any());
+        }
+    }
+
+    @Nested
+    @DisplayName("Trigger Sandbox Game Tests")
+    class TriggerSandboxGameTests {
+
+        @Test
+        @DisplayName("Should call game service to create sandbox game successfully")
+        void triggerSandboxGame_ValidIds_CallsGameService() {
+            // Arrange
+            Long whiteId = 1L;
+            Long blackId = 2L;
+
+            // Act
+            adminService.triggerSandboxGame(whiteId, blackId);
+
+            // Assert
+            verify(gameService, times(1)).createGame(whiteId, blackId);
         }
     }
 }

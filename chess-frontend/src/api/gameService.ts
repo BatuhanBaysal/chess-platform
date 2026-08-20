@@ -16,6 +16,8 @@ export interface ExecutedMove {
     toFile: number;
     toRank: number;
     pieceType: string;
+    evaluation?: number;
+    moveQuality?: string;
 }
 
 export interface GameResponse {
@@ -49,9 +51,12 @@ export const loginAsGuest = async () => {
     return (await api.post('/api/auth/guest')).data;
 };
 
-export const createLobby = async (userId: number, username: string, timeControl: number) => {
-    const response = await api.post(`/api/lobby/create`, null, {
-        params: { userId, username, time: timeControl }
+export const createLobby = async (userId: number, username: string, timeControl: number, theme: string) => {
+    const response = await api.post(`/api/lobby/create`, {
+        userId,
+        username,
+        time: timeControl,
+        theme
     });
     return response.data;
 };
@@ -70,9 +75,12 @@ export const getEngineHint = async (gameId: string, depth: number = 10): Promise
     return response.data;
 };
 
-export const joinRoom = async (roomId: string, userId: number, username: string) => {
-    const response = await api.post(`/api/lobby/join`, null, {
-        params: { roomId, userId, username }
+export const joinRoom = async (roomId: string, userId: number, username: string, theme: string) => {
+    const response = await api.post(`/api/lobby/join`, {
+        roomId,
+        userId,
+        username,
+        theme
     });
     return response.data;
 };

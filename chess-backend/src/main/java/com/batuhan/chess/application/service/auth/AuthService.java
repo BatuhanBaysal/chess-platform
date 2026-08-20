@@ -53,9 +53,9 @@ public class AuthService {
 
     @RateLimiter(name = "authService", fallbackMethod = "loginFallback")
     public AuthResponse login(LoginRequest request) {
-        var user = userRepository.findByUsername(request.username())
-            .or(() -> userRepository.findByEmail(request.username()))
-            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + request.username()));
+        var user = userRepository.findByUsername(request.usernameOrEmail())
+            .or(() -> userRepository.findByEmail(request.usernameOrEmail()))
+            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + request.usernameOrEmail()));
 
         authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(
@@ -117,7 +117,7 @@ public class AuthService {
 
     @SuppressWarnings("unused")
     public AuthResponse loginFallback(LoginRequest request, Throwable t) {
-        log.warn("Login rate limit exceeded for user {}: {}", request.username(), t.getMessage());
+        log.warn("Login rate limit exceeded for user {}: {}", request.usernameOrEmail(), t.getMessage());
         throw new GameOperationException("Too many login attempts. Please try again later.");
     }
 

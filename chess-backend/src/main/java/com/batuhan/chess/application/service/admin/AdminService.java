@@ -3,7 +3,7 @@ package com.batuhan.chess.application.service.admin;
 import com.batuhan.chess.api.config.audit.AuditableAction;
 import com.batuhan.chess.api.dto.admin.AdminActiveGameResponseDTO;
 import com.batuhan.chess.api.dto.admin.AdminUserResponseDTO;
-import com.batuhan.chess.api.exception.GameOperationException;
+import com.batuhan.chess.api.exception.ResourceNotFoundException;
 import com.batuhan.chess.application.service.game.GameService;
 import com.batuhan.chess.domain.model.chess.Game;
 import com.batuhan.chess.domain.model.chess.GameStatus;
@@ -31,7 +31,6 @@ public class AdminService {
     @Transactional(readOnly = true)
     public Page<AdminUserResponseDTO> getAllUsers(Pageable pageable) {
         log.info("Admin Service: Fetching paginated system users (Page: {}, Size: {})", pageable.getPageNumber(), pageable.getPageSize());
-
         return userRepository.findAll(pageable)
             .map(user -> AdminUserResponseDTO.builder()
                 .id(user.getId())
@@ -51,11 +50,9 @@ public class AdminService {
     public void deleteUser(Long id) {
         log.warn("Admin Service: Execution of soft-delete account termination for user ID: {}", id);
         UserEntity user = userRepository.findById(id)
-            .orElseThrow(() -> new GameOperationException("User not found with id: " + id));
-
+            .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         user.setActive(false);
         userRepository.save(user);
-
         log.info("Admin Service: Successfully deactivated (soft-deleted) user account: {}", user.getUsername());
     }
 
@@ -63,7 +60,6 @@ public class AdminService {
     public List<AdminActiveGameResponseDTO> getActiveGames() {
         log.info("Admin Service: Inspecting in-memory active game sessions for ghost session monitoring");
         Map<String, Game> activeGamesMap = gameService.getActiveGamesMap();
-
         return activeGamesMap.entrySet().stream()
             .map(entry -> {
                 String gameId = entry.getKey();
@@ -84,13 +80,20 @@ public class AdminService {
     @AuditableAction(actionType = "FORCE_FINISH_GAME")
     public void forceFinishGame(String gameId) {
         log.warn("Admin Service: Forcing emergency termination routine for game session: {}", gameId);
-
         Game game = gameService.getGame(gameId);
         if (game == null) {
-            throw new GameOperationException("Active game session not found with id: " + gameId);
+            throw new ResourceNotFoundException("Active game session not found with id: " + gameId);
         }
 
         gameService.processGameFinish(gameId, GameResult.DRAW, GameStatus.ABANDONED);
         log.info("Admin Service: Successfully forced finish/abandonment for game session: {}", gameId);
+    }
+
+    @Transactional
+    @AuditableAction(actionType = "TRIGGER_SANDBOX_GAME")
+    public void triggerSandboxGame(Long whiteId, Long blackId) {
+        log.warn("Admin Service: Triggering sandbox game creation between whiteId: {} and blackId: {}", whiteId, blackId);
+        gameService.createGame(whiteId, blackId);
+        log.info("Admin Service: Sandbox game successfully initialized.");
     }
 }

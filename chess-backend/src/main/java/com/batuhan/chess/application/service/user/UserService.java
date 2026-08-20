@@ -6,6 +6,7 @@ import com.batuhan.chess.api.dto.user.UpdateProfileRequest;
 import com.batuhan.chess.api.dto.user.UserResponseDTO;
 import com.batuhan.chess.api.exception.EmailAlreadyExistsException;
 import com.batuhan.chess.api.exception.GameOperationException;
+import com.batuhan.chess.api.exception.ResourceNotFoundException;
 import com.batuhan.chess.api.exception.UserAlreadyExistsException;
 import com.batuhan.chess.domain.model.user.UserEntity;
 import com.batuhan.chess.domain.repository.UserRepository;
@@ -31,7 +32,7 @@ public class UserService {
     public UserEntity getCurrentUserEntity() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByUsername(username)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
     }
 
     public UserResponseDTO getProfile() {

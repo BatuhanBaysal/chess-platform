@@ -1,7 +1,7 @@
 package com.batuhan.chess.application.service.game;
 
-import com.batuhan.chess.application.service.game.LobbyService.GameRoom;
-import com.batuhan.chess.application.service.game.LobbyService.MatchFoundMessage;
+import com.batuhan.chess.api.dto.lobby.GameRoomResponse;
+import com.batuhan.chess.api.dto.lobby.MatchFoundMessage;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -15,9 +15,13 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 /**
@@ -48,19 +52,22 @@ class LobbyServiceTest {
             // Arrange
             Long userId = 1L;
             String username = "batuhan";
+            String theme = "classic";
 
             // Act
-            String roomId = lobbyService.createRoom(userId, username, 10);
+            String roomId = lobbyService.createRoom(userId, username, 10, theme);
 
             // Assert
             assertThat(roomId).isNotBlank().hasSize(8);
             assertThat(lobbyService.getAllActiveRooms()).hasSize(1);
 
-            GameRoom room = lobbyService.getRoom(roomId);
-            assertThat(room).isNotNull()
-                .satisfies(r -> {
-                    assertThat(r.getHostId()).isEqualTo(userId);
-                    assertThat(r.getStatus()).isEqualTo("WAITING");
+            Optional<GameRoomResponse> roomOpt = lobbyService.getRoom(roomId);
+            assertThat(roomOpt).isPresent()
+                .satisfies(opt -> {
+                    GameRoomResponse r = opt.get();
+                    assertThat(r.hostId()).isEqualTo(userId);
+                    assertThat(r.status()).isEqualTo("WAITING");
+                    assertThat(r.theme()).isEqualTo(theme);
                 });
         }
 
@@ -68,13 +75,13 @@ class LobbyServiceTest {
         @DisplayName("Should remove an existing room from active registry")
         void shouldRemoveRoomSuccessfully() {
             // Arrange
-            String roomId = lobbyService.createRoom(1L, "user1", 5);
+            String roomId = lobbyService.createRoom(1L, "user1", 5, "classic");
 
             // Act
             lobbyService.removeRoom(roomId);
 
             // Assert
-            assertThat(lobbyService.getRoom(roomId)).isNull();
+            assertThat(lobbyService.getRoom(roomId)).isEmpty();
         }
     }
 
@@ -88,13 +95,11 @@ class LobbyServiceTest {
             // Arrange
             Long hostId = 1L;
             Long guestId = 2L;
-            String roomId = lobbyService.createRoom(hostId, "hostUser", 10);
+            String roomId = lobbyService.createRoom(hostId, "hostUser", 10, "classic");
 
-            // Act
-            boolean result = lobbyService.joinRoom(roomId, guestId, "guestUser");
+            // Act & Assert
+            lobbyService.joinRoom(roomId, guestId, "guestUser");
 
-            // Assert
-            assertThat(result).isTrue();
             verify(gameService).createNewGameWithPlayers(roomId, hostId, guestId);
 
             ArgumentCaptor<MatchFoundMessage> messageCaptor = ArgumentCaptor.forClass(MatchFoundMessage.class);
@@ -102,34 +107,35 @@ class LobbyServiceTest {
 
             List<MatchFoundMessage> messages = messageCaptor.getAllValues();
             assertThat(messages).hasSize(2)
-                .extracting(MatchFoundMessage::getColor)
+                .extracting(MatchFoundMessage::color)
                 .containsExactlyInAnyOrder("WHITE", "BLACK");
+
+            assertThat(messages)
+                .extracting(MatchFoundMessage::theme)
+                .containsOnly("classic");
         }
 
         @Test
-        @DisplayName("Should prevent a player from joining their own game room")
+        @DisplayName("Should throw IllegalArgumentException when a player tries to join their own game room")
         void shouldFailWhenHostJoinsSelfRoom() {
             // Arrange
             Long hostId = 1L;
-            String roomId = lobbyService.createRoom(hostId, "hostUser", 10);
+            String roomId = lobbyService.createRoom(hostId, "hostUser", 10, "classic");
 
-            // Act
-            boolean result = lobbyService.joinRoom(roomId, hostId, "hostUser");
+            // Act & Assert
+            assertThatThrownBy(() -> lobbyService.joinRoom(roomId, hostId, "hostUser"))
+                .isInstanceOf(IllegalArgumentException.class);
 
-            // Assert
-            assertThat(result).isFalse();
             verifyNoInteractions(gameService);
             verify(messagingTemplate, never()).convertAndSend(anyString(), any(Object.class));
         }
 
         @Test
-        @DisplayName("Should return false when attempting to join a non-existent room")
+        @DisplayName("Should throw IllegalStateException when attempting to join a non-existent room")
         void shouldFailForInvalidRoomId() {
-            // Act
-            boolean result = lobbyService.joinRoom("invalid-id", 2L, "guestUser");
-
-            // Assert
-            assertThat(result).isFalse();
+            // Act & Assert
+            assertThatThrownBy(() -> lobbyService.joinRoom("invalid-id", 2L, "guestUser"))
+                .isInstanceOf(IllegalStateException.class);
         }
     }
 
@@ -141,18 +147,18 @@ class LobbyServiceTest {
         @DisplayName("Should only expose rooms with WAITING status to the lobby list")
         void shouldFilterOnlyWaitingRooms() {
             // Arrange
-            String room1 = lobbyService.createRoom(1L, "user1", 5);
-            String room2 = lobbyService.createRoom(2L, "user2", 10);
+            String room1 = lobbyService.createRoom(1L, "user1", 5, "classic");
+            String room2 = lobbyService.createRoom(2L, "user2", 10, "modern");
             lobbyService.joinRoom(room1, 3L, "user3");
 
             // Act
-            Collection<GameRoom> activeRooms = lobbyService.getAllActiveRooms();
+            Collection<GameRoomResponse> activeRooms = lobbyService.getAllActiveRooms();
 
             // Assert
             assertThat(activeRooms)
                 .hasSize(1)
                 .first()
-                .extracting(GameRoom::getRoomId)
+                .extracting(GameRoomResponse::roomId)
                 .isEqualTo(room2);
         }
     }
@@ -166,14 +172,12 @@ class LobbyServiceTest {
         void shouldCancelRoomAndBroadcastEventSuccessfully() {
             // Arrange
             Long hostId = 1L;
-            String roomId = lobbyService.createRoom(hostId, "hostUser", 10);
+            String roomId = lobbyService.createRoom(hostId, "hostUser", 10, "classic");
 
-            // Act
-            boolean result = lobbyService.cancelRoom(roomId, hostId);
+            // Act & Assert
+            lobbyService.cancelRoom(roomId, hostId);
 
-            // Assert
-            assertThat(result).isTrue();
-            assertThat(lobbyService.getRoom(roomId)).isNull();
+            assertThat(lobbyService.getRoom(roomId)).isEmpty();
             verify(messagingTemplate).convertAndSend(eq("/topic/lobby"), argThat((Object map) -> {
                 if (map instanceof Map<?, ?> m) {
                     return "LOBBY_CANCELLED".equals(m.get("type")) && roomId.equals(m.get("roomId"));
@@ -183,19 +187,18 @@ class LobbyServiceTest {
         }
 
         @Test
-        @DisplayName("Should fail to cancel room when requested by an unauthorized user who is not the host")
+        @DisplayName("Should throw IllegalStateException to cancel room when requested by an unauthorized user")
         void shouldFailWhenUnauthorizedUserTriesToCancelRoom() {
             // Arrange
             Long hostId = 1L;
             Long unauthorizedUserId = 99L;
-            String roomId = lobbyService.createRoom(hostId, "hostUser", 10);
+            String roomId = lobbyService.createRoom(hostId, "hostUser", 10, "classic");
 
-            // Act
-            boolean result = lobbyService.cancelRoom(roomId, unauthorizedUserId);
+            // Act & Assert
+            assertThatThrownBy(() -> lobbyService.cancelRoom(roomId, unauthorizedUserId))
+                .isInstanceOf(IllegalStateException.class);
 
-            // Assert
-            assertThat(result).isFalse();
-            assertThat(lobbyService.getRoom(roomId)).isNotNull();
+            assertThat(lobbyService.getRoom(roomId)).isPresent();
             verify(messagingTemplate, never()).convertAndSend(anyString(), any(Object.class));
         }
 
@@ -204,14 +207,13 @@ class LobbyServiceTest {
         void shouldPreventJoiningCancelledOrExpiredRoom() {
             // Arrange
             Long hostId = 1L;
-            String roomId = lobbyService.createRoom(hostId, "hostUser", 10);
+            String roomId = lobbyService.createRoom(hostId, "hostUser", 10, "classic");
             lobbyService.cancelRoom(roomId, hostId);
 
-            // Act
-            boolean result = lobbyService.joinRoom(roomId, 2L, "guestUser");
+            // Act & Assert
+            assertThatThrownBy(() -> lobbyService.joinRoom(roomId, 2L, "guestUser"))
+                .isInstanceOf(IllegalStateException.class);
 
-            // Assert
-            assertThat(result).isFalse();
             verifyNoInteractions(gameService);
         }
     }

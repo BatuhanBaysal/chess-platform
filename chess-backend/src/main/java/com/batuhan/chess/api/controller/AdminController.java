@@ -3,8 +3,8 @@ package com.batuhan.chess.api.controller;
 import com.batuhan.chess.api.dto.admin.AdminActiveGameResponseDTO;
 import com.batuhan.chess.api.dto.admin.AdminUserResponseDTO;
 import com.batuhan.chess.application.service.admin.AdminService;
-import com.batuhan.chess.application.service.game.GameService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,53 +20,75 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
-@Tag(name = "Admin Management", description = "Centralized administrative and operational oversight operations")
+@PreAuthorize("hasRole('ADMIN')")
+@Tag(name = "Admin Management", description = "Administrative operations for platform oversight and system maintenance.")
 public class AdminController {
 
     private final AdminService adminService;
-    private final GameService gameService;
 
-    @Operation(summary = "Get paginated registered users", description = "Retrieves a paginated list of platform users with administrative metrics.")
+    @Operation(
+        summary = "Get paginated registered users",
+        description = "Retrieves a paginated list of all platform users for audit and management purposes."
+    )
+    @ApiResponse(responseCode = "200", description = "User list retrieved successfully")
     @GetMapping("/users")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<AdminUserResponseDTO>> getAllUsers(Pageable pageable) {
-        log.info("Admin action: Fetching paginated users");
-        return ResponseEntity.ok(adminService.getAllUsers(pageable));
+        log.info("ADMIN_ACTION: Request received to fetch paginated users - Page: {}, Size: {}",
+            pageable.getPageNumber(), pageable.getPageSize());
+        Page<AdminUserResponseDTO> users = adminService.getAllUsers(pageable);
+        log.info("ADMIN_ACTION: Successfully retrieved {} users", users.getTotalElements());
+        return ResponseEntity.ok(users);
     }
 
-    @Operation(summary = "Delete user account", description = "Performs an administrative override to permanently remove a user account by ID.")
+    @Operation(
+        summary = "Deactivate user account",
+        description = "Performs a soft-delete by deactivating a user account. Use with extreme caution."
+    )
+    @ApiResponse(responseCode = "204", description = "User account deactivated successfully")
     @DeleteMapping("/users/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        log.warn("Admin action: Deleting user account with id: {}", id);
+        log.warn("ADMIN_ACTION: Administrative request to DEACTIVATE user account ID: {}", id);
         adminService.deleteUser(id);
+        log.info("ADMIN_ACTION: User account ID: {} has been successfully deactivated", id);
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Get all active game sessions", description = "Monitors real-time active games from memory to detect and troubleshoot ghost sessions.")
+    @Operation(
+        summary = "Get all active game sessions",
+        description = "Retrieves all currently active game sessions held in memory for monitoring purposes."
+    )
+    @ApiResponse(responseCode = "200", description = "Active game list retrieved successfully")
     @GetMapping("/games/active")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<AdminActiveGameResponseDTO>> getActiveGames() {
-        log.info("Admin action: Fetching all active game sessions");
-        return ResponseEntity.ok(adminService.getActiveGames());
+        log.info("ADMIN_ACTION: Fetching all active game sessions from memory");
+        List<AdminActiveGameResponseDTO> activeGames = adminService.getActiveGames();
+        log.info("ADMIN_ACTION: Retrieved {} active game sessions", activeGames.size());
+        return ResponseEntity.ok(activeGames);
     }
 
-    @Operation(summary = "Force finish an active game", description = "Triggers an emergency termination and abandonment routine for stale or ghost game sessions.")
+    @Operation(
+        summary = "Force finish an active game",
+        description = "Emergency termination of a game session to handle ghost or stale connections."
+    )
+    @ApiResponse(responseCode = "204", description = "Game session terminated successfully")
     @PostMapping("/games/{gameId}/force-finish")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> forceFinishGame(@PathVariable String gameId) {
-        log.warn("Admin action: Forcing finish/abandonment for game session: {}", gameId);
+        log.warn("ADMIN_ACTION: EMERGENCY request to force-finish game session ID: {}", gameId);
         adminService.forceFinishGame(gameId);
+        log.info("ADMIN_ACTION: Game session ID: {} has been terminated by administrator", gameId);
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Developer sandbox trigger", description = "Triggers custom test scenarios for development purposes by instantiating a new active game.")
+    @Operation(
+        summary = "Developer sandbox trigger",
+        description = "Triggers a new game instance between two specified users for diagnostic or sandbox testing."
+    )
+    @ApiResponse(responseCode = "200", description = "Sandbox game instantiated successfully")
     @PostMapping("/sandbox/trigger-game")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> triggerSandboxGame(@RequestParam Long whiteId, @RequestParam Long blackId) {
-        log.warn("Admin action: Developer sandbox triggered. Creating test game between white ID: {} and black ID: {}", whiteId, blackId);
-        gameService.createGame(whiteId, blackId);
+        log.warn("ADMIN_ACTION: Sandbox trigger requested by admin for whiteId: {} and blackId: {}", whiteId, blackId);
+        adminService.triggerSandboxGame(whiteId, blackId);
+        log.info("ADMIN_ACTION: Sandbox game successfully created between {} and {}", whiteId, blackId);
         return ResponseEntity.ok().build();
     }
 }

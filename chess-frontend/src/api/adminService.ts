@@ -4,6 +4,10 @@ export interface AdminUserResponseDTO {
     id: number;
     username: string;
     email: string;
+    eloRating: number;     
+    totalWins: number;
+    totalLosses: number;  
+    totalDraws: number;
     role: string;
     createdAt: string;
 }

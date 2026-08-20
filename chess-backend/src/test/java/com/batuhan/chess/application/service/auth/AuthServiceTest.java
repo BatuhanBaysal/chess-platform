@@ -3,8 +3,6 @@ package com.batuhan.chess.application.service.auth;
 import com.batuhan.chess.api.dto.auth.AuthResponse;
 import com.batuhan.chess.api.dto.auth.LoginRequest;
 import com.batuhan.chess.api.dto.auth.RegisterRequest;
-import com.batuhan.chess.application.service.auth.AuthService;
-import com.batuhan.chess.application.service.auth.JwtService;
 import com.batuhan.chess.domain.model.user.UserEntity;
 import com.batuhan.chess.domain.model.user.UserRole;
 import com.batuhan.chess.domain.repository.UserRepository;
@@ -65,7 +63,6 @@ class AuthServiceTest {
             .username("batuhan")
             .email("batuhan@chess.com")
             .password("encodedPassword")
-            .role(UserRole.ROLE_USER)
             .role(UserRole.ROLE_USER)
             .eloRating(1200)
             .build();
@@ -129,7 +126,7 @@ class AuthServiceTest {
         @DisplayName("Should return AuthResponse with token when login credentials are valid")
         void shouldReturnAuthResponseOnValidLogin() {
             // Arrange
-            when(userRepository.findByUsername(loginRequest.username())).thenReturn(Optional.of(testUser));
+            when(userRepository.findByUsername(loginRequest.usernameOrEmail())).thenReturn(Optional.of(testUser));
             when(jwtService.generateToken(any(UserDetails.class))).thenReturn("mock-jwt-token");
 
             // Act
@@ -150,12 +147,12 @@ class AuthServiceTest {
         @DisplayName("Should throw exception and abort token generation if user does not exist")
         void shouldThrowExceptionWhenUserNotFound() {
             // Arrange
-            when(userRepository.findByUsername(loginRequest.username())).thenReturn(Optional.empty());
+            when(userRepository.findByUsername(loginRequest.usernameOrEmail())).thenReturn(Optional.empty());
 
             // Act & Assert
             assertThatThrownBy(() -> authService.login(loginRequest))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessage("User not found: " + loginRequest.username());
+                .hasMessage("User not found: " + loginRequest.usernameOrEmail());
 
             verify(jwtService, never()).generateToken(any());
         }

@@ -92,7 +92,7 @@ function App() {
   }, [game?.gameId, gameConfig.roomId]);
 
   const handleLogin = async (u: string, p: string) => {
-    await login({ username: u, password: p });
+    await login({ usernameOrEmail: u, password: p });
   };
 
   const handleRegister = async (u: string, p: string, e: string) => {

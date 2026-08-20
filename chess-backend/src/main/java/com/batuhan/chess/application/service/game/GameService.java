@@ -1,7 +1,9 @@
 package com.batuhan.chess.application.service.game;
 
+import com.batuhan.chess.api.dto.game.GameHistory;
 import com.batuhan.chess.api.dto.game.GameResponse;
 import com.batuhan.chess.api.dto.game.HintResponse;
+import com.batuhan.chess.api.dto.lobby.GameRoomResponse;
 import com.batuhan.chess.domain.model.chess.*;
 import com.batuhan.chess.domain.model.history.GameEntity;
 import com.batuhan.chess.domain.model.history.GameResult;
@@ -26,6 +28,8 @@ public class GameService {
     private final StockfishService stockfishService;
     private final GameBroadcastManager broadcastManager;
 
+    private static final int DEFAULT_TIME_LIMIT = 10;
+
     public String createGame(Long whiteId, Long blackId) {
         String gameId = UUID.randomUUID().toString().substring(0, 8);
         createNewGameWithPlayers(gameId, whiteId, blackId);
@@ -38,7 +42,7 @@ public class GameService {
         Long whiteId = playAsWhite ? humanUserId : -1L;
         Long blackId = playAsWhite ? -1L : humanUserId;
 
-        createNewGameWithPlayers(gameId, whiteId, blackId, timeLimit != null ? timeLimit : 10);
+        createNewGameWithPlayers(gameId, whiteId, blackId, timeLimit != null ? timeLimit : DEFAULT_TIME_LIMIT);
 
         if (!playAsWhite) {
             Game game = sessionManager.getGame(gameId);
@@ -51,8 +55,10 @@ public class GameService {
     }
 
     public void createNewGameWithPlayers(String roomId, Long whiteId, Long blackId) {
-        LobbyService.GameRoom room = lobbyService.getRoom(roomId);
-        int timeLimit = (room != null) ? room.getTimeLimit() : 10;
+        int timeLimit = lobbyService.getRoom(roomId)
+            .map(GameRoomResponse::timeLimit)
+            .orElse(DEFAULT_TIME_LIMIT);
+
         createNewGameWithPlayers(roomId, whiteId, blackId, timeLimit);
     }
 
@@ -82,8 +88,9 @@ public class GameService {
         }
 
         if (bothReady && game.getLastMoveTimestamp() == null) {
-            LobbyService.GameRoom room = lobbyService.getRoom(gameId);
-            int timeLimit = (room != null) ? room.getTimeLimit() : 10;
+            int timeLimit = lobbyService.getRoom(gameId)
+                .map(GameRoomResponse::timeLimit)
+                .orElse(DEFAULT_TIME_LIMIT);
 
             game.startClock(timeLimit);
             timerService.scheduleTimeoutTask(gameId, timeLimit * 60 * 1000L);
@@ -107,6 +114,23 @@ public class GameService {
 
     public void processGameFinish(String gameId, GameResult result, GameStatus finishMethod) {
         persistenceService.processGameFinish(gameId, result, finishMethod);
+    }
+
+    public boolean finishGameIfActive(String gameId) {
+        Game game = sessionManager.getGame(gameId);
+        if (game == null) {
+            return false;
+        }
+
+        if (!game.getStatus().isFinished()) {
+            persistenceService.processGameFinish(
+                gameId,
+                timerService.determineResult(game, game.getStatus()),
+                game.getStatus()
+            );
+            log.info("GAME_ACTION: Game successfully finished and saved to database: {}", gameId);
+        }
+        return true;
     }
 
     @Transactional
@@ -147,8 +171,28 @@ public class GameService {
         return persistenceService.getGameHistory(userId);
     }
 
+    @Transactional(readOnly = true)
+    public List<GameHistory> getPlayerGameHistoryDtos(Long userId) {
+        List<GameEntity> games = persistenceService.getGameHistory(userId);
+
+        return games.stream().map(game -> GameHistory.builder()
+            .id(game.getId())
+            .whitePlayerId(game.getWhitePlayer() != null ? game.getWhitePlayer().getId() : null)
+            .whitePlayerName(game.getWhitePlayer() != null ? game.getWhitePlayer().getUsername() : "Guest")
+            .blackPlayerId(game.getBlackPlayer() != null ? game.getBlackPlayer().getId() : null)
+            .blackPlayerName(game.getBlackPlayer() != null ? game.getBlackPlayer().getUsername() : "Guest")
+            .result(game.getResult())
+            .finishMethod(game.getFinishMethod())
+            .playedAt(game.getPlayedAt())
+            .build()
+        ).toList();
+    }
+
     public GameResponse convertToResponse(String gameId, Game game) {
-        LobbyService.GameRoom room = lobbyService.getRoom(gameId);
+        int timeLimit = lobbyService.getRoom(gameId)
+            .map(GameRoomResponse::timeLimit)
+            .orElse(DEFAULT_TIME_LIMIT);
+
         List<GameResponse.ExecutedMove> lastMovesList = new ArrayList<>();
         List<String> history = game.getMoveHistory();
 
@@ -190,7 +234,7 @@ public class GameService {
             isGameStarted(gameId),
             game.getWhiteRemainingTimeMs(),
             game.getBlackRemainingTimeMs(),
-            (room != null) ? room.getTimeLimit() : 10
+            timeLimit
         );
     }
 

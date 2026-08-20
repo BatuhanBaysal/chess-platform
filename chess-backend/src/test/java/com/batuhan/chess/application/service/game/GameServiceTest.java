@@ -17,6 +17,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -71,7 +72,7 @@ class GameServiceTest {
             // Arrange
             Long whitePlayerId = 1L;
             Long blackPlayerId = 2L;
-            when(lobbyService.getRoom(anyString())).thenReturn(null);
+            when(lobbyService.getRoom(anyString())).thenReturn(Optional.empty());
 
             // Act
             String gameId = gameService.createGame(whitePlayerId, blackPlayerId);

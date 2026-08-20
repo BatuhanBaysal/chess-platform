@@ -4,7 +4,6 @@ import com.batuhan.chess.api.config.JwtAuthenticationFilter;
 import com.batuhan.chess.api.dto.admin.AdminActiveGameResponseDTO;
 import com.batuhan.chess.api.dto.admin.AdminUserResponseDTO;
 import com.batuhan.chess.application.service.admin.AdminService;
-import com.batuhan.chess.application.service.game.GameService;
 import com.batuhan.chess.domain.model.chess.GameStatus;
 import com.batuhan.chess.domain.model.user.UserRole;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -52,12 +51,9 @@ class AdminControllerTest {
     @MockitoBean
     private AdminService adminService;
 
-    @MockitoBean
-    private GameService gameService;
-
     @BeforeEach
     void setUp() {
-        reset(adminService, gameService);
+        reset(adminService);
     }
 
     @Nested
@@ -169,7 +165,7 @@ class AdminControllerTest {
             // Arrange
             Long whiteId = 1L;
             Long blackId = 2L;
-            when(gameService.createGame(whiteId, blackId)).thenReturn(null);
+            doNothing().when(adminService).triggerSandboxGame(whiteId, blackId);
 
             // Act & Assert
             mockMvc.perform(post("/api/admin/sandbox/trigger-game")
@@ -178,7 +174,7 @@ class AdminControllerTest {
                     .with(csrf()))
                 .andExpect(status().isOk());
 
-            verify(gameService, times(1)).createGame(whiteId, blackId);
+            verify(adminService, times(1)).triggerSandboxGame(whiteId, blackId);
         }
     }
 }

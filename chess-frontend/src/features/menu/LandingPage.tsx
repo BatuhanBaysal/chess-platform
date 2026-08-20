@@ -135,8 +135,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
     try {
       let currentUser = user || await loginAsGuest();
       if (currentUser?.id) {
-        const res = await api.post('/api/lobby/create', null, {
-          params: { userId: currentUser.id, username: currentUser.username, time: selectedTime, theme: selectedTheme }
+        const res = await api.post('/api/lobby/create', {
+          userId: currentUser.id,
+          username: currentUser.username,
+          time: selectedTime,
+          theme: selectedTheme
         });
         const roomId = typeof res.data === 'string' ? res.data : (res.data.roomId || res.data.id);
         if (roomId) setWaitingRoomId(roomId); 
@@ -152,9 +155,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
     try {
       let currentUser = user || await loginAsGuest();
       if (currentUser?.id) {
-        await api.post('/api/lobby/join', null, {
-          params: { roomId: room.roomId, userId: currentUser.id, username: currentUser.username }
+        await api.post('/api/lobby/join', {
+          roomId: room.roomId,
+          userId: currentUser.id,
+          username: currentUser.username,
+          theme: room.theme 
         });
+        
         if (room.theme) setSelectedTheme(room.theme);
         setSelectedTime(room.timeLimit as TimeControl);
         handleStartGame(room.roomId, room.timeLimit, room.theme);

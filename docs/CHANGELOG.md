@@ -35,6 +35,14 @@ All notable changes to this project will be documented in this file. This projec
 ### 🚀 Phase 20: Enterprise Refactoring & Production Readiness 🏗️ (v2.1.0)
 > **Note:** Elevating backend architecture through domain-driven vertical slicing, decoupling monolithic services, and ensuring real-time production reliability.
 
+- **2026-08-20:**
+    - **Controller-Service Harmonization & Global Exception Handling (PR #125 | Issue #121):**
+        - Centralized error management by implementing a robust `GlobalExceptionHandler` to capture custom and runtime exceptions into a unified `ErrorResponse` structure.
+        - Fully updated and harmonized all REST controllers (`AdminController`, `AuditLogController`, `AuthController`, `GameRestController`, `GameWebSocketController`, `LobbyController`, `UserController`) to ensure standardized contracts with the service layer.
+        - Refactored request DTOs (`LoginRequest`, `DismissRequest`, `HeartbeatRequest`, `DeleteAccountRequest`, `ReadyRequest`, and new lobby DTOs) and enforced strict payload validation using `@Valid` and Bean Validation annotations across all endpoints.
+        - Updated core application services (`AdminService`, `AuthService`, `GameService`, `LobbyService`, `UserService`) to align seamlessly with standardized error contracts and request validation flows.
+        - Expanded comprehensive unit and controller test suites (`GlobalExceptionHandlerTest`, `AdminControllerTest`, `GameWebSocketControllerTest`, `LobbyControllerTest`, service tests) to guarantee predictable client-side error handling and robust API reliability.
+
 - **2026-08-19:**
     - **Enterprise Refactoring, Domain Modularization & Real-Time Synchronization (PR #124 | Issue #120):**
         - Refactored the monolithic `GameService` God class into modular, single-responsibility components (`GameTimerService`, `GameSessionManager`, `GamePersistenceService`, `GameEngineService`, and `GameBroadcastManager`) adhering to the Single Responsibility Principle.

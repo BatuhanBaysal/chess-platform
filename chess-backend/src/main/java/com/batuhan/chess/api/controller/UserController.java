@@ -7,6 +7,7 @@ import com.batuhan.chess.api.dto.user.UserResponseDTO;
 import com.batuhan.chess.application.service.user.UserService;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,57 +21,89 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
-@Tag(name = "User Management", description = "Authenticated user profile operations")
+@Tag(name = "User Management", description = "Authenticated user profile and account operations")
 public class UserController {
 
     private final UserService userService;
 
-    @Operation(summary = "Get current user profile")
+    @Operation(
+        summary = "Get current user profile",
+        description = "Retrieves profile details of the currently authenticated user."
+    )
+    @ApiResponse(responseCode = "200", description = "User profile retrieved successfully")
     @GetMapping("/me")
     public ResponseEntity<UserResponseDTO> getMyProfile() {
-        log.info("Fetching profile for current user");
-        return ResponseEntity.ok(userService.getProfile());
+        log.info("USER_ACTION: Request received to fetch current user profile");
+        UserResponseDTO profile = userService.getProfile();
+        log.info("USER_ACTION: Successfully retrieved profile");
+        return ResponseEntity.ok(profile);
     }
 
-    @Operation(summary = "Get global leaderboard top 3")
+    @Operation(
+        summary = "Get global leaderboard top 3",
+        description = "Retrieves top 3 users based on platform rankings."
+    )
+    @ApiResponse(responseCode = "200", description = "Top 3 leaderboard retrieved successfully")
     @GetMapping("/leaderboard")
     public ResponseEntity<List<UserResponseDTO>> getLeaderboard() {
-        log.info("Fetching global leaderboard top 3 users");
-        return ResponseEntity.ok(userService.getLeaderboard());
+        log.info("USER_ACTION: Fetching global leaderboard top 3 users");
+        List<UserResponseDTO> leaderboard = userService.getLeaderboard();
+        log.info("USER_ACTION: Successfully retrieved top 3 users");
+        return ResponseEntity.ok(leaderboard);
     }
 
-    @Operation(summary = "Get global leaderboard all users")
+    @Operation(
+        summary = "Get global leaderboard all users",
+        description = "Retrieves complete leaderboard list of all users."
+    )
+    @ApiResponse(responseCode = "200", description = "Full leaderboard retrieved successfully")
     @GetMapping("/leaderboard/all")
     public ResponseEntity<List<UserResponseDTO>> getAllLeaderboard() {
-        log.info("Fetching global leaderboard for all users");
-        return ResponseEntity.ok(userService.getAllLeaderboard());
+        log.info("USER_ACTION: Fetching global leaderboard for all users");
+        List<UserResponseDTO> allLeaderboard = userService.getAllLeaderboard();
+        log.info("USER_ACTION: Successfully retrieved all leaderboard users");
+        return ResponseEntity.ok(allLeaderboard);
     }
 
-    @Operation(summary = "Update user profile")
+    @Operation(
+        summary = "Update user profile",
+        description = "Updates authenticated user's profile information."
+    )
+    @ApiResponse(responseCode = "204", description = "Profile updated successfully")
     @PutMapping("/me")
     @RateLimiter(name = "profileUpdateLimiter")
     public ResponseEntity<Void> updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
-        log.info("Updating profile for current user");
+        log.info("USER_ACTION: Profile update requested");
         userService.updateProfile(request);
+        log.info("USER_ACTION: Profile successfully updated");
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Change account password")
+    @Operation(
+        summary = "Change account password",
+        description = "Updates password for the authenticated user after validating current credentials."
+    )
+    @ApiResponse(responseCode = "204", description = "Password changed successfully")
     @PutMapping("/me/password")
     @RateLimiter(name = "accountActionLimiter")
     public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
-        log.info("Password change requested");
+        log.info("USER_ACTION: Password change requested");
         userService.changePassword(request);
+        log.info("USER_ACTION: Password successfully changed");
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Delete account with password confirmation")
+    @Operation(
+        summary = "Delete account with password confirmation",
+        description = "Permanently deletes authenticated user account based on password confirmation."
+    )
+    @ApiResponse(responseCode = "204", description = "Account deleted successfully")
     @DeleteMapping("/me")
     @RateLimiter(name = "accountActionLimiter")
     public ResponseEntity<Void> deleteAccount(@Valid @RequestBody DeleteAccountRequest request) {
-        log.warn("Account deletion requested by user");
+        log.warn("USER_ACTION: Account deletion requested by user");
         userService.deleteAccount(request);
+        log.warn("USER_ACTION: User account successfully deleted");
         return ResponseEntity.noContent().build();
     }
 }

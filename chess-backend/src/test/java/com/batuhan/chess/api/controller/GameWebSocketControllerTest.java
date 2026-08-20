@@ -3,6 +3,7 @@ package com.batuhan.chess.api.controller;
 import com.batuhan.chess.api.dto.game.DismissRequest;
 import com.batuhan.chess.api.dto.game.GameResponse;
 import com.batuhan.chess.api.dto.game.MoveRequest;
+import com.batuhan.chess.api.dto.game.ReadyRequest;
 import com.batuhan.chess.application.service.game.GameService;
 import com.batuhan.chess.domain.model.chess.Board;
 import com.batuhan.chess.domain.model.chess.Color;
@@ -56,9 +57,7 @@ class GameWebSocketControllerTest {
             // Arrange
             String gameId = "game-123";
             Long userId = 1L;
-            var request = new GameWebSocketController.ReadyRequest();
-            request.setGameId(gameId);
-            request.setUserId(userId);
+            var request = new ReadyRequest(gameId, userId);
 
             Game game = new Game(new Board());
             GameResponse mockResponse = new GameResponse(
@@ -82,9 +81,7 @@ class GameWebSocketControllerTest {
         @DisplayName("Should not broadcast when only one player has confirmed readiness")
         void shouldNotBroadcastWhenOnlyOnePlayerIsReady() {
             // Arrange
-            var request = new GameWebSocketController.ReadyRequest();
-            request.setGameId("game-123");
-            request.setUserId(1L);
+            var request = new ReadyRequest("game-123", 1L);
 
             when(gameService.setPlayerReady(anyString(), anyLong())).thenReturn(false);
 

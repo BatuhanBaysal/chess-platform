@@ -1,6 +1,8 @@
 package com.batuhan.chess.application.service.game;
 
-import lombok.Builder;
+import com.batuhan.chess.api.dto.lobby.GameRoomResponse;
+import com.batuhan.chess.api.dto.lobby.MatchFoundMessage;
+import com.batuhan.chess.api.exception.ResourceNotFoundException;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -18,7 +20,7 @@ public class LobbyService {
     private static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
     private static final String STATUS_START_GAME = "START_GAME";
 
-    private final Map<String, GameRoom> activeRooms = new ConcurrentHashMap<>();
+    private final Map<String, GameRoomInternal> activeRooms = new ConcurrentHashMap<>();
     private final GameService gameService;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -28,7 +30,7 @@ public class LobbyService {
     }
 
     @Data
-    public static class GameRoom {
+    public static class GameRoomInternal {
         private String roomId;
         private Long hostId;
         private String hostName;
@@ -36,67 +38,75 @@ public class LobbyService {
         private String blackPlayerName;
         private String status;
         private int timeLimit;
+        private String theme;
+
+        public GameRoomResponse toResponse() {
+            return GameRoomResponse.builder()
+                .roomId(roomId)
+                .hostId(hostId)
+                .hostName(hostName)
+                .blackPlayerId(blackPlayerId)
+                .blackPlayerName(blackPlayerName)
+                .status(status)
+                .timeLimit(timeLimit)
+                .theme(theme)
+                .build();
+        }
     }
 
-    @Data
-    @Builder
-    public static class MatchFoundMessage {
-        private String gameId;
-        private String status;
-        private String color;
-        private Long opponentId;
-        private String opponentName;
-    }
-
-    public String createRoom(Long userId, String username, int time) {
+    public String createRoom(Long userId, String username, int time, String theme) {
         String roomId = UUID.randomUUID().toString().substring(0, 8);
-        GameRoom room = new GameRoom();
+        GameRoomInternal room = new GameRoomInternal();
         room.setRoomId(roomId);
         room.setHostId(userId);
         room.setHostName(username);
         room.setTimeLimit(time);
+        room.setTheme(theme);
         room.setStatus(STATUS_WAITING);
 
         activeRooms.put(roomId, room);
-        log.info("Room created: {} by user: {}, Time Limit: {}m", roomId, username, time);
+        log.info("LOBBY_SERVICE: Room created: {} by user: {}, Time Limit: {}m, Theme: {}", roomId, username, time, theme);
         return roomId;
     }
 
-    public boolean cancelRoom(String roomId, Long userId) {
+    public void cancelRoom(String roomId, Long userId) {
         synchronized (activeRooms) {
-            GameRoom room = activeRooms.get(roomId);
-            if (room != null && room.getHostId().equals(userId)) {
-                activeRooms.remove(roomId);
-                messagingTemplate.convertAndSend("/topic/lobby", Map.of(
-                    "type", "LOBBY_CANCELLED",
-                    "roomId", roomId
-                ));
-
-                log.info("Room cancelled and removed: {} by host: {}", roomId, userId);
-                return true;
+            GameRoomInternal room = activeRooms.get(roomId);
+            if (room == null) {
+                throw new ResourceNotFoundException("Room not found with ID: " + roomId);
             }
+            if (!room.getHostId().equals(userId)) {
+                throw new IllegalStateException("Only the host can cancel this room.");
+            }
+
+            activeRooms.remove(roomId);
+            messagingTemplate.convertAndSend("/topic/lobby", Map.of(
+                "type", "LOBBY_CANCELLED",
+                "roomId", roomId
+            ));
+
+            log.info("LOBBY_SERVICE: Room cancelled and removed: {} by host: {}", roomId, userId);
         }
-        return false;
     }
 
-    public boolean joinRoom(String roomId, Long userId, String username) {
+    public void joinRoom(String roomId, Long userId, String username) {
         synchronized (activeRooms) {
-            GameRoom room = activeRooms.get(roomId);
+            GameRoomInternal room = activeRooms.get(roomId);
 
             if (room == null || !STATUS_WAITING.equals(room.getStatus())) {
-                log.warn("Attempt to join invalid or expired room: {} by user: {}", roomId, userId);
-                return false;
+                log.warn("LOBBY_SERVICE: Attempt to join invalid or expired room: {} by user: {}", roomId, userId);
+                throw new IllegalStateException("Room is invalid, expired, or already in progress.");
             }
 
             if (room.getHostId().equals(userId)) {
-                log.warn("User {} tried to join their own room {}", userId, roomId);
-                return false;
+                log.warn("LOBBY_SERVICE: User {} tried to join their own room {}", userId, roomId);
+                throw new IllegalArgumentException("You cannot join your own room.");
             }
 
             String activeGameId = gameService.getActiveGameIdByUserId(userId);
             if (activeGameId != null) {
-                log.warn("User {} tried to join room {} while already in active game {}", userId, roomId, activeGameId);
-                return false;
+                log.warn("LOBBY_SERVICE: User {} tried to join room {} while already in active game {}", userId, roomId, activeGameId);
+                throw new IllegalStateException("You are already in an active game session.");
             }
 
             room.setBlackPlayerId(userId);
@@ -105,19 +115,18 @@ public class LobbyService {
 
             gameService.createNewGameWithPlayers(roomId, room.getHostId(), userId);
             notifyPlayers(room, username);
-
-            log.info("Match started in room: {}. White: {}, Black: {}", roomId, room.getHostId(), userId);
-            return true;
+            log.info("LOBBY_SERVICE: Match started in room: {}. White: {}, Black: {}", roomId, room.getHostId(), userId);
         }
     }
 
-    private void notifyPlayers(GameRoom room, String joinerName) {
+    private void notifyPlayers(GameRoomInternal room, String joinerName) {
         MatchFoundMessage whiteMsg = MatchFoundMessage.builder()
             .gameId(room.getRoomId())
             .status(STATUS_START_GAME)
             .color("WHITE")
             .opponentId(room.getBlackPlayerId())
             .opponentName(joinerName)
+            .theme(room.getTheme())
             .build();
 
         MatchFoundMessage blackMsg = MatchFoundMessage.builder()
@@ -126,23 +135,27 @@ public class LobbyService {
             .color("BLACK")
             .opponentId(room.getHostId())
             .opponentName(room.getHostName())
+            .theme(room.getTheme())
             .build();
 
         messagingTemplate.convertAndSend("/topic/lobby/" + room.getRoomId(), whiteMsg);
         messagingTemplate.convertAndSend("/topic/lobby/" + room.getRoomId(), blackMsg);
     }
 
-    public Collection<GameRoom> getAllActiveRooms() {
+    public Collection<GameRoomResponse> getAllActiveRooms() {
         return activeRooms.values().stream()
             .filter(room -> STATUS_WAITING.equals(room.getStatus()))
+            .map(GameRoomInternal::toResponse)
             .toList();
     }
 
     public void removeRoom(String roomId) {
         activeRooms.remove(roomId);
+        log.info("LOBBY_SERVICE: Room explicitly removed: {}", roomId);
     }
 
-    public GameRoom getRoom(String roomId) {
-        return activeRooms.get(roomId);
+    public Optional<GameRoomResponse> getRoom(String roomId) {
+        GameRoomInternal room = activeRooms.get(roomId);
+        return Optional.ofNullable(room).map(GameRoomInternal::toResponse);
     }
 }

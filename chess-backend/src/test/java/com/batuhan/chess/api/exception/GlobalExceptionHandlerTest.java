@@ -1,9 +1,7 @@
 package com.batuhan.chess.api.exception;
 
 import com.batuhan.chess.api.dto.error.ErrorResponse;
-import com.batuhan.chess.api.exception.GameOperationException;
-import com.batuhan.chess.api.exception.GlobalExceptionHandler;
-import com.batuhan.chess.api.exception.UserAlreadyExistsException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -24,16 +22,19 @@ import static org.mockito.Mockito.when;
 /**
  * Updated technical test suite for GlobalExceptionHandler.
  * Validates the mapping of domain-specific exceptions (GameOperation, Conflicts)
- * and generic fallback handlers.
+ * and generic fallback handlers with HttpServletRequest context.
  */
 @DisplayName("Global Exception Handler Technical Tests")
 class GlobalExceptionHandlerTest {
 
     private GlobalExceptionHandler handler;
+    private HttpServletRequest requestMock;
 
     @BeforeEach
     void setUp() {
         handler = new GlobalExceptionHandler();
+        requestMock = mock(HttpServletRequest.class);
+        when(requestMock.getRequestURI()).thenReturn("/api/test-uri");
     }
 
     @Nested
@@ -48,13 +49,14 @@ class GlobalExceptionHandlerTest {
             GameOperationException ex = new GameOperationException(message);
 
             // Act
-            ResponseEntity<ErrorResponse> response = handler.handleGameOperation(ex);
+            ResponseEntity<ErrorResponse> response = handler.handleGameOperation(ex, requestMock);
 
             // Assert
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
             assertThat(response.getBody()).isNotNull().satisfies(body -> {
                 assertThat(body.message()).isEqualTo(message);
                 assertThat(body.status()).isEqualTo(400);
+                assertThat(body.path()).isEqualTo("/api/test-uri");
             });
         }
 
@@ -65,13 +67,14 @@ class GlobalExceptionHandlerTest {
             UserAlreadyExistsException ex = new UserAlreadyExistsException("User already exists");
 
             // Act
-            ResponseEntity<ErrorResponse> response = handler.handleConflict(ex);
+            ResponseEntity<ErrorResponse> response = handler.handleConflict(ex, requestMock);
             ErrorResponse body = response.getBody();
 
             // Assert
             assertThat(body).isNotNull();
             assertThat(body.status()).isEqualTo(409);
             assertThat(body.message()).isEqualTo("User already exists");
+            assertThat(body.path()).isEqualTo("/api/test-uri");
         }
     }
 
@@ -86,7 +89,7 @@ class GlobalExceptionHandlerTest {
             BadCredentialsException ex = new BadCredentialsException("Internal auth failure");
 
             // Act
-            ResponseEntity<ErrorResponse> response = handler.handleBadCredentials(ex);
+            ResponseEntity<ErrorResponse> response = handler.handleBadCredentials(ex, requestMock);
 
             // Assert
             assertThat(response).satisfies(res -> {
@@ -94,6 +97,7 @@ class GlobalExceptionHandlerTest {
                 assertThat(res.getBody()).isNotNull();
                 assertThat(res.getBody().message()).isEqualTo("Invalid username or password");
                 assertThat(res.getBody().status()).isEqualTo(401);
+                assertThat(res.getBody().path()).isEqualTo("/api/test-uri");
             });
         }
     }
@@ -114,13 +118,15 @@ class GlobalExceptionHandlerTest {
             when(bindingResult.getFieldErrors()).thenReturn(List.of(fieldError));
 
             // Act
-            ResponseEntity<ErrorResponse> response = handler.handleValidationErrors(ex);
+            ResponseEntity<ErrorResponse> response = handler.handleValidationErrors(ex, requestMock);
 
             // Assert
             assertThat(response).satisfies(res -> {
                 assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
                 assertThat(res.getBody()).isNotNull();
-                assertThat(res.getBody().message()).contains("username: must not be empty");
+                assertThat(res.getBody().validationErrors()).containsKey("username");
+                assertThat(res.getBody().validationErrors().get("username")).isEqualTo("must not be empty");
+                assertThat(res.getBody().path()).isEqualTo("/api/test-uri");
             });
         }
     }
@@ -136,13 +142,14 @@ class GlobalExceptionHandlerTest {
             Exception ex = new Exception("Unexpected system failure");
 
             // Act
-            ResponseEntity<ErrorResponse> response = handler.handleGeneralException(ex);
+            ResponseEntity<ErrorResponse> response = handler.handleGeneralException(ex, requestMock);
 
             // Assert
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
             assertThat(response.getBody()).isNotNull().satisfies(body -> {
                 assertThat(body.message()).contains("An unexpected error occurred");
                 assertThat(body.status()).isEqualTo(500);
+                assertThat(body.path()).isEqualTo("/api/test-uri");
             });
         }
     }

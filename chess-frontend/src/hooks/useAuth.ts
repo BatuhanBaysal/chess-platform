@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 
-export type LoginCredentials = { username: string; password: string };
+export type LoginCredentials = { usernameOrEmail: string; password: string };
 export type RegisterCredentials = { username: string; email: string; password: string };
 
 export interface AuthUser {
@@ -33,7 +33,7 @@ export const useAuth = () => {
     localStorage.setItem('user', JSON.stringify(newUser));
   };
 
-  const login = async (creds: LoginCredentials) => {
+  const login = async (creds: { usernameOrEmail: string; password: string }) => {
     try {
       const response = await api.post('/api/auth/login', creds);
       const { token, id, username, role } = response.data;

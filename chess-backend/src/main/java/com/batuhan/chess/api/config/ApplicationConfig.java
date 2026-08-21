@@ -22,13 +22,13 @@ public class ApplicationConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        return username -> userRepository.findByUsername(username)
+        return username -> userRepository.findByUsernameAndActiveTrue(username)
             .map(userEntity -> User.builder()
                 .username(userEntity.getUsername())
                 .password(userEntity.getPassword())
                 .roles(userEntity.getRole().name().replace("ROLE_", ""))
                 .build())
-            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+            .orElseThrow(() -> new UsernameNotFoundException("User not found or account is deactivated: " + username));
     }
 
     @Bean

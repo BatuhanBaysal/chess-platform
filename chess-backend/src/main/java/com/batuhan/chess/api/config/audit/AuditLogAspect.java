@@ -32,11 +32,11 @@ public class AuditLogAspect {
                 if (principal instanceof UserEntity userEntity) {
                     adminId = userEntity.getId();
                 } else if (principal instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
-                    adminId = userRepository.findByUsername(userDetails.getUsername())
+                    adminId = userRepository.findByUsernameAndActiveTrue(userDetails.getUsername())
                         .map(UserEntity::getId)
                         .orElse(null);
                 } else if (principal instanceof String username && !"anonymousUser".equals(username)) {
-                    adminId = userRepository.findByUsername(username)
+                    adminId = userRepository.findByUsernameAndActiveTrue(username)
                         .map(UserEntity::getId)
                         .orElse(null);
                 }
@@ -51,7 +51,7 @@ public class AuditLogAspect {
 
                     auditLogService.logAction(adminId, actionType, detailsBuilder.toString());
                 } else {
-                    log.warn("Audit log could not be saved: Admin ID could not be resolved from authentication principal.");
+                    log.warn("Audit log could not be saved: Admin ID could not be resolved from authentication principal or account is inactive.");
                 }
             }
         } catch (Exception e) {

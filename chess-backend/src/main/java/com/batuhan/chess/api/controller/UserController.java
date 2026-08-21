@@ -54,14 +54,18 @@ public class UserController {
 
     @Operation(
         summary = "Get global leaderboard all users",
-        description = "Retrieves complete leaderboard list of all users."
+        description = "Retrieves paginated leaderboard list of all users."
     )
-    @ApiResponse(responseCode = "200", description = "Full leaderboard retrieved successfully")
+    @ApiResponse(responseCode = "200", description = "Paginated leaderboard retrieved successfully")
     @GetMapping("/leaderboard/all")
-    public ResponseEntity<List<UserResponseDTO>> getAllLeaderboard() {
-        log.info("USER_ACTION: Fetching global leaderboard for all users");
-        List<UserResponseDTO> allLeaderboard = userService.getAllLeaderboard();
-        log.info("USER_ACTION: Successfully retrieved all leaderboard users");
+    public ResponseEntity<List<UserResponseDTO>> getAllLeaderboard(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "20") int size
+    ) {
+
+        log.info("USER_ACTION: Fetching paginated global leaderboard (Page: {}, Size: {})", page, size);
+        List<UserResponseDTO> allLeaderboard = userService.getPagedLeaderboard(page, size);
+        log.info("USER_ACTION: Successfully retrieved paginated leaderboard users");
         return ResponseEntity.ok(allLeaderboard);
     }
 

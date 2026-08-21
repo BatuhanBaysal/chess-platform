@@ -31,6 +31,8 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
+    private static final String GUEST_DUMMY_PASSWORD_HASH = "$2a$10$DummyHashForGuestUsersOptimizationOnlyToAvoidHeavyCpuLoad";
+
     @Transactional
     public void register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.username())) {
@@ -53,9 +55,9 @@ public class AuthService {
 
     @RateLimiter(name = "authService", fallbackMethod = "loginFallback")
     public AuthResponse login(LoginRequest request) {
-        var user = userRepository.findByUsername(request.usernameOrEmail())
-            .or(() -> userRepository.findByEmail(request.usernameOrEmail()))
-            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + request.usernameOrEmail()));
+        var user = userRepository.findByUsernameAndActiveTrue(request.usernameOrEmail())
+            .or(() -> userRepository.findByEmailAndActiveTrue(request.usernameOrEmail()))
+            .orElseThrow(() -> new UsernameNotFoundException("User not found or account is deleted: " + request.usernameOrEmail()));
 
         authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(
@@ -90,7 +92,7 @@ public class AuthService {
         UserEntity guestUser = UserEntity.builder()
             .username(guestUsername)
             .email(guestUsername + "@chess.com")
-            .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+            .password(GUEST_DUMMY_PASSWORD_HASH)
             .role(UserRole.ROLE_GUEST)
             .eloRating(400)
             .build();

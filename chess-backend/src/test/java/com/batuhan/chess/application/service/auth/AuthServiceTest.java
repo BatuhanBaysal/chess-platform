@@ -126,7 +126,7 @@ class AuthServiceTest {
         @DisplayName("Should return AuthResponse with token when login credentials are valid")
         void shouldReturnAuthResponseOnValidLogin() {
             // Arrange
-            when(userRepository.findByUsername(loginRequest.usernameOrEmail())).thenReturn(Optional.of(testUser));
+            when(userRepository.findByUsernameAndActiveTrue(loginRequest.usernameOrEmail())).thenReturn(Optional.of(testUser));
             when(jwtService.generateToken(any(UserDetails.class))).thenReturn("mock-jwt-token");
 
             // Act
@@ -147,12 +147,13 @@ class AuthServiceTest {
         @DisplayName("Should throw exception and abort token generation if user does not exist")
         void shouldThrowExceptionWhenUserNotFound() {
             // Arrange
-            when(userRepository.findByUsername(loginRequest.usernameOrEmail())).thenReturn(Optional.empty());
+            when(userRepository.findByUsernameAndActiveTrue(loginRequest.usernameOrEmail())).thenReturn(Optional.empty());
+            when(userRepository.findByEmailAndActiveTrue(loginRequest.usernameOrEmail())).thenReturn(Optional.empty());
 
             // Act & Assert
             assertThatThrownBy(() -> authService.login(loginRequest))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessage("User not found: " + loginRequest.usernameOrEmail());
+                .hasMessage("User not found or account is deleted: " + loginRequest.usernameOrEmail());
 
             verify(jwtService, never()).generateToken(any());
         }
@@ -169,7 +170,6 @@ class AuthServiceTest {
 
             when(userRepository.save(any(UserEntity.class))).thenReturn(guestUser);
             when(jwtService.generateToken(any())).thenReturn("guest-jwt-token");
-            when(passwordEncoder.encode(anyString())).thenReturn("encodedRandomPassword");
 
             // Act
             AuthResponse response = authService.loginAsGuest();

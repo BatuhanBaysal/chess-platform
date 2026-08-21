@@ -70,8 +70,7 @@ public class LobbyService {
     }
 
     public void cancelRoom(String roomId, Long userId) {
-        synchronized (activeRooms) {
-            GameRoomInternal room = activeRooms.get(roomId);
+        activeRooms.compute(roomId, (id, room) -> {
             if (room == null) {
                 throw new ResourceNotFoundException("Room not found with ID: " + roomId);
             }
@@ -79,20 +78,18 @@ public class LobbyService {
                 throw new IllegalStateException("Only the host can cancel this room.");
             }
 
-            activeRooms.remove(roomId);
             messagingTemplate.convertAndSend("/topic/lobby", Map.of(
                 "type", "LOBBY_CANCELLED",
                 "roomId", roomId
             ));
 
             log.info("LOBBY_SERVICE: Room cancelled and removed: {} by host: {}", roomId, userId);
-        }
+            return null;
+        });
     }
 
     public void joinRoom(String roomId, Long userId, String username) {
-        synchronized (activeRooms) {
-            GameRoomInternal room = activeRooms.get(roomId);
-
+        activeRooms.compute(roomId, (id, room) -> {
             if (room == null || !STATUS_WAITING.equals(room.getStatus())) {
                 log.warn("LOBBY_SERVICE: Attempt to join invalid or expired room: {} by user: {}", roomId, userId);
                 throw new IllegalStateException("Room is invalid, expired, or already in progress.");
@@ -116,7 +113,9 @@ public class LobbyService {
             gameService.createNewGameWithPlayers(roomId, room.getHostId(), userId);
             notifyPlayers(room, username);
             log.info("LOBBY_SERVICE: Match started in room: {}. White: {}, Black: {}", roomId, room.getHostId(), userId);
-        }
+
+            return room;
+        });
     }
 
     private void notifyPlayers(GameRoomInternal room, String joinerName) {

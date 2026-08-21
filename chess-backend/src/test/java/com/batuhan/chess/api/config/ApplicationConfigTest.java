@@ -1,6 +1,5 @@
 package com.batuhan.chess.api.config;
 
-import com.batuhan.chess.api.config.ApplicationConfig;
 import com.batuhan.chess.domain.model.user.UserEntity;
 import com.batuhan.chess.domain.model.user.UserRole;
 import com.batuhan.chess.domain.repository.UserRepository;
@@ -55,7 +54,7 @@ class ApplicationConfigTest {
                 .role(UserRole.ROLE_USER)
                 .build();
 
-            when(userRepository.findByUsername(username)).thenReturn(Optional.of(userEntity));
+            when(userRepository.findByUsernameAndActiveTrue(username)).thenReturn(Optional.of(userEntity));
             UserDetailsService userDetailsService = applicationConfig.userDetailsService();
 
             // Act
@@ -67,7 +66,7 @@ class ApplicationConfigTest {
             assertThat(result.getAuthorities())
                 .extracting("authority")
                 .containsExactly("ROLE_USER");
-            verify(userRepository).findByUsername(username);
+            verify(userRepository).findByUsernameAndActiveTrue(username);
         }
 
         @Test
@@ -75,14 +74,14 @@ class ApplicationConfigTest {
         void shouldThrowExceptionWhenUserIsNotFound() {
             // Arrange
             String username = "unknownUser";
-            when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+            when(userRepository.findByUsernameAndActiveTrue(username)).thenReturn(Optional.empty());
             UserDetailsService userDetailsService = applicationConfig.userDetailsService();
 
             // Act & Assert
             assertThrows(UsernameNotFoundException.class, () ->
                 userDetailsService.loadUserByUsername(username)
             );
-            verify(userRepository).findByUsername(username);
+            verify(userRepository).findByUsernameAndActiveTrue(username);
         }
     }
 

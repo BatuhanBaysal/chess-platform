@@ -89,7 +89,6 @@ public class AdminService {
         log.info("Admin Service: Successfully forced finish/abandonment for game session: {}", gameId);
     }
 
-    @Transactional
     @AuditableAction(actionType = "TRIGGER_SANDBOX_GAME")
     public void triggerSandboxGame(Long whiteId, Long blackId) {
         log.warn("Admin Service: Triggering sandbox game creation between whiteId: {} and blackId: {}", whiteId, blackId);

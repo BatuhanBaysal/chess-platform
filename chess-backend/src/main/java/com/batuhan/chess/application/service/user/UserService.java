@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -31,7 +32,7 @@ public class UserService {
 
     public UserEntity getCurrentUserEntity() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByUsername(username)
+        return userRepository.findByUsernameAndActiveTrue(username)
             .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
     }
 
@@ -59,8 +60,9 @@ public class UserService {
             .toList();
     }
 
-    public List<UserResponseDTO> getAllLeaderboard() {
-        return userRepository.findAllByOrderByEloRatingDesc()
+    public List<UserResponseDTO> getPagedLeaderboard(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return userRepository.findAllByActiveTrueOrderByEloRatingDesc(pageable)
             .stream()
             .map(user -> UserResponseDTO.builder()
                 .username(user.getUsername())
@@ -86,7 +88,7 @@ public class UserService {
     }
 
     @Transactional
-    @CacheEvict(value = "users", key = "#root.target.getCurrentUserEntity().username")
+    @CacheEvict(value = "users", allEntries = true)
     @RateLimiter(name = "profileUpdateLimiter")
     public void updateProfile(UpdateProfileRequest request) {
         UserEntity user = getCurrentUserEntity();
@@ -109,7 +111,7 @@ public class UserService {
     }
 
     @Transactional
-    @CacheEvict(value = "users", key = "#root.target.getCurrentUserEntity().username")
+    @CacheEvict(value = "users", allEntries = true)
     public void deleteAccount(DeleteAccountRequest request) {
         UserEntity user = getCurrentUserEntity();
 
@@ -117,6 +119,7 @@ public class UserService {
             throw new GameOperationException("Password verification failed while trying to delete the account.");
         }
 
-        userRepository.delete(user);
+        user.setActive(false);
+        userRepository.save(user);
     }
 }

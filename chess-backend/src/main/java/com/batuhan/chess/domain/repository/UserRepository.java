@@ -15,14 +15,15 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     @Cacheable(value = "users", key = "#username")
-    Optional<UserEntity> findByUsername(String username);
-    Optional<UserEntity> findByEmail(String email);
+    Optional<UserEntity> findByUsernameAndActiveTrue(String username);
+
+    Optional<UserEntity> findByEmailAndActiveTrue(String email);
+
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);
-    List<UserEntity> findAllByOrderByEloRatingDesc();
 
-    Page<UserEntity> findAll(Pageable pageable);
+    Page<UserEntity> findAllByActiveTrueOrderByEloRatingDesc(Pageable pageable);
 
-    @Query("SELECT u FROM UserEntity u ORDER BY u.eloRating DESC")
+    @Query("SELECT u FROM UserEntity u WHERE u.active = true ORDER BY u.eloRating DESC")
     List<UserEntity> findTop3ByOrderByEloRatingDesc(Pageable pageable);
 }

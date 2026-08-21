@@ -68,7 +68,7 @@ class UserServiceTest {
             // Arrange
             when(securityContext.getAuthentication()).thenReturn(authentication);
             when(authentication.getName()).thenReturn("batuhan");
-            when(userRepository.findByUsername("batuhan")).thenReturn(Optional.of(testUser));
+            when(userRepository.findByUsernameAndActiveTrue("batuhan")).thenReturn(Optional.of(testUser));
 
             // Act
             UserResponseDTO result = userService.getProfile();
@@ -85,7 +85,7 @@ class UserServiceTest {
             // Arrange
             when(securityContext.getAuthentication()).thenReturn(authentication);
             when(authentication.getName()).thenReturn("unknown");
-            when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
+            when(userRepository.findByUsernameAndActiveTrue("unknown")).thenReturn(Optional.empty());
 
             // Act & Assert
             assertThrows(RuntimeException.class, () -> userService.getProfile());
@@ -103,7 +103,7 @@ class UserServiceTest {
             ChangePasswordRequest request = new ChangePasswordRequest("old_pass", "new_pass123");
             when(securityContext.getAuthentication()).thenReturn(authentication);
             when(authentication.getName()).thenReturn("batuhan");
-            when(userRepository.findByUsername("batuhan")).thenReturn(Optional.of(testUser));
+            when(userRepository.findByUsernameAndActiveTrue("batuhan")).thenReturn(Optional.of(testUser));
             when(passwordEncoder.matches("old_pass", "encoded_pass")).thenReturn(true);
             when(passwordEncoder.encode("new_pass123")).thenReturn("new_encoded");
 
@@ -122,7 +122,7 @@ class UserServiceTest {
             ChangePasswordRequest request = new ChangePasswordRequest("wrong_pass", "new_pass123");
             when(securityContext.getAuthentication()).thenReturn(authentication);
             when(authentication.getName()).thenReturn("batuhan");
-            when(userRepository.findByUsername("batuhan")).thenReturn(Optional.of(testUser));
+            when(userRepository.findByUsernameAndActiveTrue("batuhan")).thenReturn(Optional.of(testUser));
             when(passwordEncoder.matches("wrong_pass", "encoded_pass")).thenReturn(false);
 
             // Act & Assert
@@ -141,7 +141,7 @@ class UserServiceTest {
             UpdateProfileRequest request = new UpdateProfileRequest("taken_name", "test@mail.com");
             when(securityContext.getAuthentication()).thenReturn(authentication);
             when(authentication.getName()).thenReturn("batuhan");
-            when(userRepository.findByUsername("batuhan")).thenReturn(Optional.of(testUser));
+            when(userRepository.findByUsernameAndActiveTrue("batuhan")).thenReturn(Optional.of(testUser));
             when(userRepository.existsByUsername("taken_name")).thenReturn(true);
 
             // Act & Assert
@@ -155,7 +155,7 @@ class UserServiceTest {
             UpdateProfileRequest request = new UpdateProfileRequest("batuhan", "taken@mail.com");
             when(securityContext.getAuthentication()).thenReturn(authentication);
             when(authentication.getName()).thenReturn("batuhan");
-            when(userRepository.findByUsername("batuhan")).thenReturn(Optional.of(testUser));
+            when(userRepository.findByUsernameAndActiveTrue("batuhan")).thenReturn(Optional.of(testUser));
             when(userRepository.existsByEmail("taken@mail.com")).thenReturn(true);
 
             // Act & Assert
@@ -169,7 +169,7 @@ class UserServiceTest {
             UpdateProfileRequest request = new UpdateProfileRequest("new_name", "new@mail.com");
             when(securityContext.getAuthentication()).thenReturn(authentication);
             when(authentication.getName()).thenReturn("batuhan");
-            when(userRepository.findByUsername("batuhan")).thenReturn(Optional.of(testUser));
+            when(userRepository.findByUsernameAndActiveTrue("batuhan")).thenReturn(Optional.of(testUser));
             when(userRepository.existsByUsername("new_name")).thenReturn(false);
             when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
 
@@ -188,20 +188,22 @@ class UserServiceTest {
     class DeleteAccountTests {
 
         @Test
-        @DisplayName("Should delete account when password is valid")
+        @DisplayName("Should soft delete account when password is valid")
         void deleteAccount_ValidPassword_DeletesAccount() {
             // Arrange
             DeleteAccountRequest request = new DeleteAccountRequest("correct_pass");
             when(securityContext.getAuthentication()).thenReturn(authentication);
             when(authentication.getName()).thenReturn("batuhan");
-            when(userRepository.findByUsername("batuhan")).thenReturn(Optional.of(testUser));
+            when(userRepository.findByUsernameAndActiveTrue("batuhan")).thenReturn(Optional.of(testUser));
             when(passwordEncoder.matches("correct_pass", "encoded_pass")).thenReturn(true);
 
             // Act
             userService.deleteAccount(request);
 
             // Assert
-            verify(userRepository, times(1)).delete(testUser);
+            assertFalse(testUser.isActive());
+            verify(userRepository, times(1)).save(testUser);
+            verify(userRepository, never()).delete(any(UserEntity.class));
         }
 
         @Test
@@ -211,7 +213,7 @@ class UserServiceTest {
             DeleteAccountRequest request = new DeleteAccountRequest("wrong_pass");
             when(securityContext.getAuthentication()).thenReturn(authentication);
             when(authentication.getName()).thenReturn("batuhan");
-            when(userRepository.findByUsername("batuhan")).thenReturn(Optional.of(testUser));
+            when(userRepository.findByUsernameAndActiveTrue("batuhan")).thenReturn(Optional.of(testUser));
             when(passwordEncoder.matches("wrong_pass", "encoded_pass")).thenReturn(false);
 
             // Act & Assert

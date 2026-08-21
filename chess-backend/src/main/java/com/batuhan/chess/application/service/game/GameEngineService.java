@@ -12,19 +12,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 @Slf4j
-@Component
+@Service
 public class GameEngineService {
 
     private static final Long AI_PLAYER_ID = -1L;
@@ -68,14 +65,27 @@ public class GameEngineService {
             return move;
         }).toList();
 
-        String bestMove = stockfishService.getBestMove(sanitizedHistory, depth > 0 ? depth : 10);
-        int eval = stockfishService.getEvaluation(sanitizedHistory, depth > 0 ? depth : 10);
+        int targetDepth = depth > 0 ? depth : 10;
+        try {
+            CompletableFuture<String> bestMoveFuture = stockfishService.getBestMoveAsync(sanitizedHistory, targetDepth);
+            CompletableFuture<Integer> evalFuture = stockfishService.getEvaluationAsync(sanitizedHistory, targetDepth);
 
-        if (bestMove == null) {
-            throw new GameOperationException("Failed to calculate hint from engine");
+            CompletableFuture.allOf(bestMoveFuture, evalFuture).join();
+
+            String bestMove = bestMoveFuture.get();
+            int eval = evalFuture.get();
+
+            if (bestMove == null) {
+                throw new GameOperationException("Failed to calculate hint from engine");
+            }
+
+            return new HintResponse(bestMove, eval, "Engine calculated best move.");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new GameOperationException("Hint calculation interrupted", e);
+        } catch (ExecutionException e) {
+            throw new GameOperationException("Failed to calculate hint from engine", e.getCause());
         }
-
-        return new HintResponse(bestMove, eval, "Engine calculated best move.");
     }
 
     @Transactional
@@ -154,32 +164,18 @@ public class GameEngineService {
         Long nextPlayerId = (game.getCurrentTurn() == Color.WHITE) ? game.getWhitePlayerId() : game.getBlackPlayerId();
 
         if (AI_PLAYER_ID.equals(nextPlayerId)) {
-            String bestMoveUci = stockfishService.getBestMove(game.getMoveHistory(), difficulty);
-
-            if (bestMoveUci != null && bestMoveUci.length() >= 4) {
-                Position from = parseUciPosition(bestMoveUci.substring(0, 2));
-                Position to = parseUciPosition(bestMoveUci.substring(2, 4));
-                String promo = bestMoveUci.length() > 4 ? String.valueOf(bestMoveUci.charAt(4)).toUpperCase() : null;
-
-                game.makeMove(from, to, promo);
-
-                timerService.cancelTimeoutTask(gameId);
-                long remaining = (game.getCurrentTurn() == Color.WHITE) ? game.getWhiteRemainingTimeMs() : game.getBlackRemainingTimeMs();
-                timerService.scheduleTimeoutTask(gameId, Math.max(0, remaining));
-
-                broadcastManager.throttledBroadcast(gameId, game);
-
-                if (game.getStatus().isFinished()) {
-                    self.processGameFinish(gameId, timerService.determineResult(game, game.getStatus()), game.getStatus());
-                }
-            }
+            stockfishService.getBestMoveAsync(game.getMoveHistory(), difficulty)
+                .thenAccept(bestMoveUci -> applyAndBroadcastAiMove(gameId, game, bestMoveUci));
         }
     }
 
     private void executeAiMove(String gameId, Game game) {
         if (game.getStatus().isFinished()) return;
+        stockfishService.getBestMoveAsync(game.getMoveHistory(), 10)
+            .thenAccept(bestMoveUci -> applyAndBroadcastAiMove(gameId, game, bestMoveUci));
+    }
 
-        String bestMoveUci = stockfishService.getBestMove(game.getMoveHistory(), 10);
+    private void applyAndBroadcastAiMove(String gameId, Game game, String bestMoveUci) {
         if (bestMoveUci == null || bestMoveUci.length() < 4) return;
 
         Position from = parseUciPosition(bestMoveUci.substring(0, 2));
@@ -191,7 +187,6 @@ public class GameEngineService {
         timerService.cancelTimeoutTask(gameId);
         long remaining = (game.getCurrentTurn() == Color.WHITE) ? game.getWhiteRemainingTimeMs() : game.getBlackRemainingTimeMs();
         timerService.scheduleTimeoutTask(gameId, Math.max(0, remaining));
-
         broadcastManager.throttledBroadcast(gameId, game);
 
         if (game.getStatus().isFinished()) {

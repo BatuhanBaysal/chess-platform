@@ -18,6 +18,7 @@ import org.redisson.api.RedissonClient;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -95,8 +96,8 @@ class GameEngineServiceTest {
         Game game = mock(Game.class);
         when(game.getMoveHistory()).thenReturn(Collections.emptyList());
         when(sessionManager.getGame(gameId)).thenReturn(game);
-        when(stockfishService.getBestMove(any(), anyInt())).thenReturn("e2e4");
-        when(stockfishService.getEvaluation(any(), anyInt())).thenReturn(30);
+        when(stockfishService.getBestMoveAsync(any(), anyInt())).thenReturn(CompletableFuture.completedFuture("e2e4"));
+        when(stockfishService.getEvaluationAsync(any(), anyInt())).thenReturn(CompletableFuture.completedFuture(30));
 
         // Act
         HintResponse response = engineService.getEngineHint(gameId, 10);

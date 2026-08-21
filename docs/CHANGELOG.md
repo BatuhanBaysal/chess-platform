@@ -30,10 +30,17 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
-## [2.1.0] - 2026-08-19
+## [2.1.0] - 2026-08-20
 
 ### 🚀 Phase 20: Enterprise Refactoring & Production Readiness 🏗️ (v2.1.0)
 > **Note:** Elevating backend architecture through domain-driven vertical slicing, decoupling monolithic services, and ensuring real-time production reliability.
+
+- **2026-08-21:**
+    - **Core Business Logic Optimization & Stockfish Integration Refactoring (PR #126 | Issue #122):**
+        - Refactored `GameEngineService` and `StockfishService` to transition blocking synchronous operations into fully asynchronous execution paths utilizing `CompletableFuture`.
+        - Optimized core game state evaluation to ensure thread safety, eliminate concurrency bottlenecks, and prevent latency spikes during intense multi-user gaming sessions.
+        - Introduced a robust concurrency test suite (`StockfishConcurrencyTest`) to simulate simultaneous game evaluations and engine requests, guaranteeing race-condition and deadlock-free performance.
+        - Cleaned up supporting configuration classes, services, and tests to achieve seamless integration and production-ready real-time multiplayer reliability.
 
 - **2026-08-20:**
     - **Controller-Service Harmonization & Global Exception Handling (PR #125 | Issue #121):**

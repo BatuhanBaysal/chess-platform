@@ -55,7 +55,13 @@ public class UserService {
             .stream()
             .map(user -> UserResponseDTO.builder()
                 .username(user.getUsername())
+                .email(user.getEmail())
                 .eloRating(user.getEloRating())
+                .totalWins(user.getTotalWins())
+                .totalLosses(user.getTotalLosses())
+                .totalDraws(user.getTotalDraws())
+                .totalGames(user.getTotalGames())
+                .role(user.getRole())
                 .build())
             .toList();
     }

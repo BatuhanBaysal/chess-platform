@@ -42,13 +42,16 @@ public class GameService {
         Long whiteId = playAsWhite ? humanUserId : -1L;
         Long blackId = playAsWhite ? -1L : humanUserId;
 
-        createNewGameWithPlayers(gameId, whiteId, blackId, timeLimit != null ? timeLimit : DEFAULT_TIME_LIMIT);
+        int resolvedTimeLimit = timeLimit != null ? timeLimit : DEFAULT_TIME_LIMIT;
+        createNewGameWithPlayers(gameId, whiteId, blackId, resolvedTimeLimit);
 
-        if (!playAsWhite) {
-            Game game = sessionManager.getGame(gameId);
-            if (game != null) {
-                engineService.triggerAiMoveIfNeededWithDifficulty(gameId, game, difficulty);
-            }
+        Game game = sessionManager.getGame(gameId);
+        if (game != null) {
+            game.setTimeLimit(resolvedTimeLimit);
+        }
+
+        if (!playAsWhite && game != null) {
+            engineService.triggerAiMoveIfNeededWithDifficulty(gameId, game, difficulty);
         }
 
         return gameId;
@@ -88,9 +91,9 @@ public class GameService {
         }
 
         if (bothReady && game.getLastMoveTimestamp() == null) {
-            int timeLimit = lobbyService.getRoom(gameId)
+            int timeLimit = game.isAiGame() ? game.getTimeLimit() : lobbyService.getRoom(gameId)
                 .map(GameRoomResponse::timeLimit)
-                .orElse(DEFAULT_TIME_LIMIT);
+                .orElse(game.getTimeLimit());
 
             game.startClock(timeLimit);
             timerService.scheduleTimeoutTask(gameId, timeLimit * 60 * 1000L);
@@ -189,9 +192,9 @@ public class GameService {
     }
 
     public GameResponse convertToResponse(String gameId, Game game) {
-        int timeLimit = lobbyService.getRoom(gameId)
+        int timeLimit = game.isAiGame() ? game.getTimeLimit() : lobbyService.getRoom(gameId)
             .map(GameRoomResponse::timeLimit)
-            .orElse(DEFAULT_TIME_LIMIT);
+            .orElse(game.getTimeLimit());
 
         List<GameResponse.ExecutedMove> lastMovesList = new ArrayList<>();
         List<String> history = game.getMoveHistory();

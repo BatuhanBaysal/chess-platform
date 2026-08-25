@@ -33,61 +33,48 @@ export const AnalyticsSidebar: React.FC<AnalyticsSidebarProps> = ({
 
   return (
     <div className="flex bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-3 gap-3 text-slate-900 dark:text-white shadow-inner w-full sm:w-72 h-full flex-col justify-between transition-colors overflow-hidden">
+      
       <div className="flex-none">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-1">
           <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
             Stockfish Analytics
           </h3>
-          <span className="text-[11px] bg-indigo-500/15 text-indigo-400 border border-indigo-500/20 px-2.5 py-1 rounded-full font-mono font-bold">
-            Engine v16
-          </span>
-        </div>
-        
-        <div className="flex flex-col gap-2">
-          <div className="bg-white dark:bg-slate-800/60 rounded-xl p-2.5 border border-slate-200 dark:border-slate-700/50 shadow-sm flex items-center justify-between">
-            <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Status</span>
-            <span className="text-[10px] font-black text-amber-500 font-mono flex items-center gap-1">
-              🟢 Active
-            </span>
-          </div>
-          <div className="bg-white dark:bg-slate-800/60 rounded-xl p-2.5 border border-slate-200 dark:border-slate-700/50 shadow-sm flex items-center justify-between">
-            <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Evaluation</span>
-            <span className="text-xs font-black text-emerald-500 font-mono">
-              {evaluationType === 'MATE' ? `M${score}` : (score > 0 ? `+${score}` : score)}
-            </span>
+          <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[9px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Active</span>
           </div>
         </div>
       </div>
 
       <div className="flex-1 flex flex-col justify-center overflow-y-auto custom-spec-scroll min-h-0 my-1">
         {displayedHint ? (
-          <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-xl p-3 animate-fade-in shadow-inner">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] text-indigo-500 dark:text-indigo-300 font-black flex items-center gap-1 uppercase tracking-wider">
+          <div className="flex flex-col items-center justify-center p-3 animate-fade-in bg-white/60 dark:bg-indigo-950/30 rounded-2xl border border-indigo-500/20 shadow-sm">
+            <div className="flex items-center justify-between w-full mb-2 px-1">
+              <span className="text-[10px] text-indigo-600 dark:text-indigo-300 font-black uppercase tracking-wider">
                 💡 Suggestion
               </span>
-              <span className="text-[11px] bg-indigo-500/20 text-indigo-400 px-2 py-1 rounded font-mono font-bold">
+              <span className="text-[9px] bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded font-mono font-bold uppercase border border-indigo-500/20">
                 Best Move
               </span>
             </div>
-            <div className="text-2xl font-mono font-black text-slate-900 dark:text-white mb-2 bg-indigo-500/10 py-2 px-4 rounded-lg border border-indigo-500/20 text-center tracking-widest shadow-sm">
-              <span className="text-amber-500">{displayedHint.bestMoveUci}</span>
+            <div className="text-2xl font-mono font-black text-amber-600 dark:text-amber-400 bg-indigo-500/10 dark:bg-indigo-900/40 py-2.5 w-full rounded-xl border border-indigo-500/20 text-center tracking-widest shadow-sm mb-2">
+              {displayedHint.bestMoveUci}
             </div>
-            <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+            <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed font-medium text-center px-1">
               {displayedHint.message}
             </p>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center p-3 border border-dashed border-slate-300 dark:border-slate-800 rounded-xl text-center">
-            <span className="text-lg mb-1 opacity-50">♟️</span>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-tight">
+          <div className="flex flex-col items-center justify-center p-3 border border-dashed border-slate-300 dark:border-slate-800 rounded-xl text-center bg-white/40 dark:bg-slate-800/20">
+            <span className="text-lg mb-1 opacity-60">♟️</span>
+            <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium leading-tight">
               {!isMyTurn ? "Waiting for opponent..." : "Click below for an engine recommendation."}
             </span>
           </div>
         )}
       </div>
 
-      <div className="flex-none flex flex-col gap-3">
+      <div className="flex-none flex flex-col gap-2">
         <div className="bg-white dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <EvaluationBar score={score} evaluationType={evaluationType} />
         </div>
@@ -110,3 +97,5 @@ export const AnalyticsSidebar: React.FC<AnalyticsSidebarProps> = ({
     </div>
   );
 };
+
+export default AnalyticsSidebar;

@@ -1,69 +1,68 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, Users, Loader2, Sword, Shield, Clock, LayoutDashboard, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import Dashboard from './Dashboard';
-import MatchHistory from './MatchHistory';
-import ChessBoard from '../../components/chess/ChessBoard';
-import GlobalLeaderboard from './GlobalLeaderboard';
-import { useChess } from '../../hooks/useChess';
+import MatchHistory from './views/MatchHistory';
+import GlobalLeaderboard from './panels/GlobalLeaderboard';
 import api from '../../api/axios';
-import { getActiveGame, cancelLobby } from '../../api/gameService';
+import { getActiveGame, createAiGame } from '../../api/gameService'; 
 import type { GameResponse } from '../../api/gameService';
 
-type ChessTheme = 'classic' | 'modern' | 'emerald';
-type TimeControl = 3 | 10 | 30;
-
-interface GameRoom {
-  roomId: string;
-  hostName: string;
-  timeLimit?: number;
-  theme?: ChessTheme;
-}
+import { useLobby } from './hooks/useLobby';
+import type { TimeControl } from './hooks/useLobby';
+import { GameSetupPanel } from './panels/GameSetupPanel';
+import { LobbyRoomsList } from './panels/LobbyRoomsList';
+import { AiMatchModal } from './modals/AiMatchModal';
+import { ReconnectAlert } from './components/ReconnectAlert';
+import { WaitingRoomModal } from './modals/WaitingRoomModal';
 
 interface LandingPageProps {
-  onStart: (theme: ChessTheme, time: TimeControl, roomId?: string) => void;
-  setView: (view: 'MENU' | 'GAME' | 'PROFILE' | 'LEADERBOARD' | 'HISTORY') => void;
+  onStart: (theme: any, time: TimeControl, roomId?: string) => void;
 }
 
-const THEME_PREVIEWS = {
-  classic: { dark: '#b58863', light: '#f0d9b5' },
-  modern: { dark: '#4b7399', light: '#eae9d2' },
-  emerald: { dark: '#6a8d5c', light: '#eceed1' }
-};
-
-const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   const { user, loginAsGuest } = useAuth();
+  const navigate = useNavigate();
   const matchHistoryRef = useRef<{ refresh: () => void }>(null);
-  const [selectedTheme, setSelectedTheme] = useState<ChessTheme>('classic');
-  const [selectedTime, setSelectedTime] = useState<TimeControl>(10);
-  const [rooms, setRooms] = useState<GameRoom[]>([]);
-  const [isCreating, setIsCreating] = useState(false);
-  const [waitingRoomId, setWaitingRoomId] = useState<string | null>(null);
-  const [activeGameId, setActiveGameId] = useState<string | null>(null);
+
+  const {
+    rooms,
+    isCreating,
+    setIsCreating,
+    waitingRoomId,
+    setWaitingRoomId,
+    selectedTheme,
+    setSelectedTheme,
+    selectedTime,
+    setSelectedTime,
+    handleCancelDeployment
+  } = useLobby(user?.id ? String(user.id) : undefined);
+
   const [reconnectGame, setReconnectGame] = useState<GameResponse | null>(null);
   const [showAiModal, setShowAiModal] = useState(false);
   const [aiPlayAsWhite, setAiPlayAsWhite] = useState(true);
   const [aiDifficulty, setAiDifficulty] = useState(3);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
-  const { 
-    game, 
-    isConnected, 
-    playerColor, 
-    makeMove, 
-    fetchLegalMoves, 
-    startNewGame,
-    startAiGame,
-    isAiLoading, 
-    resetChessState 
-  } = useChess();
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('preferred_theme');
+    if (savedTheme && savedTheme !== selectedTheme) {
+      setSelectedTheme(savedTheme as any);
+    }
+  }, [setSelectedTheme]);
+
+  useEffect(() => {
+    if (selectedTheme) {
+      localStorage.setItem('preferred_theme', String(selectedTheme));
+    }
+  }, [selectedTheme]);
 
   useEffect(() => {
     const checkActiveGame = async () => {
       if (user?.id) {
-        const activeGame = await getActiveGame(user.id);
+        const activeGame = await getActiveGame(Number(user.id));
         if (activeGame && activeGame.status !== 'CLOSING') {
           const dismissedGames = JSON.parse(localStorage.getItem('dismissed_games') || '[]');
-          
           if (!dismissedGames.includes(activeGame.gameId)) {
             setReconnectGame(activeGame);
           }
@@ -73,68 +72,56 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
     checkActiveGame();
   }, [user]);
 
-  const fetchRooms = async () => {
-    try {
-      const res = await api.get('/api/lobby/rooms');
-      setRooms(res.data);
-    } catch (e) {
-      console.error("Lobby Sync Error");
-    }
-  };
-
-  const handleStartGame = useCallback((roomId: string, time?: number, theme?: ChessTheme) => {
+  const handleStartGame = (roomId: string, time?: number, customTheme?: any) => {
     setWaitingRoomId(null);
     setReconnectGame(null);
-    setActiveGameId(roomId);
-    startNewGame(roomId);
-    onStart(theme || selectedTheme, (time as TimeControl) || selectedTime, roomId);
-  }, [onStart, selectedTheme, selectedTime, startNewGame]);
+    const chosenTheme = customTheme || selectedTheme;
+    localStorage.setItem('preferred_theme', chosenTheme);
+    onStart(chosenTheme, (time as TimeControl) || selectedTime, roomId);
+    navigate('/game');
+  };
 
   const handleStartAiMatch = async () => {
     try {
+      setIsAiLoading(true);
       let currentUser = user || await loginAsGuest();
       if (currentUser?.id) {
-        const gameId = await startAiGame(aiPlayAsWhite, aiDifficulty, selectedTime);
-        if (gameId) {
+        localStorage.setItem('preferred_theme', String(selectedTheme));
+        const aiGameData = await createAiGame(
+          Number(currentUser.id), 
+          aiPlayAsWhite, 
+          aiDifficulty, 
+          Number(selectedTime)
+        );
+
+        if (aiGameData && aiGameData.gameId) {
           setShowAiModal(false);
-          setActiveGameId(gameId);
-          onStart(selectedTheme, selectedTime, gameId);
+          onStart(selectedTheme, selectedTime, aiGameData.gameId);
+          navigate('/game', { 
+            state: { 
+              isAiGame: true, 
+              aiDifficulty, 
+              aiPlayAsWhite, 
+              selectedTime, 
+              selectedTheme 
+            } 
+          });
         }
       }
     } catch (e) {
+      console.error("AI game start error:", e);
       alert("Could not start AI game.");
+    } finally {
+      setIsAiLoading(false);
     }
   };
-
-  const checkMatchStatus = async (roomId: string) => {
-    try {
-      const res = await api.get(`/api/lobby/status/${roomId}`);
-      if (res.data.status === 'FULL' || res.data.status === 'IN_PROGRESS' || res.data.ready) {
-        handleStartGame(roomId);
-      }
-    } catch (e) {
-      console.error("Match Status Check Failed");
-    }
-  };
-
-  useEffect(() => {
-    fetchRooms();
-    const lobbyInterval = setInterval(fetchRooms, 3000);
-    let matchInterval: ReturnType<typeof setInterval> | undefined;
-    if (waitingRoomId) {
-      matchInterval = setInterval(() => checkMatchStatus(waitingRoomId), 2000);
-    }
-    return () => {
-      clearInterval(lobbyInterval);
-      if (matchInterval) clearInterval(matchInterval);
-    };
-  }, [waitingRoomId]);
 
   const handleCreateRoom = async () => {
     setIsCreating(true);
     try {
       let currentUser = user || await loginAsGuest();
       if (currentUser?.id) {
+        localStorage.setItem('preferred_theme', String(selectedTheme));
         const res = await api.post('/api/lobby/create', {
           userId: currentUser.id,
           username: currentUser.username,
@@ -151,7 +138,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
     }
   };
 
-  const handleJoinRoom = async (room: GameRoom) => {
+  const handleJoinRoom = async (room: any) => {
     try {
       let currentUser = user || await loginAsGuest();
       if (currentUser?.id) {
@@ -159,32 +146,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
           roomId: room.roomId,
           userId: currentUser.id,
           username: currentUser.username,
-          theme: room.theme 
+          theme: selectedTheme 
         });
         
-        if (room.theme) setSelectedTheme(room.theme);
         setSelectedTime(room.timeLimit as TimeControl);
-        handleStartGame(room.roomId, room.timeLimit, room.theme);
+        handleStartGame(room.roomId, room.timeLimit, selectedTheme);
       }
     } catch (e) {
       alert("Room is full or no longer exists.");
     }
   };
 
-  const handleCancelDeployment = async () => {
-    if (waitingRoomId && user?.id) {
-      try {
-        await cancelLobby(waitingRoomId, user.id);
-      } catch (e) {
-        console.error("Cancel lobby error:", e);
-      }
-    }
-    setWaitingRoomId(null);
-  };
-
   useEffect(() => {
-    fetchRooms();
-    const lobbyInterval = setInterval(fetchRooms, 3000);
     let matchInterval: ReturnType<typeof setInterval> | undefined;
     
     if (waitingRoomId) {
@@ -203,295 +176,68 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
     }
 
     return () => {
-      clearInterval(lobbyInterval);
       if (matchInterval) clearInterval(matchInterval);
     };
-  }, [waitingRoomId, handleStartGame]);
-
-  if (activeGameId && game) {
-    return (
-      <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col items-center p-4 pt-20 lg:pt-32 animate-in fade-in duration-500 transition-colors">
-        <div className="w-full max-w-7xl flex justify-between items-center mb-8 bg-slate-100 dark:bg-slate-900/50 p-6 rounded-3xl border border-slate-200 dark:border-white/5 backdrop-blur-xl">
-           <div className="flex items-center gap-4">
-              <button 
-                onClick={() => { setActiveGameId(null); resetChessState(); }} 
-                className="p-3 hover:bg-slate-200 dark:hover:bg-white/5 rounded-2xl transition-all text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-              >
-                <LayoutDashboard size={20} />
-              </button>
-              <div>
-                <h2 className="text-lg font-black uppercase tracking-widest text-slate-900 dark:text-white">Active Operations</h2>
-                <p className="text-[10px] font-mono text-slate-500 uppercase">Sector: {activeGameId}</p>
-              </div>
-           </div>
-           <div className="flex items-center gap-3 bg-slate-200 dark:bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-300 dark:border-white/5">
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-rose-500'} animate-pulse`} />
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">
-                {isConnected ? 'Link Established' : 'Link Corrupted'}
-              </span>
-           </div>
-        </div>
-        <ChessBoard
-          boardRepresentation={game.boardRepresentation}
-          isStarted={game.isStarted}
-          gameStatus={game.status}
-          currentTurn={game.currentTurn}
-          moveHistory={game.moveHistory}
-          lastMoveMessage={game.lastMoveMessage}
-          onMove={(f, r, tf, tr, prom) => makeMove(activeGameId, f, r, tf, tr, prom)}
-          fetchLegalMoves={fetchLegalMoves}
-          theme={selectedTheme}
-          timeLimit={game.timeLimit || selectedTime} 
-          orientation={playerColor || 'WHITE'}
-          whiteRemainingTimeMs={game.whiteRemainingTimeMs}
-          blackRemainingTimeMs={game.blackRemainingTimeMs}
-          onBackToMenu={() => { 
-              setActiveGameId(null); 
-              resetChessState(); 
-              matchHistoryRef.current?.refresh();
-          }}
-        />
-      </div>
-    );
-  }
+  }, [waitingRoomId, handleStartGame, setWaitingRoomId]);
 
   return (
-    <div className="w-full max-w-[70%] mx-auto pt-20 pb-12 space-y-8 text-slate-900 dark:text-slate-100">
+    <div className="w-full max-w-[70%] mx-auto pt-36 pb-12 space-y-8 text-slate-900 dark:text-slate-100">
       {reconnectGame && (
-        <div className="fixed bottom-10 right-10 z-50 animate-in slide-in-from-right-10 duration-500 w-[90%] max-w-xs">
-          <div className="bg-blue-600 p-6 rounded-3xl shadow-2xl border border-white/10 flex flex-col gap-4">
-            <div className="flex items-center gap-3">
-              <RefreshCw className="text-white animate-spin-slow" size={20} />
-              <span className="text-xs font-black uppercase tracking-widest text-white">Active Signal Found</span>
-            </div>
-            <p className="text-[10px] font-bold text-blue-100 uppercase opacity-80 leading-relaxed">
-              You have a match in progress. Re-establish neural link to Sector {reconnectGame.gameId.substring(0,4)}?
-            </p>
-            <div className="flex gap-2">
-              <button 
-                onClick={() => handleStartGame(reconnectGame.gameId, reconnectGame.timeLimit)}
-                className="flex-1 py-3 bg-white text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-50 transition-all"
-              >
-                Reconnect
-              </button>
-              <button 
-                onClick={() => {
-                  if (reconnectGame) {
-                    const dismissedGames = JSON.parse(localStorage.getItem('dismissed_games') || '[]');
-                    if (!dismissedGames.includes(reconnectGame.gameId)) {
-                      dismissedGames.push(reconnectGame.gameId);
-                      localStorage.setItem('dismissed_games', JSON.stringify(dismissedGames));
-                    }
-                  }
-                  setReconnectGame(null);
-                }}
-                className="px-4 py-3 bg-blue-700 text-blue-200 rounded-xl text-[10px] font-black uppercase hover:bg-blue-800 transition-all"
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
-        </div>
+        <ReconnectAlert 
+          reconnectGame={reconnectGame}
+          onReconnect={() => handleStartGame(reconnectGame.gameId, reconnectGame.timeLimit)}
+          onDismiss={() => {
+            const dismissedGames = JSON.parse(localStorage.getItem('dismissed_games') || '[]');
+            if (!dismissedGames.includes(reconnectGame.gameId)) {
+              dismissedGames.push(reconnectGame.gameId);
+              localStorage.setItem('dismissed_games', JSON.stringify(dismissedGames));
+            }
+            setReconnectGame(null);
+          }}
+        />
       )}
 
-      {waitingRoomId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/90 dark:bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-200 dark:border-blue-500/30 shadow-2xl text-center max-w-sm w-[90%]">
-            <div className="relative w-20 h-20 mx-auto mb-6">
-              <div className="absolute inset-0 rounded-full border-4 border-blue-500/20"></div>
-              <div className="absolute inset-0 rounded-full border-4 border-t-blue-500 animate-spin"></div>
-              <Sword className="absolute inset-0 m-auto text-blue-500" size={30} />
-            </div>
-            <h2 className="text-xl font-black tracking-tighter mb-2 uppercase text-slate-900 dark:text-white">Searching Opponent</h2>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-6">Room ID: {waitingRoomId}</p>
-            <div className="flex items-center justify-center gap-4 py-3 px-6 bg-slate-100 dark:bg-slate-800 rounded-2xl mb-6">
-              <div className="text-center">
-                  <p className="text-[8px] font-black opacity-40 uppercase text-slate-900 dark:text-white">Mode</p>
-                  <p className="text-xs font-bold text-slate-900 dark:text-white">{selectedTime} MIN</p>
-               </div>
-                <div className="w-px h-8 bg-slate-300 dark:bg-slate-700"></div>
-                <div className="text-center">
-                  <p className="text-[8px] font-black opacity-40 uppercase text-slate-900 dark:text-white">Theme</p>
-                  <p className="text-xs font-bold uppercase text-slate-900 dark:text-white">{selectedTheme}</p>
-               </div>
-            </div>
-            <button 
-              onClick={handleCancelDeployment}
-              className="text-[10px] font-black uppercase tracking-widest text-rose-500 hover:opacity-70 transition-opacity"
-            >
-              Cancel Deployment
-            </button>
-          </div>
-        </div>
-      )}
+      <WaitingRoomModal 
+        waitingRoomId={waitingRoomId}
+        selectedTime={selectedTime}
+        selectedTheme={selectedTheme}
+        onCancel={handleCancelDeployment}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch auto-rows-fr">
-        <div className="p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800/60 bg-white dark:bg-slate-900/40 backdrop-blur-3xl shadow-sm">
-          <div className="space-y-8">
-            <section>
-              <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest mb-3 text-slate-500 dark:text-slate-400 ml-1">
-                <Clock size={12} /> Time Control
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {[3, 10, 30].map(t => (
-                  <button key={t} onClick={() => setSelectedTime(t as TimeControl)} className={`py-3 rounded-xl text-[10px] font-black transition-all border ${selectedTime === t ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 text-slate-600 dark:text-slate-300'}`}>
-                    {t} MIN
-                  </button>
-                ))}
-              </div>
-            </section>
-            <section>
-              <label className="block text-[10px] font-black uppercase tracking-widest mb-3 text-slate-500 dark:text-slate-400 ml-1">Board Aesthetic</label>
-              <div className="grid grid-cols-3 gap-3">
-                {(['classic', 'modern', 'emerald'] as ChessTheme[]).map(theme => (
-                  <button key={theme} onClick={() => setSelectedTheme(theme)} className={`relative p-3 rounded-2xl transition-all border-2 flex flex-col items-center gap-3 ${selectedTheme === theme ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/5' : 'border-transparent bg-slate-100 dark:bg-slate-800/40'}`}>
-                    <div className="w-10 h-10 grid grid-cols-2 rounded-lg overflow-hidden shadow-sm">
-                      <div style={{ backgroundColor: THEME_PREVIEWS[theme].light }}></div>
-                      <div style={{ backgroundColor: THEME_PREVIEWS[theme].dark }}></div>
-                      <div style={{ backgroundColor: THEME_PREVIEWS[theme].dark }}></div>
-                      <div style={{ backgroundColor: THEME_PREVIEWS[theme].light }}></div>
-                    </div>
-                    <span className="text-[9px] font-black uppercase tracking-tighter text-slate-900 dark:text-white">{theme}</span>
-                  </button>
-                ))}
-              </div>
-            </section>
-            <button 
-              onClick={handleCreateRoom} 
-              disabled={isCreating}
-              className="w-full py-5 flex items-center justify-center gap-3 rounded-3xl font-black uppercase tracking-[0.3em] text-xs transition-all bg-slate-900 text-white dark:bg-white dark:text-slate-950 hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-50"
-            >
-              {isCreating ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />} 
-              Initialize Match
-            </button>
+        <GameSetupPanel
+          selectedTime={selectedTime}
+          setSelectedTime={setSelectedTime}
+          selectedTheme={selectedTheme}
+          setSelectedTheme={setSelectedTheme}
+          isCreating={isCreating}
+          onCreateRoom={handleCreateRoom}
+          onOpenAiModal={() => setShowAiModal(true)}
+        />
 
-            <button 
-              onClick={() => setShowAiModal(true)}
-              className="w-full py-5 flex items-center justify-center gap-3 rounded-3xl font-black uppercase tracking-[0.3em] text-xs transition-all bg-blue-600 text-white hover:bg-blue-500 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-blue-600/20"
-            >
-              <Sword size={16} />
-              Play vs AI
-            </button>
-          </div>
-        </div>
+        <AiMatchModal 
+          isOpen={showAiModal}
+          onClose={() => setShowAiModal(false)}
+          selectedTime={selectedTime}
+          setSelectedTime={setSelectedTime}
+          selectedTheme={selectedTheme}        
+          setSelectedTheme={setSelectedTheme as any}  
+          aiPlayAsWhite={aiPlayAsWhite}
+          setAiPlayAsWhite={setAiPlayAsWhite}
+          aiDifficulty={aiDifficulty}
+          setAiDifficulty={setAiDifficulty}
+          onStartMatch={handleStartAiMatch}
+          isAiLoading={isAiLoading}
+        />
 
-        {showAiModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/90 dark:bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
-            <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-200 dark:border-blue-500/30 shadow-2xl text-center max-w-sm w-[90%] space-y-6">
-              <div className="flex items-center justify-center gap-3 text-blue-500 mb-2">
-                <Sword size={30} />
-                <h2 className="text-xl font-black tracking-tighter uppercase text-slate-900 dark:text-white">Configure AI Match</h2>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Time Control (Selected: {selectedTime} MIN)</label>
-                <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Using menu setting: <span className="text-blue-500">{selectedTime} Minutes</span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Choose Your Side</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button 
-                    onClick={() => setAiPlayAsWhite(true)}
-                    className={`py-3 rounded-xl text-[10px] font-black uppercase transition-all border ${aiPlayAsWhite ? 'bg-blue-600 border-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
-                  >
-                    White (First)
-                  </button>
-                  <button 
-                    onClick={() => setAiPlayAsWhite(false)}
-                    className={`py-3 rounded-xl text-[10px] font-black uppercase transition-all border ${!aiPlayAsWhite ? 'bg-blue-600 border-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
-                  >
-                    Black (AI First)
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Difficulty Level</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[1, 3, 5].map((lvl) => (
-                    <button
-                      key={lvl}
-                      onClick={() => setAiDifficulty(lvl)}
-                      className={`py-2 rounded-xl text-[10px] font-black uppercase transition-all border ${
-                        aiDifficulty === lvl 
-                          ? 'bg-blue-600 border-blue-600 text-white' 
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-                      }`}
-                    >
-                      Level {lvl}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button 
-                  onClick={() => setShowAiModal(false)}
-                  className="flex-1 py-3 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleStartAiMatch}
-                  disabled={isAiLoading}
-                  className="flex-1 py-3 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 disabled:opacity-50"
-                >
-                  {isAiLoading && <Loader2 className="animate-spin" size={14} />}
-                  Start Match
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800/60 bg-white dark:bg-slate-900/40 backdrop-blur-3xl shadow-sm flex flex-col">
-           <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-               <Users className="text-blue-600" size={20} />
-               <h2 className="text-lg font-black uppercase tracking-widest text-slate-900 dark:text-white">Active Channels</h2>
-              </div>
-              <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                  <span className="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{rooms.length} Active</span>
-              </div>
-           </div>
-           <div className="grow overflow-y-auto pr-2 space-y-3">
-              {rooms.length > 0 ? (
-                rooms.map(room => (
-                  <div key={room.roomId} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/50 flex justify-between items-center group hover:border-blue-500 transition-all shadow-sm">
-                    <div>
-                      <p className="text-[10px] font-black opacity-60 uppercase tracking-widest text-slate-900 dark:text-white">{room.hostName}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                          <Shield size={10} className="text-blue-500" />
-                          <p className="text-[10px] text-blue-600 dark:text-blue-400 font-bold">
-                            {room.timeLimit} MIN {room.theme ? `• ${room.theme.toUpperCase()}` : ''}
-                          </p>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => handleJoinRoom(room)} 
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 transition-all active:scale-95 flex items-center gap-1.5 group-hover:shadow-blue-600/40"
-                    >
-                      <span>Engage</span>
-                      <Sword size={11} className="transition-transform group-hover:translate-x-0.5" />
-                    </button>
-                  </div>
-                ))
-              ) : (
-               <div className="h-full flex flex-col items-center justify-center opacity-40 text-slate-900 dark:text-white">
-                  <Sword size={24} className="mb-2" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em]">No signals detected...</p>
-               </div>
-              )}
-           </div>
-        </div>
+        <LobbyRoomsList 
+          rooms={rooms} 
+          onJoinRoom={handleJoinRoom} 
+        />
       </div>
 
       <div className="w-full bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 rounded-[3rem] p-8 shadow-sm">
-        <GlobalLeaderboard setView={setView} />
+        <GlobalLeaderboard />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch auto-rows-fr">
@@ -500,22 +246,22 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, setView }) => {
           {user && <Dashboard userId={user.id} activeLobbyId={waitingRoomId} />}
         </div>
         <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 rounded-[3rem] p-8 shadow-sm">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-black uppercase tracking-widest text-slate-900 dark:text-white">
-            Deployment History
-          </h2>
-          <button 
-            onClick={() => setView('HISTORY')}
-            className="text-blue-500 hover:text-blue-400 text-xs font-black uppercase tracking-widest transition-all flex items-center gap-1"
-          >
-            View All &gt;
-          </button>
-        </div>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-black uppercase tracking-widest text-slate-900 dark:text-white">
+              Deployment History
+            </h2>
+            <button 
+              onClick={() => navigate('/history')}
+              className="text-blue-500 hover:text-blue-400 text-xs font-black uppercase tracking-widest transition-all flex items-center gap-1"
+            >
+              View All &gt;
+            </button>
+          </div>
 
-        {user && (
-          <MatchHistory ref={matchHistoryRef} userId={user.id} limit={5} />
-        )}
-      </div>
+          {user && (
+            <MatchHistory ref={matchHistoryRef} userId={user.id} limit={5} />
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
-import { getPlayerHistory } from '../../api/gameService';
+import { getPlayerHistory } from '../../../api/gameService';
 import { User, Sword, Hash, RefreshCw } from 'lucide-react';
 
 interface GameHistory {

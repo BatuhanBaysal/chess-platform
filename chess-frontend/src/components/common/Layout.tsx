@@ -4,29 +4,20 @@ import Footer from './Footer';
 
 interface LayoutProps {
   children: React.ReactNode;
-  colorMode: string;
-  setColorMode: React.Dispatch<React.SetStateAction<string>>;
-  view?: 'MENU' | 'GAME' | 'PROFILE' | 'LEADERBOARD' | 'HISTORY' | 'ADMIN';
   onBackToMenu?: () => void;
-  onNavigateToProfile?: () => void; 
+  isInGame?: boolean;
 }
 
 const Layout: React.FC<LayoutProps> = ({ 
   children, 
-  colorMode, 
-  setColorMode, 
-  view, 
   onBackToMenu,
-  onNavigateToProfile 
+  isInGame
 }) => {
   return (
     <div className="min-h-screen flex flex-col transition-colors duration-500">
       <Header 
-        colorMode={colorMode} 
-        setColorMode={setColorMode}
-        view={view} 
         onBackToMenu={onBackToMenu}
-        onNavigateToProfile={onNavigateToProfile}
+        isInGame={isInGame}
       />
       
       <main className="grow flex flex-col justify-center items-center w-full py-12">

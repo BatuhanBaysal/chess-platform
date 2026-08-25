@@ -30,6 +30,8 @@ public class Game {
     private long blackRemainingTimeMs;
     private Long lastMoveTimestamp;
 
+    private int timeLimit = 10;
+
     public Game(Board board) {
         this.board = board;
         this.currentTurn = Color.WHITE;
@@ -52,6 +54,10 @@ public class Game {
 
     public synchronized void setStatus(GameStatus status) {
         this.status = status;
+    }
+
+    public synchronized void setTimeLimit(int timeLimit) {
+        this.timeLimit = timeLimit;
     }
 
     public synchronized void setHalfMoveClock(int halfMoveClock) {
@@ -124,6 +130,7 @@ public class Game {
     }
 
     public synchronized void startClock(int timeLimitMinutes) {
+        this.timeLimit = timeLimitMinutes;
         long timeLimitMs = (long) timeLimitMinutes * 60 * 1000;
         this.whiteRemainingTimeMs = timeLimitMs;
         this.blackRemainingTimeMs = timeLimitMs;

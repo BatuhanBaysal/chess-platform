@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { getLeaderboard, type LeaderboardUser } from '../../api/userService';
+import { useNavigate } from 'react-router-dom';
+import { getLeaderboard, type LeaderboardUser } from '../../../api/userService';
 import { Trophy } from 'lucide-react';
 
-interface GlobalLeaderboardProps {
-    setView: (view: 'MENU' | 'GAME' | 'PROFILE' | 'LEADERBOARD') => void;
-}
-
-const GlobalLeaderboard: React.FC<GlobalLeaderboardProps> = ({ setView }) => {
+const GlobalLeaderboard: React.FC = () => {
+    const navigate = useNavigate();
     const [users, setUsers] = useState<LeaderboardUser[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -16,6 +14,11 @@ const GlobalLeaderboard: React.FC<GlobalLeaderboardProps> = ({ setView }) => {
             .catch(console.error)
             .finally(() => setIsLoading(false));
     }, []);
+
+    const handleViewAllClick = () => {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        navigate('/leaderboard');
+    };
 
     const getTrophyColor = (index: number) => {
         if (index === 0) return 'text-amber-500';
@@ -34,8 +37,8 @@ const GlobalLeaderboard: React.FC<GlobalLeaderboardProps> = ({ setView }) => {
                     Top Players
                 </h2>
                 <button 
-                    onClick={() => setView('LEADERBOARD')} 
-                    className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 transition-colors"
+                    onClick={handleViewAllClick} 
+                    className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 transition-colors cursor-pointer"
                 >
                     View All &gt;
                 </button>
@@ -52,7 +55,7 @@ const GlobalLeaderboard: React.FC<GlobalLeaderboardProps> = ({ setView }) => {
                         </div>
                         
                         <span className="text-base font-mono text-slate-600 dark:text-slate-400 uppercase tracking-widest">
-                            {user.totalWins}W / {user.totalLosses}L / {user.totalDraws}D
+                            {user.totalWins ?? 0}W / {user.totalLosses ?? 0}L / {user.totalDraws ?? 0}D
                         </span>
 
                         <span className="text-2xl font-black text-blue-700 dark:text-blue-400 tabular-nums">

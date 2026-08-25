@@ -1,38 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { getMyProfile, type UserResponse } from '../../api/userService';
+import { useAuth } from '../../hooks/useAuth';
 
 interface ProtectedRouteProps {
     requiredRole?: string;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requiredRole }) => {
-    const [user, setUser] = useState<UserResponse | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
+    const { user, loading } = useAuth();
     const token = localStorage.getItem('token');
 
-    useEffect(() => {
-        const fetchUser = async () => {
-            if (!token) {
-                setLoading(false);
-                return;
-            }
-            try {
-                const data = await getMyProfile();
-                setUser(data);
-            } catch (error) {
-                console.error("Failed to fetch user profile for route protection:", error);
-                setUser(null);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchUser();
-    }, [token]);
-
     if (loading) {
-        return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: '#fff' }}>Loading...</div>;
+        return (
+            <div className="min-h-screen bg-white dark:bg-[#020617] flex items-center justify-center font-black uppercase text-xs tracking-widest text-slate-500">
+                Loading Security Context...
+            </div>
+        );
     }
 
     if (!token || !user) {

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { getPlayerHistory } from '../../api/gameService';
+import { useNavigate } from 'react-router-dom';
+import { getPlayerHistory } from '../../../api/gameService';
 import { ChevronLeft, ChevronRight, ArrowLeft, Hash } from 'lucide-react';
 
 interface GameHistory {
@@ -15,10 +16,10 @@ interface GameHistory {
 
 interface AllMatchHistoryProps {
     userId: number;
-    onBack: () => void; 
 }
 
-const AllMatchHistory: React.FC<AllMatchHistoryProps> = ({ userId, onBack }) => {
+const AllMatchHistory: React.FC<AllMatchHistoryProps> = ({ userId }) => {
+    const navigate = useNavigate();
     const [history, setHistory] = useState<GameHistory[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
@@ -39,12 +40,12 @@ const AllMatchHistory: React.FC<AllMatchHistoryProps> = ({ userId, onBack }) => 
     };
 
     return (
-        <div className="min-h-screen p-6 md:p-12 max-w-7xl mx-auto text-slate-900 dark:text-white animate-in fade-in duration-500">
+        <div className="min-h-screen pt-36 pb-12 px-6 md:px-12 max-w-7xl mx-auto text-slate-900 dark:text-white animate-in fade-in duration-500">
             <button 
-                onClick={onBack} 
+                onClick={() => navigate('/')} 
                 className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors mb-8 uppercase font-black text-xs tracking-widest"
             >
-                <ArrowLeft size={16} /> Back to Dashboard
+                <ArrowLeft size={16} /> Back to Menu
             </button>
 
             <div className="flex flex-col mb-10">

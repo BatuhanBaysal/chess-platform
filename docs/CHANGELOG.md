@@ -30,10 +30,17 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
-## [2.1.0] - 2026-08-20
+## [2.1.0] - 2026-08-25
 
 ### 🚀 Phase 20: Enterprise Refactoring & Production Readiness 🏗️ (v2.1.0)
 > **Note:** Elevating backend architecture through domain-driven vertical slicing, decoupling monolithic services, and ensuring real-time production reliability.
+
+- **2026-08-25:**
+    - **Frontend Enterprise Architecture Refactoring & Modular UI Componentization (PR #131 | Issue #123):**
+        - Decoupled monolithic `ChessBoard` and oversized custom hooks (`useChess`) into granular, single-responsibility presentational components and modular hooks (`useChessGameLogic`, `useChessActions`, `useChessSocket`, `useChessTimer`) to isolate state management and side-effects.
+        - Redesigned the active match interface layout by consolidating left-side elements (Stockfish evaluation, clocks, captured pieces) into a unified panel, and combining right-side telemetry and move notation elements into an intuitive tabbed panel system.
+        - Integrated clean routing architecture (`AppRoutes`) across application features, enhancing client-side navigation security and clean URL management.
+        - Refactored UI component hierarchies and styling layers across menus, game views, authentication modules, and user dashboards to boost rendering performance, maintainability, and visual responsiveness.
 
 - **2026-08-21:**
     - **Core Business Logic Optimization & Stockfish Integration Refactoring (PR #126 | Issue #122):**

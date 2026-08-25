@@ -1,4 +1,4 @@
-import axios from './axios';
+import api from './axios';
 
 export interface UserResponse {
     username: string;
@@ -20,15 +20,6 @@ export interface LeaderboardUser {
     totalGames: number;
 }
 
-export interface LeaderboardUser {
-    username: string;
-    eloRating: number;
-    totalWins: number;      
-    totalLosses: number;    
-    totalDraws: number; 
-    totalGames: number;    
-}
-
 export interface UpdateProfileRequest {
     username: string;
     email: string;
@@ -44,28 +35,28 @@ export interface DeleteAccountRequest {
 }
 
 export const getMyProfile = async (): Promise<UserResponse> => {
-    const response = await axios.get('/api/users/me');
+    const response = await api.get('/api/users/me');
     return response.data;
 };
 
 export const getLeaderboard = async (): Promise<LeaderboardUser[]> => {
-    const response = await axios.get('/api/users/leaderboard');
+    const response = await api.get('/api/users/leaderboard');
     return response.data;
 };
 
 export const getFullLeaderboard = async (): Promise<LeaderboardUser[]> => {
-    const response = await axios.get('/api/users/leaderboard/all');
+    const response = await api.get('/api/users/leaderboard/all');
     return response.data;
 };
 
 export const updateMyProfile = async (data: UpdateProfileRequest): Promise<void> => {
-    await axios.put('/api/users/me', data);
+    await api.put('/api/users/me', data);
 };
 
 export const changeMyPassword = async (data: ChangePasswordRequest): Promise<void> => {
-    await axios.put('/api/users/me/password', data);
+    await api.put('/api/users/me/password', data);
 };
 
 export const deleteMyAccount = async (data: DeleteAccountRequest): Promise<void> => {
-    await axios.delete('/api/users/me', { data });
+    await api.delete('/api/users/me', { data });
 };

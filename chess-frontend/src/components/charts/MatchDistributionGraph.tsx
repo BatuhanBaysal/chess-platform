@@ -1,6 +1,13 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
-export const MatchDistributionGraph = ({ data }: { data: any[] }) => {
+export interface MatchDistributionItem {
+    name: string;
+    value: number;
+    fill: string;
+    [key: string]: any;
+}
+
+export const MatchDistributionGraph = ({ data }: { data: MatchDistributionItem[] }) => {
     return (
         <ResponsiveContainer width="100%" height={200}>
             <PieChart>

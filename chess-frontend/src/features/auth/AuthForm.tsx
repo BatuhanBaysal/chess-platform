@@ -48,7 +48,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin }
     if (strength <= 1) return 0; 
     if (strength <= 2) return 1; 
     if (strength <= 3) return 2; 
-    return 3;                   
+    return 3;             
   };
 
   const strength = getPasswordStrength();
@@ -94,8 +94,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin }
       } else {
         await onLogin(formData.username, formData.password);
       }
-    } catch (error: any) {
+    } catch (err: unknown) {
       setFormData(prev => ({ ...prev, password: '' })); 
+      
+      const error = err as { response?: { data?: any }; message?: string };
       const errData = error.response?.data;
       const errorMessage = typeof errData === 'string' ? errData : (errData?.message || errData?.error || error.message || "Authentication failed");
       const msgLower = errorMessage.toLowerCase();
@@ -113,13 +115,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin }
   return (
     <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6">
       {success ? (
-        <div className="p-8 bg-emerald-500/5 border border-emerald-500/10 rounded-3xl text-center flex flex-col items-center max-w-sm">
+        <div className="p-8 bg-emerald-500/5 border border-emerald-500/10 rounded-3xl text-center flex flex-col items-center max-w-sm mx-auto">
           <h3 className="text-emerald-500 font-black uppercase tracking-[0.2em] mb-4">Welcome to the Board!</h3>
           <p className="text-slate-300 text-sm md:text-base mb-6 leading-relaxed">
             Your account <span className="text-white font-bold">{formData.username}</span> has been successfully created. 
             You are starting your chess journey with an initial Elo rating of <span className="text-emerald-500 font-bold"> 1200</span>.
           </p>
-          <button type="button" onClick={() => { setSuccess(false); setIsRegistering(false); }} className="w-full px-8 py-3 bg-emerald-600 text-white font-black uppercase tracking-widest rounded-xl hover:bg-emerald-500 transition-all active:scale-95">
+          <button type="button" onClick={() => { setSuccess(false); setIsRegistering(false); }} className="w-full px-8 py-3 bg-emerald-600 text-white font-black uppercase tracking-widest rounded-xl hover:bg-emerald-500 transition-all active:scale-95 cursor-pointer">
             Sign In & Play
           </button>
         </div>
@@ -156,7 +158,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin }
               placeholder="••••••••" 
               value={formData.password} 
               onChange={handleInputChange} 
-              onKeyDown={(e: any) => setCapsLockOn(e.getModifierState("CapsLock"))}
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => setCapsLockOn(e.getModifierState("CapsLock"))}
               error={errors.password} 
             />
             {capsLockOn && <p className="text-[10px] text-amber-500 font-bold absolute right-0 -top-1">CAPS LOCK IS ON</p>}
@@ -170,12 +172,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin }
               </div>
             )}
 
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-9.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-9 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer">
               {showPassword ? "🙈" : "👁️"}
             </button>
           </div>
           
-          <button type="submit" className="w-full py-4 mt-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black uppercase tracking-widest rounded-xl hover:opacity-90 transition-opacity">
+          <button type="submit" className="w-full py-4 mt-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black uppercase tracking-widest rounded-xl hover:opacity-90 transition-opacity cursor-pointer">
             {isRegistering ? 'CREATE ACCOUNT' : 'SIGN IN'}
           </button>
 
@@ -185,7 +187,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin }
             <div className="grow border-t border-slate-200 dark:border-slate-800"></div>
           </div>
 
-          <button type="button" onClick={onGuestLogin} className="w-full py-4 border-2 border-slate-200 dark:border-slate-800 rounded-xl text-slate-600 dark:text-slate-400 font-black uppercase tracking-widest hover:border-indigo-500 hover:text-indigo-500 transition-all">
+          <button type="button" onClick={onGuestLogin} className="w-full py-4 border-2 border-slate-200 dark:border-slate-800 rounded-xl text-slate-600 dark:text-slate-400 font-black uppercase tracking-widest hover:border-indigo-500 hover:text-indigo-500 transition-all cursor-pointer">
             Play as Guest
           </button>
 
@@ -199,7 +201,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin }
           </div>
 
           <div className="text-center mt-2">
-            <button type="button" onClick={() => { setIsRegistering(!isRegistering); resetForm(); }} className="text-xs font-bold text-slate-500 hover:text-indigo-600 transition-colors">
+            <button type="button" onClick={() => { setIsRegistering(!isRegistering); resetForm(); }} className="text-xs font-bold text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer">
               {isRegistering ? <>Already have an account? <span className="underline">Sign In</span></> : <>Don't have an account? <span className="underline">Register Now</span></>}
             </button>
           </div>

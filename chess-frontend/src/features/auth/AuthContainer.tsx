@@ -7,21 +7,17 @@ interface AuthContainerProps {
   onLogin: (username: string, password: string) => void;
   onRegister: (username: string, password: string, email: string) => Promise<void> | void;
   onGuestLogin: () => void;
-  colorMode: string;
-  setColorMode: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const AuthContainer: React.FC<AuthContainerProps> = ({ 
   onLogin, 
   onRegister, 
-  onGuestLogin,
-  colorMode,
-  setColorMode
+  onGuestLogin
 }) => {
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-[#020617] transition-colors duration-500">
-      <Header colorMode={colorMode} setColorMode={setColorMode} />
- 
+      <Header />
+
       <main className="grow flex flex-col items-center justify-center px-6 pt-32 pb-12 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] bg-blue-600/10 dark:bg-blue-600/20" />

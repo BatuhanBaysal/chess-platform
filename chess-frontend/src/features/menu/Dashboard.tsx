@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { getMyProfile } from '../../api/userService';
 import { Trophy, Swords, BarChart3, Activity, TrendingUp } from 'lucide-react';
-import ChessBoard from '../../components/chess/ChessBoard';
-import { useChess } from '../../hooks/useChess';
+import ChessBoard from '../chess/components/ChessBoard.tsx';
+import { useChess } from '../chess/hooks/useChess.ts';
 import { MatchDistributionGraph } from '../../components/charts/MatchDistributionGraph';
 
 interface Stats {
@@ -49,10 +49,34 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) => {
     const statsCards = useMemo(() => {
         if (!stats) return [];
         return [
-            { label: 'ELO', value: stats.eloRating, icon: <TrendingUp size={12} />, color: 'yellow' },
-            { label: 'Wins', value: stats.totalWins, icon: <Trophy size={12} />, color: 'emerald' },
-            { label: 'Losses', value: stats.totalLosses, icon: <Swords size={12} />, color: 'rose' },
-            { label: 'Draws', value: stats.totalDraws, icon: <Activity size={12} />, color: 'slate' }
+            { 
+                label: 'ELO', 
+                value: stats.eloRating, 
+                icon: <TrendingUp size={12} />, 
+                borderColor: 'border-yellow-500', 
+                textColor: 'text-yellow-500' 
+            },
+            { 
+                label: 'Wins', 
+                value: stats.totalWins, 
+                icon: <Trophy size={12} />, 
+                borderColor: 'border-emerald-500', 
+                textColor: 'text-emerald-500' 
+            },
+            { 
+                label: 'Losses', 
+                value: stats.totalLosses, 
+                icon: <Swords size={12} />, 
+                borderColor: 'border-rose-500', 
+                textColor: 'text-rose-500' 
+            },
+            { 
+                label: 'Draws', 
+                value: stats.totalDraws, 
+                icon: <Activity size={12} />, 
+                borderColor: 'border-slate-500', 
+                textColor: 'text-slate-500' 
+            }
         ];
     }, [stats]);
 
@@ -104,10 +128,10 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) => {
                     {statsCards.map((card, idx) => (
                         <div 
                             key={idx} 
-                            className={`bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border-l-4 border-${card.color}-500 border-t border-r border-b border-slate-200 dark:border-slate-800 shadow-sm`}
+                            className={`bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border-l-4 ${card.borderColor} border-t border-r border-b border-slate-200 dark:border-slate-800 shadow-sm`}
                         >
                             <div className="flex items-center gap-2 mb-2">
-                                <span className={`text-${card.color}-500`}>{card.icon}</span>
+                                <span className={card.textColor}>{card.icon}</span>
                                 <p className="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
                                     {card.label}
                                 </p>

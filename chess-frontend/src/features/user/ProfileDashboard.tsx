@@ -69,7 +69,7 @@ const ProfileDashboard: React.FC = () => {
     };
 
     const handleSave = async () => {
-    if (!formData || !canSave) return;
+        if (!formData || !canSave) return;
         setLoading(true); setProfileError(null); setSuccess(null);
         try {
             await updateMyProfile({ username: formData.username, email: formData.email });
@@ -108,106 +108,102 @@ const ProfileDashboard: React.FC = () => {
     if (!formData) return null;
 
     return (
-        <div className="max-w-3xl mx-auto mt-10 p-10 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 space-y-12 animate-in fade-in duration-500 text-slate-900 dark:text-slate-100">
-            {/* Header */}
-            <h1 className="text-4xl font-extrabold text-center uppercase tracking-tighter">Profile Settings</h1>
-            
-            {/* Notifications */}
-            {(profileError || passwordError || success) && (
-                <div className={`flex items-center gap-2 p-4 border rounded-xl text-sm ${profileError || passwordError ? 'bg-red-500/20 border-red-500 text-red-500' : 'bg-emerald-500/20 border-emerald-500 text-emerald-400'}`}>
-                    {(profileError || passwordError) ? <AlertCircle size={18}/> : <CheckCircle2 size={18}/>} 
-                    {profileError || passwordError || success}
-                </div>
-            )}
+        <div className="max-w-3xl mx-auto pt-36 pb-12 px-4 text-slate-900 dark:text-slate-100">
+            <div className="bg-white dark:bg-slate-900 p-8 md:p-10 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 space-y-12 animate-in fade-in duration-500">
+                <h1 className="text-4xl font-extrabold text-center uppercase tracking-tighter">Profile Settings</h1>
+                
+                {(profileError || passwordError || success) && (
+                    <div className={`flex items-center gap-2 p-4 border rounded-xl text-sm ${profileError || passwordError ? 'bg-red-500/20 border-red-500 text-red-500' : 'bg-emerald-500/20 border-emerald-500 text-emerald-400'}`}>
+                        {(profileError || passwordError) ? <AlertCircle size={18}/> : <CheckCircle2 size={18}/>} 
+                        {profileError || passwordError || success}
+                    </div>
+                )}
 
-            {/* Stats Overview */}
-            <div className="grid grid-cols-4 gap-6 bg-slate-50 dark:bg-slate-800 p-8 rounded-3xl border border-slate-200 dark:border-slate-700">
-                {[
-                    { label: 'ELO', val: formData.eloRating, title: 'ELO Rating', tips: ['Increases based on match results.', 'Determines your rank.'] },
-                    { label: 'WINS', val: formData.totalWins, title: 'Total Wins', tips: ['Total number of matches won.'] },
-                    { label: 'LOSS', val: formData.totalLosses, title: 'Total Losses', tips: ['Total number of matches lost.'] },
-                    { label: 'DRAW', val: formData.totalDraws, title: 'Draws', tips: ['Total number of matches drawn.'] },
-                ].map((stat, i) => (
-                    <div key={i} className="text-center space-y-1">
-                        <div className="flex items-center justify-center gap-1">
-                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest">{stat.label}</div>
-                            <Tooltip title={stat.title} items={stat.tips} />
+                <div className="grid grid-cols-4 gap-6 bg-slate-50 dark:bg-slate-800 p-8 rounded-3xl border border-slate-200 dark:border-slate-700">
+                    {[
+                        { label: 'ELO', val: formData.eloRating, title: 'ELO Rating', tips: ['Increases based on match results.', 'Determines your rank.'] },
+                        { label: 'WINS', val: formData.totalWins, title: 'Total Wins', tips: ['Total number of matches won.'] },
+                        { label: 'LOSS', val: formData.totalLosses, title: 'Total Losses', tips: ['Total number of matches lost.'] },
+                        { label: 'DRAW', val: formData.totalDraws, title: 'Draws', tips: ['Total number of matches drawn.'] },
+                    ].map((stat, i) => (
+                        <div key={i} className="text-center space-y-1">
+                            <div className="flex items-center justify-center gap-1">
+                                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest">{stat.label}</div>
+                                <Tooltip title={stat.title} items={stat.tips} />
+                            </div>
+                            <div className="text-3xl font-black text-blue-600 dark:text-blue-400">{stat.val}</div>
                         </div>
-                        <div className="text-3xl font-black text-blue-600 dark:text-blue-400">{stat.val}</div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Account Details */}
-            <div className="space-y-6">
-                <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-slate-500"><Trophy size={18} /> Account Details</h3>
-                <div className={`space-y-4 ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
-                    <div className="relative">
-                        <div className="flex items-center gap-2 mb-2">
-                            <label className="text-[10px] font-bold uppercase text-slate-500">Username</label>
-                            <Tooltip title="Username" items={['Only letters and numbers allowed.', 'Changes are permanent.']} />
-                        </div>
-                        <User className="absolute left-4 top-11 text-slate-400" size={20} />
-                        <input className={`w-full bg-slate-50 dark:bg-slate-950 p-4 pl-12 rounded-2xl border ${profileError && formData.username === '' ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} focus:ring-2 focus:ring-blue-500 outline-none`} disabled={!isEditing} value={formData.username} onChange={(e) => handleInputChange('username', e.target.value)} />
-                    </div>
-                    <div className="relative">
-                        <div className="flex items-center gap-2 mb-2">
-                            <label className="text-[10px] font-bold uppercase text-slate-500">Email Address</label>
-                            <Tooltip title="Email Address" items={['Used for notifications.', 'Provides access for password reset.']} />
-                        </div>
-                        <Mail className="absolute left-4 top-11 text-slate-400" size={20} />
-                        <input className={`w-full bg-slate-50 dark:bg-slate-950 p-4 pl-12 rounded-2xl border ${formData.email && !isValidEmail(formData.email) ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} focus:ring-2 focus:ring-blue-500 outline-none`} disabled={!isEditing} value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} />
-                    </div>
+                    ))}
                 </div>
-                <div className="flex gap-4 pt-2">
-                    <button onClick={isEditing ? handleCancel : () => setIsEditing(true)} className="flex-1 py-4 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 rounded-2xl text-xs font-black uppercase tracking-widest transition-colors">
-                        {isEditing ? <><X size={14} className="inline mr-1"/> Cancel</> : <><Edit2 size={14} className="inline mr-1"/> Edit Profile</>}
-                    </button>
-                    {isEditing && (
-                        <button onClick={handleSave} disabled={!canSave} className="flex-1 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-xs font-black uppercase tracking-widest disabled:opacity-30 transition-colors">
-                            {loading ? <Loader2 className="animate-spin inline mr-1" size={14}/> : <><Save size={14} className="inline mr-1"/> Save Changes</>}
+
+                <div className="space-y-6">
+                    <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-slate-500"><Trophy size={18} /> Account Details</h3>
+                    <div className={`space-y-4 ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
+                        <div className="relative">
+                            <div className="flex items-center gap-2 mb-2">
+                                <label className="text-[10px] font-bold uppercase text-slate-500">Username</label>
+                                <Tooltip title="Username" items={['Only letters and numbers allowed.', 'Changes are permanent.']} />
+                            </div>
+                            <User className="absolute left-4 top-11 text-slate-400" size={20} />
+                            <input className={`w-full bg-slate-50 dark:bg-slate-950 p-4 pl-12 rounded-2xl border ${profileError && formData.username === '' ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} focus:ring-2 focus:ring-blue-500 outline-none`} disabled={!isEditing} value={formData.username} onChange={(e) => handleInputChange('username', e.target.value)} />
+                        </div>
+                        <div className="relative">
+                            <div className="flex items-center gap-2 mb-2">
+                                <label className="text-[10px] font-bold uppercase text-slate-500">Email Address</label>
+                                <Tooltip title="Email Address" items={['Used for notifications.', 'Provides access for password reset.']} />
+                            </div>
+                            <Mail className="absolute left-4 top-11 text-slate-400" size={20} />
+                            <input className={`w-full bg-slate-50 dark:bg-slate-950 p-4 pl-12 rounded-2xl border ${formData.email && !isValidEmail(formData.email) ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} focus:ring-2 focus:ring-blue-500 outline-none`} disabled={!isEditing} value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} />
+                        </div>
+                    </div>
+                    <div className="flex gap-4 pt-2">
+                        <button onClick={isEditing ? handleCancel : () => setIsEditing(true)} className="flex-1 py-4 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 rounded-2xl text-xs font-black uppercase tracking-widest transition-colors cursor-pointer">
+                            {isEditing ? <><X size={14} className="inline mr-1"/> Cancel</> : <><Edit2 size={14} className="inline mr-1"/> Edit Profile</>}
                         </button>
-                    )}
-                </div>
-            </div>
-
-            {/* Security Section */}
-            <div className="pt-8 border-t border-slate-200 dark:border-slate-700 space-y-6">
-                <div className="flex items-center gap-2">
-                    <h4 className="text-sm font-black uppercase text-slate-500 flex items-center gap-2"><Lock size={18}/> Security</h4>
-                    <Tooltip title="Security Policies" items={['Password must be at least 8 characters.', 'Must include at least 1 number and 1 letter.']} />
-                </div>
-                <div className="relative">
-                    <input className="w-full bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" type={showCurrentPass ? "text" : "password"} placeholder="Current Password" value={passwordData.currentPassword} onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})} />
-                    <button onClick={() => setShowCurrentPass(!showCurrentPass)} className="absolute right-4 top-4 text-slate-400 hover:text-slate-600">{showCurrentPass ? <EyeOff size={20}/> : <Eye size={20}/>}</button>
-                </div>
-                <div className="space-y-2">
-                    <div className="relative">
-                        <input className="w-full bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" type={showNewPass ? "text" : "password"} placeholder="New Password" value={passwordData.newPassword} onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})} />
-                        <button onClick={() => setShowNewPass(!showNewPass)} className="absolute right-4 top-4 text-slate-400 hover:text-slate-600">{showNewPass ? <EyeOff size={20}/> : <Eye size={20}/>}</button>
+                        {isEditing && (
+                            <button onClick={handleSave} disabled={!canSave} className="flex-1 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-xs font-black uppercase tracking-widest disabled:opacity-30 transition-colors cursor-pointer">
+                                {loading ? <Loader2 className="animate-spin inline mr-1" size={14}/> : <><Save size={14} className="inline mr-1"/> Save Changes</>}
+                            </button>
+                        )}
                     </div>
-                    {passwordData.newPassword && (
-                        <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                            <div className={`h-full transition-all duration-300 ${isPasswordStrong ? 'bg-emerald-500 w-full' : 'bg-red-500 w-1/2'}`} />
-                        </div>
-                    )}
                 </div>
-                <button onClick={handlePasswordChange} disabled={loading || !passwordData.currentPassword || !isPasswordStrong} className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-black uppercase tracking-widest disabled:opacity-30 transition-colors">Change Password</button>
-            </div>
 
-            {/* Danger Zone */}
-            <div className="pt-4">
-                <div className="flex items-center gap-2 mb-4">
-                    <h4 className="text-sm font-black uppercase text-rose-600 flex items-center gap-2"><ShieldAlert size={18} /> Danger Zone</h4>
-                    <Tooltip title="Delete Account" items={['This action cannot be undone.', 'All data will be permanently deleted.', 'Password is required to confirm.']} />
+                <div className="pt-8 border-t border-slate-200 dark:border-slate-700 space-y-6">
+                    <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-black uppercase text-slate-500 flex items-center gap-2"><Lock size={18}/> Security</h4>
+                        <Tooltip title="Security Policies" items={['Password must be at least 8 characters.', 'Must include at least 1 number and 1 letter.']} />
+                    </div>
+                    <div className="relative">
+                        <input className="w-full bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" type={showCurrentPass ? "text" : "password"} placeholder="Current Password" value={passwordData.currentPassword} onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})} />
+                        <button onClick={() => setShowCurrentPass(!showCurrentPass)} className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 cursor-pointer">{showCurrentPass ? <EyeOff size={20}/> : <Eye size={20}/>}</button>
+                    </div>
+                    <div className="space-y-2">
+                        <div className="relative">
+                            <input className="w-full bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" type={showNewPass ? "text" : "password"} placeholder="New Password" value={passwordData.newPassword} onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})} />
+                            <button onClick={() => setShowNewPass(!showNewPass)} className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 cursor-pointer">{showNewPass ? <EyeOff size={20}/> : <Eye size={20}/>}</button>
+                        </div>
+                        {passwordData.newPassword && (
+                            <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                                <div className={`h-full transition-all duration-300 ${isPasswordStrong ? 'bg-emerald-500 w-full' : 'bg-red-500 w-1/2'}`} />
+                            </div>
+                        )}
+                    </div>
+                    <button onClick={handlePasswordChange} disabled={loading || !passwordData.currentPassword || !isPasswordStrong} className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-black uppercase tracking-widest disabled:opacity-30 transition-colors cursor-pointer">Change Password</button>
                 </div>
-                <div className="relative">
-                    <input className="w-full bg-slate-50 dark:bg-slate-950 p-4 pr-14 rounded-2xl border border-slate-200 dark:border-slate-700 text-sm mb-4 focus:ring-2 focus:ring-rose-500 outline-none" type={showDeletePass ? "text" : "password"} placeholder="Confirm password to delete" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} />
-                    <button onClick={() => setShowDeletePass(!showDeletePass)} className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">{showDeletePass ? <EyeOff size={20}/> : <Eye size={20}/>}</button>
+
+                <div className="pt-4">
+                    <div className="flex items-center gap-2 mb-4">
+                        <h4 className="text-sm font-black uppercase text-rose-600 flex items-center gap-2"><ShieldAlert size={18} /> Danger Zone</h4>
+                        <Tooltip title="Delete Account" items={['This action cannot be undone.', 'All data will be permanently deleted.', 'Password is required to confirm.']} />
+                    </div>
+                    <div className="relative">
+                        <input className="w-full bg-slate-50 dark:bg-slate-950 p-4 pr-14 rounded-2xl border border-slate-200 dark:border-slate-700 text-sm mb-4 focus:ring-2 focus:ring-rose-500 outline-none" type={showDeletePass ? "text" : "password"} placeholder="Confirm password to delete" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} />
+                        <button onClick={() => setShowDeletePass(!showDeletePass)} className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">{showDeletePass ? <EyeOff size={20}/> : <Eye size={20}/>}</button>
+                    </div>
+                    <button onClick={handleDeleteAccount} disabled={loading || !deletePassword} className="w-full py-4 border-2 border-rose-600 text-rose-600 hover:bg-rose-600 hover:text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-colors disabled:opacity-30 cursor-pointer">
+                        Delete My Account
+                    </button>
                 </div>
-                <button onClick={handleDeleteAccount} disabled={loading || !deletePassword} className="w-full py-4 border-2 border-rose-600 text-rose-600 hover:bg-rose-600 hover:text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-colors disabled:opacity-30">
-                    Delete My Account
-                </button>
             </div>
         </div>
     );

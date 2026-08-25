@@ -34,7 +34,7 @@ public class GameSessionManager {
         Game newGame = new Game(new Board());
         newGame.setWhitePlayerId(whiteId);
         newGame.setBlackPlayerId(blackId);
-        newGame.setRemainingTimes(timeLimit * 60 * 1000L, timeLimit * 60 * 1000L);
+        newGame.startClock(timeLimit);
 
         activeGames.put(roomId, newGame);
     }

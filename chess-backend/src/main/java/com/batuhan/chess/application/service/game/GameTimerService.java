@@ -91,12 +91,12 @@ public class GameTimerService {
 
     @PostConstruct
     public void startWatchdogScheduler() {
-        scheduler.scheduleAtFixedRate(this::runWatchdog, 1, 1, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::runWatchdog, 50, 50, TimeUnit.SECONDS);
     }
 
     private void runWatchdog() {
         long now = System.currentTimeMillis();
-        long heartbeatTimeoutThreshold = 10_000;
+        long heartbeatTimeoutThreshold = 60_000;
 
         Map<String, ConcurrentHashMap<Long, Long>> heartbeats = sessionManager.getPlayerHeartbeats();
         for (Map.Entry<String, ConcurrentHashMap<Long, Long>> entry : heartbeats.entrySet()) {

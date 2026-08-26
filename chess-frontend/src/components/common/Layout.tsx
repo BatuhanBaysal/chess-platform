@@ -20,7 +20,7 @@ const Layout: React.FC<LayoutProps> = ({
         isInGame={isInGame}
       />
       
-      <main className="grow flex flex-col justify-center items-center w-full py-12">
+      <main className="grow flex flex-col justify-center items-center w-full pt-32 pb-12 px-4">
         {children}
       </main>
 

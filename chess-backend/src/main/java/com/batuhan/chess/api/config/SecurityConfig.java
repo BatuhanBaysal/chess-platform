@@ -36,7 +36,7 @@ public class SecurityConfig {
                 var config = new CorsConfiguration();
                 config.setAllowCredentials(true);
                 config.setAllowedOriginPatterns(List.of("http://localhost:5173", "http://localhost", "http://localhost:*"));
-                config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
                 config.setAllowedHeaders(List.of("*"));
                 return config;
             }))
@@ -46,6 +46,7 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/api/auth/**",
                     "/api/lobby/**",
+                    "/api/health/**",
                     "/ws-chess/**",
                     "/actuator/**",
                     "/v3/api-docs/**",

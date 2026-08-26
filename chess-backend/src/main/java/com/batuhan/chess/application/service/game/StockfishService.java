@@ -1,5 +1,6 @@
 package com.batuhan.chess.application.service.game;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -39,6 +40,18 @@ public class StockfishService {
             this.score = score;
             this.timestamp = timestamp;
         }
+    }
+
+    @PostConstruct
+    public void init() {
+        engineExecutor.submit(() -> {
+            try {
+                startEngine();
+                log.info("Stockfish engine successfully pre-warmed during application startup.");
+            } catch (Exception e) {
+                log.error("Failed to pre-warm Stockfish engine on startup: {}", e.getMessage(), e);
+            }
+        });
     }
 
     public void startEngine() {

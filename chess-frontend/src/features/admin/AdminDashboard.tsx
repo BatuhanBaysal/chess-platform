@@ -110,7 +110,7 @@ export default function AdminDashboard() {
     };
 
     return (
-        <div className="max-w-7xl mx-auto space-y-10 w-full px-4 pt-36 pb-12">
+        <div className="max-w-7xl mx-auto space-y-10 w-full px-4 pt-12 pb-12">
             <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-6">
                 <div>
                     <h1 className="text-3xl font-black tracking-wider text-slate-900 dark:text-white flex items-center gap-3">

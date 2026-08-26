@@ -27,7 +27,7 @@ const FullLeaderboardPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen pt-36 pb-12 px-6 md:px-12 max-w-8xl mx-auto text-slate-900 dark:text-white">
+        <div className="min-h-screen pt-12 pb-12 px-6 md:px-12 max-w-8xl mx-auto text-slate-900 dark:text-white">
             <button onClick={() => navigate('/')} className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors mb-8 uppercase font-black text-xs tracking-widest">
                 <ArrowLeft size={16} /> Back to Menu
             </button>

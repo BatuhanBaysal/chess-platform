@@ -7,6 +7,12 @@ import AllMatchHistory from '../features/menu/views/AllMatchHistory';
 import AdminDashboard from '../features/admin/AdminDashboard';
 import { ProtectedRoute } from '../components/common/ProtectedRoute';
 import { ActiveGameView } from '../features/chess/components/ActiveGameView';
+
+import About from '../components/common/About';
+import Contact from '../components/common/Contact';
+import Changelog from '../components/common/Changelog';
+import SystemHealth from '../components/common/SystemHealth';
+
 import type { ChessTheme, TimeControl } from '../App';
 
 interface AppRoutesProps {
@@ -52,6 +58,11 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
       <Route path="/profile" element={<ProfileDashboard />} />
       <Route path="/leaderboard" element={<FullLeaderboardPage />} />
       <Route path="/history" element={<AllMatchHistory userId={user?.id} />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/contact" element={<Contact />} />
+      <Route path="/changelog" element={<Changelog />} />
+      <Route path="/system-health" element={<SystemHealth />} />
+
       <Route 
         path="/game" 
         element={
@@ -74,5 +85,5 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
 
       <Route path="*" element={<LandingPage onStart={handleStartMatch} />} />
     </Routes>
-  )
+  );
 };

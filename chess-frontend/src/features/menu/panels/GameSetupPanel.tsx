@@ -1,22 +1,17 @@
 import React from 'react';
 import { Plus, Sword, Clock, Loader2, Globe, Cpu } from 'lucide-react';
-import type { ChessTheme, TimeControl } from '../hooks/useLobby';
+import type { TimeControl } from '../hooks/useLobby';
+import { CHESS_THEMES, type ChessThemeKey } from '../../../constants/chessThemes';
 
 interface GameSetupPanelProps {
   selectedTime: TimeControl;
   setSelectedTime: (time: TimeControl) => void;
-  selectedTheme: ChessTheme;
-  setSelectedTheme: (theme: ChessTheme) => void;
+  selectedTheme: ChessThemeKey;
+  setSelectedTheme: (theme: ChessThemeKey) => void;
   isCreating: boolean;
   onCreateRoom: () => void;
   onOpenAiModal: () => void;
 }
-
-const THEME_PREVIEWS = {
-  classic: { dark: '#b58863', light: '#f0d9b5' },
-  modern: { dark: '#4b7399', light: '#e2e8f0' },
-  emerald: { dark: '#6a8d5c', light: '#eceed1' }
-};
 
 export const GameSetupPanel: React.FC<GameSetupPanelProps> = ({
   selectedTime,
@@ -27,6 +22,12 @@ export const GameSetupPanel: React.FC<GameSetupPanelProps> = ({
   onCreateRoom,
   onOpenAiModal,
 }) => {
+  const previewColors = {
+    classic: { dark: '#b58863', light: '#f0d9b5' },
+    modern: { dark: '#4b7399', light: '#e2e8f0' },
+    emerald: { dark: '#6a8d5c', light: '#eceed1' }
+  };
+
   return (
     <div className="p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800/60 bg-white dark:bg-slate-900/40 backdrop-blur-3xl shadow-sm">
       <div className="space-y-8">
@@ -57,7 +58,7 @@ export const GameSetupPanel: React.FC<GameSetupPanelProps> = ({
             Board Aesthetic
           </label>
           <div className="grid grid-cols-3 gap-3">
-            {(['classic', 'modern', 'emerald'] as ChessTheme[]).map(theme => (
+            {(Object.keys(CHESS_THEMES) as ChessThemeKey[]).map(theme => (
               <button 
                 key={theme} 
                 onClick={() => setSelectedTheme(theme)} 
@@ -68,10 +69,10 @@ export const GameSetupPanel: React.FC<GameSetupPanelProps> = ({
                 }`}
               >
                 <div className="w-10 h-10 grid grid-cols-2 rounded-xl overflow-hidden shadow-inner border border-black/5 dark:border-white/5">
-                  <div style={{ backgroundColor: THEME_PREVIEWS[theme].light }}></div>
-                  <div style={{ backgroundColor: THEME_PREVIEWS[theme].dark }}></div>
-                  <div style={{ backgroundColor: THEME_PREVIEWS[theme].dark }}></div>
-                  <div style={{ backgroundColor: THEME_PREVIEWS[theme].light }}></div>
+                  <div style={{ backgroundColor: previewColors[theme].light }}></div>
+                  <div style={{ backgroundColor: previewColors[theme].dark }}></div>
+                  <div style={{ backgroundColor: previewColors[theme].dark }}></div>
+                  <div style={{ backgroundColor: previewColors[theme].light }}></div>
                 </div>
                 <span className="text-[9px] font-black uppercase tracking-tighter text-slate-900 dark:text-white">
                   {theme}

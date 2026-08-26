@@ -108,7 +108,7 @@ const ProfileDashboard: React.FC = () => {
     if (!formData) return null;
 
     return (
-        <div className="max-w-3xl mx-auto pt-36 pb-12 px-4 text-slate-900 dark:text-slate-100">
+        <div className="max-w-3xl mx-auto pt-12 pb-12 px-4 text-slate-900 dark:text-slate-100">
             <div className="bg-white dark:bg-slate-900 p-8 md:p-10 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 space-y-12 animate-in fade-in duration-500">
                 <h1 className="text-4xl font-extrabold text-center uppercase tracking-tighter">Profile Settings</h1>
                 

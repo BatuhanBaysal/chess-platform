@@ -6,6 +6,7 @@ import { useGameNavigation } from './hooks/useGameNavigation.ts';
 import Layout from './components/common/Layout';
 import AuthCard from './features/auth/AuthContainer';
 import { AppRoutes } from './routes/AppRoutes';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 export type ChessTheme = 'classic' | 'modern' | 'emerald';
 export type TimeControl = 3 | 10 | 30;
@@ -109,40 +110,44 @@ function App() {
 
   if (!user) {
     return (
-      <Routes>
-        <Route path="*" element={
-          <AuthCard 
-            onLogin={handleLogin} 
-            onRegister={handleRegister} 
-            onGuestLogin={loginAsGuest} 
-          />
-        } />
-      </Routes>
+      <ErrorBoundary>
+        <Routes>
+          <Route path="*" element={
+            <AuthCard 
+              onLogin={handleLogin} 
+              onRegister={handleRegister} 
+              onGuestLogin={loginAsGuest} 
+            />
+          } />
+        </Routes>
+      </ErrorBoundary>
     );
   }
 
   return (
-    <Layout 
-      onBackToMenu={handleBackToMenu} 
-      isInGame={Boolean(game?.gameId)} 
-    >
-      <AppRoutes 
-        user={user}
-        game={game}
-        isConnected={isConnected}
-        playerColor={playerColor}
-        gameConfig={gameConfig}
-        hintData={hintData}
-        isHintLoading={isHintLoading}
-        evaluation={evaluation}
-        handleStartMatch={handleStartMatch}
-        handleBackToMenu={handleBackToMenu}
-        handleRestart={handleRestart}
-        onMoveInternal={onMoveInternal}
-        fetchLegalMoves={fetchLegalMoves}
-        fetchHint={fetchHint}
-      />
-    </Layout>
+    <ErrorBoundary>
+      <Layout 
+        onBackToMenu={handleBackToMenu} 
+        isInGame={Boolean(game?.gameId)} 
+      >
+        <AppRoutes 
+          user={user}
+          game={game}
+          isConnected={isConnected}
+          playerColor={playerColor}
+          gameConfig={gameConfig}
+          hintData={hintData}
+          isHintLoading={isHintLoading}
+          evaluation={evaluation}
+          handleStartMatch={handleStartMatch}
+          handleBackToMenu={handleBackToMenu}
+          handleRestart={handleRestart}
+          onMoveInternal={onMoveInternal}
+          fetchLegalMoves={fetchLegalMoves}
+          fetchHint={fetchHint}
+        />
+      </Layout>
+    </ErrorBoundary>
   );
 }
 

@@ -30,10 +30,17 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
-## [2.1.0] - 2026-08-25
+## [2.1.0] - 2026-08-26
 
 ### 🚀 Phase 20: Enterprise Refactoring & Production Readiness 🏗️ (v2.1.0)
 > **Note:** Elevating backend architecture through domain-driven vertical slicing, decoupling monolithic services, and ensuring real-time production reliability.
+
+- **2026-08-26:**
+    - **Robust WebSocket Reconnection, Error Boundary & UI/UX Enhancements (PR #132 | Issue #128):**
+        - Implemented robust client-side reconnection strategies and error boundaries to ensure the application gracefully handles WebSocket disconnections and unexpected UI rendering states without data loss or stuck components.
+        - Added system health checking (`/api/auth/health`) with automated ping monitoring and CORS support for `HEAD` and `GET` requests to maintain real-time backend connection visibility.
+        - Refactored UI layouts, navigation structures, and modal components including the addition of `ErrorBoundary`, `About`, `Changelog`, `Contact`, and `SystemHealth` views for an upgraded production-grade user experience.
+        - Harmonized security configuration (`SecurityConfig`) and authentication endpoints (`AuthController`) to permit unsecure operational checks while maintaining stringent JWT-based security policies for core platform features.
 
 - **2026-08-25:**
     - **Frontend Enterprise Architecture Refactoring & Modular UI Componentization (PR #131 | Issue #123):**

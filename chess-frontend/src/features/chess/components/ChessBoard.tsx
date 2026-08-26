@@ -11,17 +11,17 @@ import { GameOverModal } from './GameOverModal';
 import type { ChessBoardProps } from '../types/chess.types';
 
 const PIECE_IMAGES: { [key: string]: string } = {
-  'P': '/assets/pieces/wP.svg', 
-  'N': '/assets/pieces/wN.svg', 
-  'B': '/assets/pieces/wB.svg', 
-  'R': '/assets/pieces/wR.svg', 
-  'Q': '/assets/pieces/wQ.svg', 
+  'P': '/assets/pieces/wP.svg',  
+  'N': '/assets/pieces/wN.svg',  
+  'B': '/assets/pieces/wB.svg',  
+  'R': '/assets/pieces/wR.svg',  
+  'Q': '/assets/pieces/wQ.svg',  
   'K': '/assets/pieces/wK.svg',
-  'p': '/assets/pieces/bP.svg', 
-  'n': '/assets/pieces/bN.svg', 
-  'b': '/assets/pieces/bB.svg', 
-  'r': '/assets/pieces/bR.svg', 
-  'q': '/assets/pieces/bQ.svg', 
+  'p': '/assets/pieces/bP.svg',  
+  'n': '/assets/pieces/bN.svg',  
+  'b': '/assets/pieces/bB.svg',  
+  'r': '/assets/pieces/bR.svg',  
+  'q': '/assets/pieces/bQ.svg',  
   'k': '/assets/pieces/bK.svg'
 };
 
@@ -37,7 +37,7 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
   onDismissGame, theme = 'modern', orientation = 'WHITE',
   whiteRemainingTimeMs, blackRemainingTimeMs, game,
   hintData = null, isHintLoading = false, onGetHint = () => {},
-  evaluationScore = 0, evaluationType = 'CP', 
+  evaluationScore = 0, evaluationType = 'CP',  
 }) => {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   const currentTheme = THEMES[theme] || THEMES.modern;
@@ -55,14 +55,14 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
   );
 
   return (
-    <div className="flex flex-col items-center justify-center w-full px-4 py-6 select-none overflow-x-auto">
-      <div 
-        className="bg-[#111827]/80 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-6 shadow-2xl flex flex-row items-center justify-center gap-6 mx-auto box-border"
+    <div className="flex flex-col items-center justify-center w-full px-4 -my-3 select-none overflow-x-auto">
+      <div  
+        className="bg-[#111827]/80 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-4 shadow-2xl flex flex-row items-center justify-center gap-6 mx-auto box-border"
         style={{ minWidth: '1050px', overflow: 'visible' }}
       >
         
         <div className="shrink-0 w-80 flex flex-col box-border" style={{ height: '624px' }}>
-          <MatchInfoPanel 
+          <MatchInfoPanel  
             orientation={orientation}
             currentTurn={currentTurn}
             isGameOver={isGameOver}
@@ -85,7 +85,7 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
         </div>
 
         <div className="flex flex-col items-center justify-center relative shrink-0 box-border" style={{ height: '624px', overflow: 'visible' }}>
-          <BoardGrid 
+          <BoardGrid  
             sensors={sensors}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
@@ -153,7 +153,7 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
       </div>
 
       {promotionPending && (
-        <PromotionModal 
+        <PromotionModal  
           orientation={orientation}
           pieceImages={PIECE_IMAGES}
           onSelectPromotion={(type) => {
@@ -165,7 +165,7 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
         />
       )}
 
-      <GameOverModal 
+      <GameOverModal  
         show={showGameOverModal}
         endGameReason={getEndGameReason()}
         isTimeoutOrDismissed={gameStatus.includes('TIMEOUT') || gameStatus.includes('DISMISSED')}

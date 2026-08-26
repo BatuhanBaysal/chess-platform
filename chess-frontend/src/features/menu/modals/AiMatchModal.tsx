@@ -1,13 +1,14 @@
 import React from 'react';
 import { Sword, Loader2, Clock, Shield, Sliders, Palette } from 'lucide-react';
 import type { TimeControl } from '../hooks/useLobby';
+import { CHESS_THEMES, type ChessThemeKey } from '../../../constants/chessThemes';
 
 interface AiMatchModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedTime: TimeControl;
   setSelectedTime: (time: TimeControl) => void; 
-  selectedTheme: string;                       
+  selectedTheme: string;                         
   setSelectedTheme: (theme: string) => void; 
   aiPlayAsWhite: boolean;
   setAiPlayAsWhite: (val: boolean) => void;
@@ -16,12 +17,6 @@ interface AiMatchModalProps {
   onStartMatch: () => void;
   isAiLoading: boolean;
 }
-
-const THEME_PREVIEWS = {
-  classic: { dark: '#b58863', light: '#f0d9b5' },
-  modern: { dark: '#4b7399', light: '#e2e8f0' },
-  emerald: { dark: '#6a8d5c', light: '#eceed1' }
-};
 
 export const AiMatchModal: React.FC<AiMatchModalProps> = ({
   isOpen,
@@ -126,27 +121,35 @@ export const AiMatchModal: React.FC<AiMatchModalProps> = ({
             <Palette size={12} /> Board Theme
           </label>
           <div className="grid grid-cols-3 gap-2">
-            {(['classic', 'modern', 'emerald'] as const).map((theme) => (
-              <button
-                key={theme}
-                onClick={() => setSelectedTheme(theme)}
-                className={`relative p-3 rounded-2xl transition-all duration-300 border-2 flex flex-col items-center gap-2.5 ${
-                  selectedTheme === theme 
-                    ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/10 shadow-md scale-[1.02]' 
-                    : 'border-transparent bg-slate-100 dark:bg-slate-800/50 hover:border-slate-700/50'
-                }`}
-              >
-                <div className="w-8 h-8 grid grid-cols-2 rounded-lg overflow-hidden shadow-inner border border-black/5 dark:border-white/5">
-                  <div style={{ backgroundColor: THEME_PREVIEWS[theme].light }}></div>
-                  <div style={{ backgroundColor: THEME_PREVIEWS[theme].dark }}></div>
-                  <div style={{ backgroundColor: THEME_PREVIEWS[theme].dark }}></div>
-                  <div style={{ backgroundColor: THEME_PREVIEWS[theme].light }}></div>
-                </div>
-                <span className="text-[9px] font-black uppercase tracking-tighter text-slate-900 dark:text-white">
-                  {theme}
-                </span>
-              </button>
-            ))}
+            {(Object.keys(CHESS_THEMES) as ChessThemeKey[]).map((theme) => {
+              const previewColors = {
+                classic: { dark: '#b58863', light: '#f0d9b5' },
+                modern: { dark: '#4b7399', light: '#e2e8f0' },
+                emerald: { dark: '#6a8d5c', light: '#eceed1' }
+              };
+
+              return (
+                <button
+                  key={theme}
+                  onClick={() => setSelectedTheme(theme)}
+                  className={`relative p-3 rounded-2xl transition-all duration-300 border-2 flex flex-col items-center gap-2.5 ${
+                    selectedTheme === theme 
+                      ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/10 shadow-md scale-[1.02]' 
+                      : 'border-transparent bg-slate-100 dark:bg-slate-800/50 hover:border-slate-700/50'
+                  }`}
+                >
+                  <div className="w-8 h-8 grid grid-cols-2 rounded-lg overflow-hidden shadow-inner border border-black/5 dark:border-white/5">
+                    <div style={{ backgroundColor: previewColors[theme].light }}></div>
+                    <div style={{ backgroundColor: previewColors[theme].dark }}></div>
+                    <div style={{ backgroundColor: previewColors[theme].dark }}></div>
+                    <div style={{ backgroundColor: previewColors[theme].light }}></div>
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-tighter text-slate-900 dark:text-white">
+                    {theme}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 

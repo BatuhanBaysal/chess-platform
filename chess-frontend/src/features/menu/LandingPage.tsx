@@ -181,7 +181,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   }, [waitingRoomId, handleStartGame, setWaitingRoomId]);
 
   return (
-    <div className="w-full max-w-[70%] mx-auto pt-36 pb-12 space-y-8 text-slate-900 dark:text-slate-100">
+    <div className="w-full max-w-[70%] mx-auto pt-12 pb-12 space-y-8 text-slate-900 dark:text-slate-100">
       {reconnectGame && (
         <ReconnectAlert 
           reconnectGame={reconnectGame}
@@ -234,6 +234,25 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
           rooms={rooms} 
           onJoinRoom={handleJoinRoom} 
         />
+      </div>
+      
+      <div 
+        onClick={() => navigate('/about')}
+        className="relative w-full h-40 md:h-48 rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-200 dark:border-slate-800/60 cursor-pointer group bg-slate-900"
+      >
+        <img
+          src="/assets/images/chess-platform.jpg"
+          alt="Chess Platform Arena"
+          className="w-full h-full object-cover object-center transform scale-105 group-hover:scale-100 transition-transform duration-1000 ease-out"
+        />
+        <div className="absolute inset-0 bg-linear-to-t from-slate-950/90 via-slate-950/40 to-transparent flex flex-col justify-end p-6 md:p-8">
+          <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-indigo-400 mb-1 bg-indigo-500/10 px-3 py-0.5 rounded-full w-fit border border-indigo-500/20">
+            Distributed Multiplayer
+          </span>
+          <h2 className="text-xl md:text-2xl font-black text-white tracking-wide">
+            Core Strategy & Ecosystem Architecture &rarr;
+          </h2>
+        </div>
       </div>
 
       <div className="w-full bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 rounded-[3rem] p-8 shadow-sm">

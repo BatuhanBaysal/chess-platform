@@ -1,7 +1,5 @@
 package com.batuhan.chess.domain.model.user;
 
-import com.batuhan.chess.domain.model.user.UserEntity;
-import com.batuhan.chess.domain.model.user.UserRole;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -11,10 +9,6 @@ import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Domain-level unit tests for UserEntity.
- * Validates builder defaults, statistical calculations, and JPA lifecycle hooks.
- */
 @DisplayName("User Entity Domain Model Tests")
 class UserEntityTest {
 

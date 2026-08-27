@@ -28,11 +28,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-/**
- * Unit test suite for GameWebSocketController.
- * Validates real-time game interactions including player readiness,
- * move processing, timeout handling, and STOMP message broadcasting.
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Game WebSocket Controller Technical Tests")

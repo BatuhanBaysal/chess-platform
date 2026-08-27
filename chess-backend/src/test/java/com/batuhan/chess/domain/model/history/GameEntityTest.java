@@ -1,8 +1,6 @@
 package com.batuhan.chess.domain.model.history;
 
 import com.batuhan.chess.domain.model.chess.GameStatus;
-import com.batuhan.chess.domain.model.history.GameEntity;
-import com.batuhan.chess.domain.model.history.GameResult;
 import com.batuhan.chess.domain.model.user.UserEntity;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -13,10 +11,6 @@ import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Domain-level unit tests for GameEntity.
- * Ensures persistence integrity for game history, PGN records, and JPA lifecycle hooks.
- */
 @DisplayName("Game Entity Domain Model Tests")
 class GameEntityTest {
 

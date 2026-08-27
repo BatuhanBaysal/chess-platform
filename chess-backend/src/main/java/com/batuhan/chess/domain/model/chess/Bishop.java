@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class Bishop extends Piece {
+
     public Bishop(Color color, Position position) {
         super(color, PieceType.BISHOP, position);
     }

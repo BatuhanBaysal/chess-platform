@@ -1,6 +1,5 @@
 package com.batuhan.chess.domain.model.chess;
 
-import com.batuhan.chess.domain.model.chess.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -8,10 +7,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Unit tests for the abstract Piece class behavior.
- * Validates path clearing logic, position state management, and equality contracts.
- */
 @DisplayName("Base Piece Domain Logic Tests")
 class PieceTest {
 
@@ -30,8 +25,8 @@ class PieceTest {
         @DisplayName("Should return true when the trajectory between start and target is empty")
         void shouldReturnTrueWhenPathIsClear() {
             // Arrange
-            Position start = new Position(0, 0); // a1
-            Position target = new Position(0, 5); // a6
+            Position start = new Position(0, 0);
+            Position target = new Position(0, 5);
             Piece queen = new Queen(Color.WHITE, start);
             board.setPieceAt(start, queen);
 
@@ -47,7 +42,7 @@ class PieceTest {
         void shouldReturnFalseWhenPathIsBlocked() {
             // Arrange
             Position start = new Position(0, 0);
-            Position blocker = new Position(0, 2); // Blocking the file
+            Position blocker = new Position(0, 2);
             Position target = new Position(0, 4);
 
             Piece queen = new Queen(Color.WHITE, start);
@@ -110,7 +105,7 @@ class PieceTest {
         void shouldVerifyEqualityContract() {
             // Arrange
             Piece queen1 = new Queen(Color.WHITE, new Position(0, 0));
-            Piece queen2 = new Queen(Color.WHITE, new Position(7, 7)); // Different position
+            Piece queen2 = new Queen(Color.WHITE, new Position(7, 7));
             Piece blackQueen = new Queen(Color.BLACK, new Position(0, 0));
 
             // Assert

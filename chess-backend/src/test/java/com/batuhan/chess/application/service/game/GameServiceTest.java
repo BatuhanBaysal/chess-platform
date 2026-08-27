@@ -2,6 +2,7 @@ package com.batuhan.chess.application.service.game;
 
 import com.batuhan.chess.api.dto.game.GameResponse;
 import com.batuhan.chess.api.dto.game.HintResponse;
+import com.batuhan.chess.domain.model.chess.Game;
 import com.batuhan.chess.domain.model.chess.GameStatus;
 import com.batuhan.chess.domain.model.chess.Position;
 import com.batuhan.chess.domain.model.history.GameEntity;
@@ -165,6 +166,100 @@ class GameServiceTest {
 
             // Assert
             verify(persistenceService, times(1)).processGameFinish(gameId, result, status);
+        }
+    }
+
+    @Nested
+    @DisplayName("AI Game Operations")
+    class AiGameTests {
+
+        @Test
+        @DisplayName("Should create an AI game session successfully when human plays as white")
+        void shouldCreateAiGameAsWhite() {
+            // Arrange
+            Long humanUserId = 1L;
+            boolean playAsWhite = true;
+            int difficulty = 5;
+            Integer timeLimit = 10;
+
+            // Act
+            String gameId = gameService.createAiGame(humanUserId, playAsWhite, difficulty, timeLimit);
+
+            // Assert
+            assertThat(gameId)
+                .isNotNull()
+                .hasSize(8);
+            verify(sessionManager, times(1)).createNewGameWithPlayers(gameId, humanUserId, -1L, 10);
+            verify(engineService, never()).triggerAiMoveIfNeededWithDifficulty(anyString(), any(), anyInt());
+        }
+
+        @Test
+        @DisplayName("Should trigger AI move when human plays as black")
+        void shouldCreateAiGameAsBlack() {
+            // Arrange
+            Long humanUserId = 1L;
+            boolean playAsWhite = false;
+            int difficulty = 8;
+            Integer timeLimit = 15;
+            Game game = mock(Game.class);
+            when(sessionManager.getGame(anyString())).thenReturn(game);
+
+            // Act
+            String gameId = gameService.createAiGame(humanUserId, playAsWhite, difficulty, timeLimit);
+
+            // Assert
+            assertThat(gameId)
+                .isNotNull()
+                .hasSize(8);
+            verify(sessionManager, times(1)).createNewGameWithPlayers(gameId, -1L, humanUserId, 15);
+            verify(engineService, times(1)).triggerAiMoveIfNeededWithDifficulty(gameId, game, difficulty);
+        }
+    }
+
+    @Nested
+    @DisplayName("Game Finish Operations")
+    class FinishValidationTests {
+
+        @Test
+        @DisplayName("Should finish active game successfully when game is not finished")
+        void shouldFinishGameIfActiveWhenActive() {
+            // Arrange
+            String gameId = "room123";
+            Game game = mock(Game.class);
+            GameStatus status = mock(GameStatus.class);
+            GameResult result = GameResult.DRAW;
+
+            when(sessionManager.getGame(gameId)).thenReturn(game);
+            when(game.getStatus()).thenReturn(status);
+            when(status.isFinished()).thenReturn(false);
+            when(timerService.determineResult(game, status)).thenReturn(result);
+
+            // Act
+            boolean finished = gameService.finishGameIfActive(gameId);
+
+            // Assert
+            assertThat(finished).isTrue();
+            verify(persistenceService, times(1)).processGameFinish(gameId, result, status);
+        }
+
+        @Test
+        @DisplayName("Should not process finish when game is already finished")
+        void shouldNotFinishGameIfAlreadyFinished() {
+            // Arrange
+            String gameId = "room123";
+            Game game = mock(Game.class);
+            GameStatus status = mock(GameStatus.class);
+
+            when(sessionManager.getGame(gameId)).thenReturn(game);
+            when(game.getStatus()).thenReturn(status);
+            when(status.isFinished()).thenReturn(true);
+
+            // Act
+            boolean finished = gameService.finishGameIfActive(gameId);
+
+            // Assert
+            assertThat(finished).isTrue();
+            verify(persistenceService, never()).processGameFinish(anyString(), any(), any());
         }
     }
 }

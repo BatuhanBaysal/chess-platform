@@ -1,6 +1,5 @@
 package com.batuhan.chess.domain.model.chess;
 
-import com.batuhan.chess.domain.model.chess.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -10,15 +9,11 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Unit tests for King piece movement and special rules.
- * Validates basic 1-square movement, capturing logic, and castling availability.
- */
 @DisplayName("King Piece Logic Tests")
 class KingTest {
 
     private Board board;
-    private final Position centerPos = new Position(4, 4); // e5
+    private final Position centerPos = new Position(4, 4);
 
     @BeforeEach
     void setUp() {
@@ -35,11 +30,19 @@ class KingTest {
             // Arrange
             King king = new King(Color.WHITE, centerPos);
             board.setPieceAt(centerPos, king);
+            Position northPos = new Position(4, 5);
+            Position northEastPos = new Position(5, 5);
+            Position westPos = new Position(3, 4);
 
-            // Act & Assert
-            assertThat(king.isPseudoLegalMove(new Position(4, 5), board)).as("Move North").isTrue();
-            assertThat(king.isPseudoLegalMove(new Position(5, 5), board)).as("Move North-East").isTrue();
-            assertThat(king.isPseudoLegalMove(new Position(3, 4), board)).as("Move West").isTrue();
+            // Act
+            boolean canMoveNorth = king.isPseudoLegalMove(northPos, board);
+            boolean canMoveNorthEast = king.isPseudoLegalMove(northEastPos, board);
+            boolean canMoveWest = king.isPseudoLegalMove(westPos, board);
+
+            // Assert
+            assertThat(canMoveNorth).as("Move North").isTrue();
+            assertThat(canMoveNorthEast).as("Move North-East").isTrue();
+            assertThat(canMoveWest).as("Move West").isTrue();
         }
 
         @Test
@@ -48,10 +51,12 @@ class KingTest {
             // Arrange
             King king = new King(Color.WHITE, centerPos);
             board.setPieceAt(centerPos, king);
+            Position twoSquaresPos = new Position(4, 6);
+            Position knightJumpPos = new Position(6, 6);
 
             // Act
-            boolean twoSquaresForward = king.isPseudoLegalMove(new Position(4, 6), board);
-            boolean knightJump = king.isPseudoLegalMove(new Position(6, 6), board);
+            boolean twoSquaresForward = king.isPseudoLegalMove(twoSquaresPos, board);
+            boolean knightJump = king.isPseudoLegalMove(knightJumpPos, board);
 
             // Assert
             assertThat(twoSquaresForward).isFalse();
@@ -118,13 +123,15 @@ class KingTest {
         @DisplayName("Should allow castling attempts if king has not moved yet")
         void shouldAllowCastlingAttempt() {
             // Arrange
-            Position start = new Position(4, 0); // e1
+            Position start = new Position(4, 0);
             King king = new King(Color.WHITE, start);
             board.setPieceAt(start, king);
+            Position kingSidePos = new Position(6, 0);
+            Position queenSidePos = new Position(2, 0);
 
             // Act
-            boolean kingSide = king.isPseudoLegalMove(new Position(6, 0), board);
-            boolean queenSide = king.isPseudoLegalMove(new Position(2, 0), board);
+            boolean kingSide = king.isPseudoLegalMove(kingSidePos, board);
+            boolean queenSide = king.isPseudoLegalMove(queenSidePos, board);
 
             // Assert
             assertThat(kingSide).as("King-side castling attempt (g1)").isTrue();
@@ -137,11 +144,12 @@ class KingTest {
             // Arrange
             Position start = new Position(4, 0);
             King king = new King(Color.WHITE, start);
-            king.setHasMoved(true); // Key condition
+            king.setHasMoved(true);
             board.setPieceAt(start, king);
+            Position kingSidePos = new Position(6, 0);
 
             // Act
-            boolean castlingAttempt = king.isPseudoLegalMove(new Position(6, 0), board);
+            boolean castlingAttempt = king.isPseudoLegalMove(kingSidePos, board);
 
             // Assert
             assertThat(castlingAttempt).isFalse();
@@ -156,7 +164,7 @@ class KingTest {
         @DisplayName("Should handle board boundaries correctly in corners")
         void shouldHandleCornerBoundaries() {
             // Arrange
-            Position corner = new Position(0, 0); // a1
+            Position corner = new Position(0, 0);
             King king = new King(Color.WHITE, corner);
             king.setHasMoved(true);
             board.setPieceAt(corner, king);

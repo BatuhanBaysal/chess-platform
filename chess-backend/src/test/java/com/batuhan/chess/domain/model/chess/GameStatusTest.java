@@ -1,6 +1,5 @@
 package com.batuhan.chess.domain.model.chess;
 
-import com.batuhan.chess.domain.model.chess.GameStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -9,10 +8,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Unit tests for GameStatus enum logic.
- * Ensures terminal and non-terminal states are correctly identified.
- */
 @DisplayName("Game Status Enum Logic Tests")
 class GameStatusTest {
 
@@ -22,7 +17,7 @@ class GameStatusTest {
 
         @ParameterizedTest
         @EnumSource(value = GameStatus.class, names = {
-            "CHECKMATE", "STALEMATE", "RESIGNED", "TIMEOUT", "DRAW", "CLOSING"
+            "CHECKMATE", "STALEMATE", "RESIGNED", "TIMEOUT", "DRAW", "CLOSING", "ABANDONED"
         })
         @DisplayName("Should return true for terminal game statuses")
         void shouldReturnTrueForTerminalStatuses(GameStatus status) {
@@ -68,7 +63,7 @@ class GameStatusTest {
             assertThat(active).isEqualTo(GameStatus.ACTIVE);
             assertThat(mate).isEqualTo(GameStatus.CHECKMATE);
             assertThat(GameStatus.values())
-                .contains(GameStatus.STALEMATE, GameStatus.RESIGNED);
+                .contains(GameStatus.STALEMATE, GameStatus.RESIGNED, GameStatus.ABANDONED);
         }
     }
 }

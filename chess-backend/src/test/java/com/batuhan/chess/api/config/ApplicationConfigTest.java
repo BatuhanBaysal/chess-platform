@@ -24,11 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * Technical test suite for ApplicationConfig.
- * Validates the correct creation of security-related beans and the logic
- * of the custom UserDetailsService implementation.
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Application Configuration Functional Tests")
 class ApplicationConfigTest {

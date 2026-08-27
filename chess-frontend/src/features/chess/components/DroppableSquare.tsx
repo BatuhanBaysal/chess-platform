@@ -5,6 +5,7 @@ interface DroppableSquareProps {
   index: number;
   children: React.ReactNode;
   className: string;
+  style?: React.CSSProperties;
   onClick: () => void;
 }
 

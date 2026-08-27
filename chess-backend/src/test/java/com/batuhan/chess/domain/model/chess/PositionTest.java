@@ -1,6 +1,5 @@
 package com.batuhan.chess.domain.model.chess;
 
-import com.batuhan.chess.domain.model.chess.Position;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -10,10 +9,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-/**
- * Unit tests for Position record.
- * Ensures coordinate validation (0-7) and equality logic for board indices.
- */
 @DisplayName("Position Value Object Tests")
 class PositionTest {
 

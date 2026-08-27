@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class Rook extends Piece {
+
     public Rook(Color color, Position position) {
         super(color, PieceType.ROOK, position);
     }

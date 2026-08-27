@@ -175,9 +175,9 @@ class StockfishServiceTest {
                 (Map<String, Object>) ReflectionTestUtils.getField(stockfishService, "evaluationCache");
 
             assertThat(evaluationCache).isNotNull();
-            evaluationCache.forEach((key, cachedObj) -> {
-                ReflectionTestUtils.setField(cachedObj, "timestamp", System.currentTimeMillis() - 300L);
-            });
+            evaluationCache.forEach((key, cachedObj) ->
+                ReflectionTestUtils.setField(cachedObj, "timestamp", System.currentTimeMillis() - 300L)
+            );
 
             int refreshedEval = stockfishService.getEvaluation(List.of(cacheKey), 5);
 

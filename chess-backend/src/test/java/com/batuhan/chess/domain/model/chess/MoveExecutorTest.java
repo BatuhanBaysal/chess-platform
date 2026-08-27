@@ -1,6 +1,5 @@
 package com.batuhan.chess.domain.model.chess;
 
-import com.batuhan.chess.domain.model.chess.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -13,10 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-/**
- * Technical test suite for MoveExecutor.
- * Validates the atomic execution of chess moves including complex special rules.
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Move Executor Professional Test Suite")
 class MoveExecutorTest {
@@ -41,12 +36,11 @@ class MoveExecutorTest {
         @DisplayName("Should update board state and piece flags for a standard move")
         void shouldExecuteStandardMoveSuccessfully() {
             // Arrange
-            Position start = new Position(4, 1); // e2
-            Position end = new Position(4, 2);   // e3
+            Position start = new Position(4, 1);
+            Position end = new Position(4, 2);
             Piece pawn = new Pawn(Color.WHITE, start);
             board.setPieceAt(start, pawn);
 
-            // Stubbing
             lenient().when(validator.isCastlingAttempt(any(), any(), any())).thenReturn(false);
             lenient().when(validator.isEnPassantAttempt(any(), any(), any())).thenReturn(false);
             lenient().when(validator.isPromotionSituation(any(), any())).thenReturn(false);
@@ -94,9 +88,9 @@ class MoveExecutorTest {
         @DisplayName("Should execute En Passant and remove the captured pawn")
         void shouldExecuteEnPassantCapture() {
             // Arrange
-            Position whiteStart = new Position(4, 4); // e5
-            Position blackPos = new Position(5, 4);   // f5
-            Position target = new Position(5, 5);     // f6
+            Position whiteStart = new Position(4, 4);
+            Position blackPos = new Position(5, 4);
+            Position target = new Position(5, 5);
 
             Pawn whitePawn = new Pawn(Color.WHITE, whiteStart);
             Pawn blackPawn = new Pawn(Color.BLACK, blackPos);

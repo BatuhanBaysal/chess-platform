@@ -112,7 +112,7 @@ class GameTest {
         @Test
         @DisplayName("Should detect Checkmate (Fool's Mate)")
         void shouldDetectCheckmate() {
-            // Arrange (sequence of moves)
+            // Arrange
             game.makeMove(new Position(5, 1), new Position(5, 2), null);
             game.makeMove(new Position(4, 6), new Position(4, 4), null);
             game.makeMove(new Position(6, 1), new Position(6, 3), null);
@@ -176,8 +176,6 @@ class GameTest {
                 game.makeMove(new Position(2, 2), new Position(1, 0), null);
                 game.makeMove(new Position(2, 5), new Position(1, 7), null);
             }
-
-            // Act
 
             // Assert
             assertThat(game.getStatus()).isEqualTo(GameStatus.DRAW);

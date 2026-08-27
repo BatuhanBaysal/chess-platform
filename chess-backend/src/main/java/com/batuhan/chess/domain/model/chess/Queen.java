@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class Queen extends Piece {
+
     public Queen(Color color, Position position) {
         super(color, PieceType.QUEEN, position);
     }

@@ -1,6 +1,5 @@
 package com.batuhan.chess.application.service.game;
 
-import com.batuhan.chess.application.service.game.EloService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -10,11 +9,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Technical test suite for EloService.
- * Validates the Elo rating system calculations, ensuring correct point gains/losses,
- * handling of edge cases for extreme rating gaps, and guard clauses for invalid inputs.
- */
 @DisplayName("Elo Service Calculation Tests")
 class EloServiceTest {
 

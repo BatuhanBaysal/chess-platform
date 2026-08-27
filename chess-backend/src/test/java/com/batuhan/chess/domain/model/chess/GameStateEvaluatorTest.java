@@ -1,6 +1,5 @@
 package com.batuhan.chess.domain.model.chess;
 
-import com.batuhan.chess.domain.model.chess.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -18,11 +17,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-/**
- * GameStateEvaluator Test Suite.
- * Validates complex chess rules including Checkmate, Stalemate, 50-move rule,
- * Threefold Repetition, and Insufficient Material.
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("GameStateEvaluator - Professional Coverage Suite")
 class GameStateEvaluatorTest {
@@ -98,7 +92,7 @@ class GameStateEvaluatorTest {
             // Arrange
             setupLegalMoveMocking(true);
             when(validator.isInCheck(white, board)).thenReturn(false);
-            int halfMoveClock = 100; // 50 moves for both sides
+            int halfMoveClock = 100;
 
             // Act
             GameStatus status = evaluator.evaluateStatus(board, white, validator, halfMoveClock, new ArrayList<>(), null);

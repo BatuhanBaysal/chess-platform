@@ -1,6 +1,5 @@
 package com.batuhan.chess.domain.model.chess;
 
-import com.batuhan.chess.domain.model.chess.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -8,10 +7,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * MoveValidator Professional Test Suite.
- * Validates complex rules: Pinning, Castling, En Passant, and Square Safety.
- */
 @DisplayName("MoveValidator Logic Tests")
 class MoveValidatorTest {
 
@@ -53,10 +48,10 @@ class MoveValidatorTest {
         @DisplayName("isMoveSafe: should prevent en passant if it results in a discovered check")
         void isMoveSafe_EnPassantExposesKing_ReturnsFalse() {
             // Arrange
-            Position kingPos = new Position(0, 4); // a5
-            Position myPawnPos = new Position(4, 4); // e5
-            Position enemyPawnEnd = new Position(3, 4); // d5
-            Position enemyRookPos = new Position(7, 4); // h5
+            Position kingPos = new Position(0, 4);
+            Position myPawnPos = new Position(4, 4);
+            Position enemyPawnEnd = new Position(3, 4);
+            Position enemyRookPos = new Position(7, 4);
 
             board.setPieceAt(kingPos, new King(white, kingPos));
             board.setPieceAt(myPawnPos, new Pawn(white, myPawnPos));
@@ -135,9 +130,9 @@ class MoveValidatorTest {
         @DisplayName("Should validate En Passant after opponent's two-square pawn jump")
         void canEnPassant_ValidScenario_ReturnsTrue() {
             // Arrange
-            Position myPawnPos = new Position(4, 4); // e5
-            Position enemyPawnStart = new Position(5, 6); // f7
-            Position enemyPawnEnd = new Position(5, 4); // f5
+            Position myPawnPos = new Position(4, 4);
+            Position enemyPawnStart = new Position(5, 6);
+            Position enemyPawnEnd = new Position(5, 4);
             Pawn enemyPawn = new Pawn(black, enemyPawnEnd);
 
             board.setPieceAt(myPawnPos, new Pawn(white, myPawnPos));
@@ -157,8 +152,8 @@ class MoveValidatorTest {
         void canEnPassant_SingleStepLastMove_ReturnsFalse() {
             // Arrange
             Position myPawnPos = new Position(4, 4);
-            Position enemyPawnStart = new Position(5, 5); // f6
-            Position enemyPawnEnd = new Position(5, 4); // f5
+            Position enemyPawnStart = new Position(5, 5);
+            Position enemyPawnEnd = new Position(5, 4);
             Pawn enemyPawn = new Pawn(black, enemyPawnEnd);
 
             Game.Move lastMove = new Game.Move(enemyPawnStart, enemyPawnEnd, enemyPawn);
@@ -179,8 +174,8 @@ class MoveValidatorTest {
         @DisplayName("isSquareAttacked: should detect attack from enemy Knight")
         void isSquareAttacked_ByKnight_ReturnsTrue() {
             // Arrange
-            Position target = new Position(4, 4); // e5
-            Position knightPos = new Position(3, 2); // d3
+            Position target = new Position(4, 4);
+            Position knightPos = new Position(3, 2);
             board.setPieceAt(knightPos, new Knight(black, knightPos));
 
             // Act
@@ -194,7 +189,7 @@ class MoveValidatorTest {
         @DisplayName("isPromotionSituation: should detect Pawn reaching the final rank")
         void isPromotionSituation_DetectsEndRank() {
             // Arrange
-            Position endPos = new Position(0, 7); // a8
+            Position endPos = new Position(0, 7);
             Pawn whitePawn = new Pawn(white, new Position(0, 6));
 
             // Act

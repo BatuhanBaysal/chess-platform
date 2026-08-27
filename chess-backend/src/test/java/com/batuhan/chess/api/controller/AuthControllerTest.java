@@ -1,6 +1,5 @@
 package com.batuhan.chess.api.controller;
 
-import com.batuhan.chess.api.controller.AuthController;
 import com.batuhan.chess.api.dto.auth.AuthResponse;
 import com.batuhan.chess.api.dto.auth.LoginRequest;
 import com.batuhan.chess.api.dto.auth.RegisterRequest;
@@ -22,12 +21,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 
-/**
- * Web layer unit tests for AuthController.
- * Validates request mapping, JSON serialization/deserialization, and
- * the interaction between the web entry points and the AuthService.
- */
 @WebMvcTest(AuthController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("Authentication Controller Web Layer Tests")
@@ -112,6 +108,27 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.role").value("ROLE_GUEST"));
 
             verify(authService).loginAsGuest();
+        }
+    }
+
+    @Nested
+    @DisplayName("Health Check Operations")
+    class HealthCheckTests {
+
+        @Test
+        @DisplayName("Should return 200 OK for GET request on health endpoint")
+        void shouldReturnOkForHealthGet() throws Exception {
+            // Act & Assert
+            mockMvc.perform(get("/api/auth/health"))
+                .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("Should return 200 OK for HEAD request on health endpoint")
+        void shouldReturnOkForHealthHead() throws Exception {
+            // Act & Assert
+            mockMvc.perform(head("/api/auth/health"))
+                .andExpect(status().isOk());
         }
     }
 }

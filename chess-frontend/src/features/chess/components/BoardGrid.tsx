@@ -17,7 +17,12 @@ interface BoardGridProps {
   isStarted: boolean;
   isGameOver: boolean;
   isMyTurn: boolean;
-  currentTheme: { dark: string; light: string; textDark: string; textLight: string };
+  currentTheme: { 
+    dark: string; 
+    light: string; 
+    previewDark: string; 
+    previewLight: string; 
+  };
   activePiece: { char: string; index: number } | null;
   pieceImages: { [key: string]: string };
   getActualIndex: (visualIndex: number) => number;
@@ -49,7 +54,13 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
             const disabled = Boolean(!isStarted || !isMyTurn || isGameOver || ((orientation === 'WHITE' && char === char.toLowerCase()) || (orientation === 'BLACK' && char === char.toUpperCase())));
 
             return (
-              <DroppableSquare key={visualIndex} index={visualIndex} onClick={() => handleSquareClick(actualIndex)} className={`relative flex items-center justify-center aspect-square ${isDark ? currentTheme.dark : currentTheme.light} ${isSelected ? 'ring-4 ring-blue-500/50 z-30' : ''} ${isKingInDanger ? 'bg-red-600/90 animate-pulse' : ''}`}>
+              <DroppableSquare 
+                key={visualIndex} 
+                index={visualIndex} 
+                onClick={() => handleSquareClick(actualIndex)} 
+                style={{ backgroundColor: isDark ? currentTheme.previewDark : currentTheme.previewLight }}
+                className={`relative flex items-center justify-center aspect-square ${isSelected ? 'ring-4 ring-blue-500/50 z-30' : ''} ${isKingInDanger ? 'bg-red-600/90 animate-pulse' : ''}`}
+              >
                 {col === (orientation === 'WHITE' ? 0 : 7) && (
                   <span className="absolute left-1.5 top-1 text-base font-black text-slate-900 z-10 drop-shadow-[0_1.2px_1.2px_rgba(255,255,255,0.5)]">
                     {displayRank + 1}

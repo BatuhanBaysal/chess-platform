@@ -1,6 +1,5 @@
 package com.batuhan.chess.domain.model.chess;
 
-import com.batuhan.chess.domain.model.chess.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -10,10 +9,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Domain-level unit tests for Bishop movement logic.
- * Validates diagonal movement patterns, obstacle detection, and capture rules.
- */
 @DisplayName("Bishop Piece Logic Tests")
 class BishopTest {
 
@@ -32,8 +27,8 @@ class BishopTest {
         @DisplayName("Should allow basic diagonal movement across the board")
         void shouldMoveDiagonally() {
             // Arrange
-            Position start = new Position(2, 0); // c1
-            Position target = new Position(5, 3); // f4
+            Position start = new Position(2, 0);
+            Position target = new Position(5, 3);
             Bishop bishop = new Bishop(Color.WHITE, start);
             board.setPieceAt(start, bishop);
 
@@ -48,12 +43,12 @@ class BishopTest {
         @DisplayName("Should block movement if another piece is in the way")
         void shouldNotMoveWhenPathIsBlocked() {
             // Arrange
-            Position start = new Position(2, 0); // c1
-            Position target = new Position(5, 3); // f4
+            Position start = new Position(2, 0);
+            Position target = new Position(5, 3);
             Bishop bishop = new Bishop(Color.WHITE, start);
             board.setPieceAt(start, bishop);
 
-            Position blockerPosition = new Position(3, 1); // d2
+            Position blockerPosition = new Position(3, 1);
             board.setPieceAt(blockerPosition, new Pawn(Color.WHITE, blockerPosition));
 
             // Act
@@ -67,8 +62,8 @@ class BishopTest {
         @DisplayName("Should allow capturing an enemy piece")
         void shouldCaptureEnemy() {
             // Arrange
-            Position start = new Position(2, 0); // c1
-            Position target = new Position(4, 2); // e3
+            Position start = new Position(2, 0);
+            Position target = new Position(4, 2);
             Bishop bishop = new Bishop(Color.WHITE, start);
             board.setPieceAt(start, bishop);
             board.setPieceAt(target, new Pawn(Color.BLACK, target));
@@ -89,7 +84,7 @@ class BishopTest {
         @DisplayName("Should generate all 13 possible diagonal moves from the center (e5)")
         void shouldReturnCorrectMovesFromCenter() {
             // Arrange
-            Position start = new Position(4, 4); // e5
+            Position start = new Position(4, 4);
             Bishop bishop = new Bishop(Color.WHITE, start);
             board.setPieceAt(start, bishop);
 
@@ -107,11 +102,11 @@ class BishopTest {
         @DisplayName("Should stop move generation exactly at the enemy piece's square")
         void shouldStopAfterCapture() {
             // Arrange
-            Position start = new Position(0, 0); // a1
+            Position start = new Position(0, 0);
             Bishop bishop = new Bishop(Color.WHITE, start);
             board.setPieceAt(start, bishop);
 
-            Position enemyPos = new Position(1, 1); // b2
+            Position enemyPos = new Position(1, 1);
             board.setPieceAt(enemyPos, new Pawn(Color.BLACK, enemyPos));
 
             // Act
@@ -127,7 +122,7 @@ class BishopTest {
         @DisplayName("Should handle board edges correctly from corners")
         void shouldHandleBoundaries() {
             // Arrange
-            Position start = new Position(7, 0); // h1
+            Position start = new Position(7, 0);
             Bishop bishop = new Bishop(Color.WHITE, start);
             board.setPieceAt(start, bishop);
 

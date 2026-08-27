@@ -1,6 +1,5 @@
 package com.batuhan.chess.domain.model.chess;
 
-import com.batuhan.chess.domain.model.chess.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -10,15 +9,11 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Unit tests for Rook piece movement logic.
- * Validates horizontal/vertical sliding, path obstruction, and capture rules.
- */
 @DisplayName("Rook Movement Logic Tests")
 class RookTest {
 
     private Board board;
-    private final Position centerPos = new Position(3, 3); // d4
+    private final Position centerPos = new Position(3, 3);
 
     @BeforeEach
     void setUp() {
@@ -35,12 +30,22 @@ class RookTest {
             // Arrange
             Rook rook = new Rook(Color.WHITE, centerPos);
             board.setPieceAt(centerPos, rook);
+            Position rightPos = new Position(7, 3);
+            Position leftPos = new Position(0, 3);
+            Position upPos = new Position(3, 7);
+            Position downPos = new Position(3, 0);
 
-            // Act & Assert
-            assertThat(rook.isPseudoLegalMove(new Position(7, 3), board)).as("Move Right (h4)").isTrue();
-            assertThat(rook.isPseudoLegalMove(new Position(0, 3), board)).as("Move Left (a4)").isTrue();
-            assertThat(rook.isPseudoLegalMove(new Position(3, 7), board)).as("Move Up (d8)").isTrue();
-            assertThat(rook.isPseudoLegalMove(new Position(3, 0), board)).as("Move Down (d1)").isTrue();
+            // Act
+            boolean canMoveRight = rook.isPseudoLegalMove(rightPos, board);
+            boolean canMoveLeft = rook.isPseudoLegalMove(leftPos, board);
+            boolean canMoveUp = rook.isPseudoLegalMove(upPos, board);
+            boolean canMoveDown = rook.isPseudoLegalMove(downPos, board);
+
+            // Assert
+            assertThat(canMoveRight).as("Move Right (h4)").isTrue();
+            assertThat(canMoveLeft).as("Move Left (a4)").isTrue();
+            assertThat(canMoveUp).as("Move Up (d8)").isTrue();
+            assertThat(canMoveDown).as("Move Down (d1)").isTrue();
         }
 
         @Test
@@ -49,10 +54,16 @@ class RookTest {
             // Arrange
             Rook rook = new Rook(Color.WHITE, centerPos);
             board.setPieceAt(centerPos, rook);
+            Position diagonalPos = new Position(4, 4);
+            Position knightPos = new Position(5, 4);
 
-            // Act & Assert
-            assertThat(rook.isPseudoLegalMove(new Position(4, 4), board)).as("Diagonal move").isFalse();
-            assertThat(rook.isPseudoLegalMove(new Position(5, 4), board)).as("Knight-style jump").isFalse();
+            // Act
+            boolean isDiagonal = rook.isPseudoLegalMove(diagonalPos, board);
+            boolean isKnightJump = rook.isPseudoLegalMove(knightPos, board);
+
+            // Assert
+            assertThat(isDiagonal).as("Diagonal move").isFalse();
+            assertThat(isKnightJump).as("Knight-style jump").isFalse();
         }
     }
 
@@ -64,10 +75,9 @@ class RookTest {
         @DisplayName("Should be blocked by any piece on its path and cannot jump")
         void shouldBeBlockedByPiecesOnPath() {
             // Arrange
-            Position start = new Position(0, 0); // a1
-            Position blocker = new Position(0, 3); // a4 (Blocker)
-            Position target = new Position(0, 5);  // a6
-
+            Position start = new Position(0, 0);
+            Position blocker = new Position(0, 3);
+            Position target = new Position(0, 5);
             Rook rook = new Rook(Color.WHITE, start);
             board.setPieceAt(start, rook);
             board.setPieceAt(blocker, new Pawn(Color.WHITE, blocker));
@@ -85,18 +95,21 @@ class RookTest {
         @DisplayName("Should allow capturing enemy pieces but reject friendly squares")
         void shouldHandleCaptureLogicCorrectly() {
             // Arrange
-            Position start = new Position(0, 0); // a1
-            Position enemyPos = new Position(0, 4); // a5
-            Position friendPos = new Position(4, 0); // e1
-
+            Position start = new Position(0, 0);
+            Position enemyPos = new Position(0, 4);
+            Position friendPos = new Position(4, 0);
             Rook rook = new Rook(Color.WHITE, start);
             board.setPieceAt(start, rook);
             board.setPieceAt(enemyPos, new Pawn(Color.BLACK, enemyPos));
             board.setPieceAt(friendPos, new Pawn(Color.WHITE, friendPos));
 
-            // Act & Assert
-            assertThat(rook.isPseudoLegalMove(enemyPos, board)).as("Can capture enemy").isTrue();
-            assertThat(rook.isPseudoLegalMove(friendPos, board)).as("Cannot occupy friendly square").isFalse();
+            // Act
+            boolean canCapture = rook.isPseudoLegalMove(enemyPos, board);
+            boolean canOccupyFriend = rook.isPseudoLegalMove(friendPos, board);
+
+            // Assert
+            assertThat(canCapture).as("Can capture enemy").isTrue();
+            assertThat(canOccupyFriend).as("Cannot occupy friendly square").isFalse();
         }
     }
 
@@ -108,15 +121,13 @@ class RookTest {
         @DisplayName("Should collect all legal moves until it hits a piece or board boundary")
         void shouldCollectMovesUntilBlocked() {
             // Arrange
-            Position start = new Position(0, 0); // a1
+            Position start = new Position(0, 0);
             Rook rook = new Rook(Color.WHITE, start);
             board.setPieceAt(start, rook);
 
-            // Vertical block: enemy at a3
             Position enemyPos = new Position(0, 2);
             board.setPieceAt(enemyPos, new Pawn(Color.BLACK, enemyPos));
 
-            // Horizontal block: friend at c1
             Position friendPos = new Position(2, 0);
             board.setPieceAt(friendPos, new Pawn(Color.WHITE, friendPos));
 

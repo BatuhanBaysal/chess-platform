@@ -164,4 +164,42 @@ class GamePersistenceServiceTest {
         assertThat(history).hasSize(1);
         verify(gameRepository, times(1)).findByWhitePlayerIdOrBlackPlayerIdOrderByPlayedAtDesc(userId, userId);
     }
+
+    @Test
+    void shouldNotProcessFinishWhenGameAlreadyClosing() {
+        // Arrange
+        String gameId = "room123";
+        Game game = new Game(new Board());
+        game.setStatus(GameStatus.CLOSING);
+
+        when(sessionManager.getGame(gameId)).thenReturn(game);
+
+        // Act
+        persistenceService.processGameFinish(gameId, GameResult.WHITE_WIN, GameStatus.CHECKMATE);
+
+        // Assert
+        verify(timerService, never()).cancelTimeoutTask(anyString());
+        verify(self, never()).handleFinishLogic(anyString(), any(), any(), any());
+    }
+
+    @Test
+    void shouldHandleNullUsersSafelyWhenFinishingGame() {
+        // Arrange
+        String gameId = "room123";
+        Game game = new Game(new Board());
+        game.setWhitePlayerId(null);
+        game.setBlackPlayerId(-1L);
+
+        when(gameRepository.saveAndFlush(any(GameEntity.class))).thenReturn(new GameEntity());
+
+        // Act
+        persistenceService.handleFinishLogic(gameId, game, GameResult.DRAW, GameStatus.STALEMATE);
+
+        // Assert
+        assertThat(game.getStatus()).isEqualTo(GameStatus.STALEMATE);
+        verify(userRepository, never()).findById(anyLong());
+        verify(gameRepository, times(1)).saveAndFlush(any(GameEntity.class));
+        verify(webSocketController, times(1)).broadcastGameUpdate(gameId, game);
+        verify(webSocketController, times(1)).sendGameOver(gameId, GameResult.DRAW);
+    }
 }

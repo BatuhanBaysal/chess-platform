@@ -30,10 +30,15 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
-## [2.1.0] - 2026-08-26
+## [2.1.0] - 2026-08-27
 
 ### 🚀 Phase 20: Enterprise Refactoring & Production Readiness 🏗️ (v2.1.0)
 > **Note:** Elevating backend architecture through domain-driven vertical slicing, decoupling monolithic services, and ensuring real-time production reliability.
+
+- **2026-08-27:**
+    - **Comprehensive Backend Test Suite Expansion & Domain Refactoring (PR #133 | Issue #129):**
+        - Significantly expanded backend unit, configuration, controller, and integration test suites (including new tests for Redis config, audit log aspects, WebSocket configurations, game broadcast managers, and domain repositories) to fulfill v2.1.0 release quality gates.
+        - Refactored core application and domain services (`AuthService`, `GameEngineService`, `GamePersistenceService`, `GameTimerService`, `StockfishService`, etc.) alongside domain models to ensure absolute test reliability, prevent regressions, and guarantee concurrency safety for chess rule evaluations and API services.
 
 - **2026-08-26:**
     - **Robust WebSocket Reconnection, Error Boundary & UI/UX Enhancements (PR #132 | Issue #128):**

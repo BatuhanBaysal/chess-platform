@@ -1,6 +1,5 @@
 package com.batuhan.chess.application.service.auth;
 
-import com.batuhan.chess.application.service.auth.JwtService;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -18,11 +17,6 @@ import java.util.Date;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Technical test suite for JwtService.
- * Validates JWT generation, claims extraction, and token expiration logic
- * using manual key simulation via ReflectionTestUtils.
- */
 @DisplayName("JWT Service Technical Tests")
 class JwtServiceTest {
 

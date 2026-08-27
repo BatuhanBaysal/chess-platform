@@ -1,6 +1,5 @@
 package com.batuhan.chess.domain.model.chess;
 
-import com.batuhan.chess.domain.model.chess.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -13,11 +12,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 
-/**
- * Technical test suite for the Chess Board.
- * Validates the 8x8 grid structure, standard piece placement,
- * deep copying mechanisms, and internal consistency.
- */
 @DisplayName("Board Unified Professional Test Suite")
 class BoardTest {
 
@@ -48,12 +42,12 @@ class BoardTest {
 
         @ParameterizedTest
         @CsvSource({
-            "0, 0, WHITE, ROOK",  // a1
-            "4, 0, WHITE, KING",  // e1
-            "3, 0, WHITE, QUEEN", // d1
-            "0, 7, BLACK, ROOK",  // a8
-            "4, 7, BLACK, KING",  // e8
-            "3, 7, BLACK, QUEEN"  // d8
+            "0, 0, WHITE, ROOK",
+            "4, 0, WHITE, KING",
+            "3, 0, WHITE, QUEEN",
+            "0, 7, BLACK, ROOK",
+            "4, 7, BLACK, KING",
+            "3, 7, BLACK, QUEEN"
         })
         @DisplayName("Major pieces should be placed correctly according to standard rules")
         void shouldValidateMajorPiecePlacement(int file, int rank, Color color, PieceType type) {
@@ -139,8 +133,6 @@ class BoardTest {
         @Test
         @DisplayName("Should locate the King of a specific color correctly")
         void shouldFindKingInstance() {
-            // Arrange
-
             // Act
             Optional<King> whiteKing = board.findKing(Color.WHITE)
                 .map(King.class::cast);

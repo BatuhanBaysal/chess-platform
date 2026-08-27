@@ -25,11 +25,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-/**
- * Unit test suite for AuthService.
- * Validates authentication and registration business logic, including
- * user persistence, password encoding, and JWT generation processes.
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Authentication Service Business Logic Tests")
 class AuthServiceTest {

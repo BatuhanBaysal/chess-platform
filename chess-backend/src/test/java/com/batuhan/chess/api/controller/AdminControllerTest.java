@@ -6,7 +6,6 @@ import com.batuhan.chess.api.dto.admin.AdminUserResponseDTO;
 import com.batuhan.chess.application.service.admin.AdminService;
 import com.batuhan.chess.domain.model.chess.GameStatus;
 import com.batuhan.chess.domain.model.user.UserRole;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -44,9 +43,6 @@ class AdminControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @MockitoBean
     private AdminService adminService;

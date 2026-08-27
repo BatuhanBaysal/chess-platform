@@ -29,11 +29,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
-/**
- * Security test suite for JwtAuthenticationFilter.
- * Validates JWT extraction, user authentication process, and filter chain delegation
- * across various request scenarios including security context management.
- */
+
 @ExtendWith(MockitoExtension.class)
 @DisplayName("JWT Authentication Filter Technical Tests")
 class JwtAuthenticationFilterTest {

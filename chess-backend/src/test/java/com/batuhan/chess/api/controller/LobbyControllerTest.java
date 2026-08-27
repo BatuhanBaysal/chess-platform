@@ -26,11 +26,6 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * Web layer unit tests for LobbyController.
- * Validates match-making processes, including room creation, player joining logic,
- * and retrieval of active game room statuses.
- */
 @WebMvcTest(LobbyController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("Lobby Controller Web Layer Tests")

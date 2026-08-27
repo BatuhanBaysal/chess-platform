@@ -1,6 +1,5 @@
 package com.batuhan.chess.domain.model.chess;
 
-import com.batuhan.chess.domain.model.chess.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -10,10 +9,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Unit tests for Pawn movement logic.
- * Covers forward moves, initial double-step, diagonal captures, and path blocking.
- */
 @DisplayName("Pawn Domain Model Unit Tests")
 class PawnTest {
 
@@ -30,10 +25,10 @@ class PawnTest {
 
         @ParameterizedTest(name = "{0} pawn from {1},{2} to {3},{4}")
         @CsvSource({
-            "WHITE, 0, 1, 0, 2", // White a2 -> a3
-            "BLACK, 0, 6, 0, 5", // Black a7 -> a6
-            "WHITE, 4, 1, 4, 3", // White e2 -> e4 (Initial double step)
-            "BLACK, 4, 6, 4, 4"  // Black e7 -> e5 (Initial double step)
+            "WHITE, 0, 1, 0, 2",
+            "BLACK, 0, 6, 0, 5",
+            "WHITE, 4, 1, 4, 3",
+            "BLACK, 4, 6, 4, 4"
         })
         @DisplayName("Pawn should move forward correctly according to its color and starting rank")
         void shouldMoveForwardCorrectly(Color color, int startFile, int startRank, int targetFile, int targetRank) {
@@ -58,7 +53,7 @@ class PawnTest {
             Position target = new Position(0, 2);
             Pawn pawn = new Pawn(Color.WHITE, start);
             board.setPieceAt(start, pawn);
-            board.setPieceAt(target, new Rook(Color.BLACK, target)); // Blocker
+            board.setPieceAt(target, new Rook(Color.BLACK, target));
 
             // Act
             boolean isLegal = pawn.isPseudoLegalMove(target, board);
@@ -94,8 +89,8 @@ class PawnTest {
         @DisplayName("Pawn should capture an enemy piece diagonally")
         void shouldCaptureDiagonally() {
             // Arrange
-            Position start = new Position(3, 1); // d2
-            Position target = new Position(4, 2); // e3
+            Position start = new Position(3, 1);
+            Position target = new Position(4, 2);
             Pawn pawn = new Pawn(Color.WHITE, start);
             board.setPieceAt(start, pawn);
             board.setPieceAt(target, new Knight(Color.BLACK, target));
@@ -116,8 +111,11 @@ class PawnTest {
             Pawn pawn = new Pawn(Color.WHITE, start);
             board.setPieceAt(start, pawn);
 
-            // Act & Assert
-            assertThat(pawn.isPseudoLegalMove(target, board))
+            // Act
+            boolean isLegal = pawn.isPseudoLegalMove(target, board);
+
+            // Assert
+            assertThat(isLegal)
                 .as("Diagonal move is pseudo-legal even if empty for En Passant logic")
                 .isTrue();
         }
@@ -149,25 +147,31 @@ class PawnTest {
         void shouldNotMoveBackwards() {
             // Arrange
             Position start = new Position(4, 3);
-            Position target = new Position(4, 2); // Moving back
+            Position target = new Position(4, 2);
             Pawn pawn = new Pawn(Color.WHITE, start);
             board.setPieceAt(start, pawn);
 
-            // Act & Assert
-            assertThat(pawn.isPseudoLegalMove(target, board)).isFalse();
+            // Act
+            boolean isLegal = pawn.isPseudoLegalMove(target, board);
+
+            // Assert
+            assertThat(isLegal).isFalse();
         }
 
         @Test
         @DisplayName("Pawn should not move 2 squares if it has already left its starting rank")
         void shouldNotMoveTwoSquaresFromMiddleBoard() {
             // Arrange
-            Position start = new Position(4, 2); // e3
-            Position target = new Position(4, 4); // e5
+            Position start = new Position(4, 2);
+            Position target = new Position(4, 4);
             Pawn pawn = new Pawn(Color.WHITE, start);
             board.setPieceAt(start, pawn);
 
-            // Act & Assert
-            assertThat(pawn.isPseudoLegalMove(target, board)).isFalse();
+            // Act
+            boolean isLegal = pawn.isPseudoLegalMove(target, board);
+
+            // Assert
+            assertThat(isLegal).isFalse();
         }
     }
 }

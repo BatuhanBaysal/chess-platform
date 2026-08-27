@@ -1,6 +1,5 @@
 package com.batuhan.chess.domain.model.chess;
 
-import com.batuhan.chess.domain.model.chess.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -10,15 +9,11 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Unit tests for Queen piece movement.
- * Combines Rook and Bishop logic to validate 8-directional sliding movement.
- */
 @DisplayName("Queen Piece Logic Tests")
 class QueenTest {
 
     private Board board;
-    private final Position centerPos = new Position(3, 3); // d4
+    private final Position centerPos = new Position(3, 3);
 
     @BeforeEach
     void setUp() {
@@ -35,16 +30,34 @@ class QueenTest {
             // Arrange
             Queen queen = new Queen(Color.WHITE, centerPos);
             board.setPieceAt(centerPos, queen);
+            Position north = new Position(3, 7);
+            Position south = new Position(3, 0);
+            Position east = new Position(7, 3);
+            Position west = new Position(0, 3);
+            Position northEast = new Position(7, 7);
+            Position southWest = new Position(0, 0);
+            Position northWest = new Position(0, 6);
+            Position southEast = new Position(6, 0);
 
-            // Act & Assert
-            assertThat(queen.isPseudoLegalMove(new Position(3, 7), board)).as("North").isTrue();
-            assertThat(queen.isPseudoLegalMove(new Position(3, 0), board)).as("South").isTrue();
-            assertThat(queen.isPseudoLegalMove(new Position(7, 3), board)).as("East").isTrue();
-            assertThat(queen.isPseudoLegalMove(new Position(0, 3), board)).as("West").isTrue();
-            assertThat(queen.isPseudoLegalMove(new Position(7, 7), board)).as("North-East").isTrue();
-            assertThat(queen.isPseudoLegalMove(new Position(0, 0), board)).as("South-West").isTrue();
-            assertThat(queen.isPseudoLegalMove(new Position(0, 6), board)).as("North-West").isTrue();
-            assertThat(queen.isPseudoLegalMove(new Position(6, 0), board)).as("South-East").isTrue();
+            // Act
+            boolean canMoveNorth = queen.isPseudoLegalMove(north, board);
+            boolean canMoveSouth = queen.isPseudoLegalMove(south, board);
+            boolean canMoveEast = queen.isPseudoLegalMove(east, board);
+            boolean canMoveWest = queen.isPseudoLegalMove(west, board);
+            boolean canMoveNorthEast = queen.isPseudoLegalMove(northEast, board);
+            boolean canMoveSouthWest = queen.isPseudoLegalMove(southWest, board);
+            boolean canMoveNorthWest = queen.isPseudoLegalMove(northWest, board);
+            boolean canMoveSouthEast = queen.isPseudoLegalMove(southEast, board);
+
+            // Assert
+            assertThat(canMoveNorth).as("North").isTrue();
+            assertThat(canMoveSouth).as("South").isTrue();
+            assertThat(canMoveEast).as("East").isTrue();
+            assertThat(canMoveWest).as("West").isTrue();
+            assertThat(canMoveNorthEast).as("North-East").isTrue();
+            assertThat(canMoveSouthWest).as("South-West").isTrue();
+            assertThat(canMoveNorthWest).as("North-West").isTrue();
+            assertThat(canMoveSouthEast).as("South-East").isTrue();
         }
 
         @Test
@@ -53,9 +66,10 @@ class QueenTest {
             // Arrange
             Queen queen = new Queen(Color.WHITE, centerPos);
             board.setPieceAt(centerPos, queen);
+            Position knightPos = new Position(4, 5);
 
             // Act
-            boolean knightMove = queen.isPseudoLegalMove(new Position(4, 5), board);
+            boolean knightMove = queen.isPseudoLegalMove(knightPos, board);
 
             // Assert
             assertThat(knightMove).as("Queen cannot perform L-shaped moves").isFalse();
@@ -68,8 +82,11 @@ class QueenTest {
             Queen queen = new Queen(Color.WHITE, centerPos);
             board.setPieceAt(centerPos, queen);
 
-            // Act & Assert
-            assertThat(queen.isPseudoLegalMove(centerPos, board)).isFalse();
+            // Act
+            boolean isSameSquare = queen.isPseudoLegalMove(centerPos, board);
+
+            // Assert
+            assertThat(isSameSquare).isFalse();
         }
     }
 
@@ -81,10 +98,9 @@ class QueenTest {
         @DisplayName("Should be blocked by friendly pieces and not jump over them")
         void shouldNotJumpOverFriendlyPieces() {
             // Arrange
-            Position blocker = new Position(3, 5); // d6
-            Position target = new Position(3, 7);  // d8
+            Position blocker = new Position(3, 5);
+            Position target = new Position(3, 7);
             Queen queen = new Queen(Color.WHITE, centerPos);
-
             board.setPieceAt(centerPos, queen);
             board.setPieceAt(blocker, new Pawn(Color.WHITE, blocker));
 
@@ -103,7 +119,6 @@ class QueenTest {
             Position blocker = new Position(1, 1);
             Position target = new Position(3, 3);
             Queen queen = new Queen(Color.WHITE, start);
-
             board.setPieceAt(start, queen);
             board.setPieceAt(blocker, new Pawn(Color.BLACK, blocker));
 
@@ -123,7 +138,7 @@ class QueenTest {
         @DisplayName("Should allow capturing an enemy piece at the end of a path")
         void shouldCaptureEnemy() {
             // Arrange
-            Position target = new Position(3, 6); // d7
+            Position target = new Position(3, 6);
             Queen queen = new Queen(Color.WHITE, centerPos);
             board.setPieceAt(centerPos, queen);
             board.setPieceAt(target, new Pawn(Color.BLACK, target));
@@ -178,7 +193,6 @@ class QueenTest {
             Position enemyPos = new Position(0, 3);
             Position pastEnemy = new Position(0, 4);
             Queen queen = new Queen(Color.WHITE, start);
-
             board.setPieceAt(start, queen);
             board.setPieceAt(enemyPos, new Pawn(Color.BLACK, enemyPos));
 

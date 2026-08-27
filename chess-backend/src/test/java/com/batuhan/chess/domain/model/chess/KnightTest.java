@@ -1,6 +1,5 @@
 package com.batuhan.chess.domain.model.chess;
 
-import com.batuhan.chess.domain.model.chess.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -10,15 +9,11 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Unit tests for Knight piece movement.
- * Validates the unique L-shape movement, jumping capability, and capture rules.
- */
 @DisplayName("Knight Piece Logic Tests")
 class KnightTest {
 
     private Board board;
-    private final Position centerPos = new Position(4, 4); // e5
+    private final Position centerPos = new Position(4, 4);
 
     @BeforeEach
     void setUp() {
@@ -33,8 +28,8 @@ class KnightTest {
         @DisplayName("Should move in a vertical L-shape (2 ranks, 1 file)")
         void shouldMoveVerticalLShape() {
             // Arrange
-            Position start = new Position(1, 0); // b1
-            Position target = new Position(2, 2); // c3
+            Position start = new Position(1, 0);
+            Position target = new Position(2, 2);
             Knight knight = new Knight(Color.WHITE, start);
             board.setPieceAt(start, knight);
 
@@ -49,7 +44,7 @@ class KnightTest {
         @DisplayName("Should move in a horizontal L-shape (1 rank, 2 files)")
         void shouldMoveHorizontalLShape() {
             // Arrange
-            Position target = new Position(6, 5); // g6
+            Position target = new Position(6, 5);
             Knight knight = new Knight(Color.WHITE, centerPos);
             board.setPieceAt(centerPos, knight);
 
@@ -66,11 +61,18 @@ class KnightTest {
             // Arrange
             Knight knight = new Knight(Color.WHITE, centerPos);
             board.setPieceAt(centerPos, knight);
+            Position straightPos = new Position(4, 6);
+            Position diagonalPos = new Position(6, 6);
 
-            // Act & Assert
-            assertThat(knight.isPseudoLegalMove(new Position(4, 6), board)).as("Straight move").isFalse();
-            assertThat(knight.isPseudoLegalMove(new Position(6, 6), board)).as("Pure diagonal move").isFalse();
-            assertThat(knight.isPseudoLegalMove(centerPos, board)).as("Same square").isFalse();
+            // Act
+            boolean straightMove = knight.isPseudoLegalMove(straightPos, board);
+            boolean diagonalMove = knight.isPseudoLegalMove(diagonalPos, board);
+            boolean sameSquareMove = knight.isPseudoLegalMove(centerPos, board);
+
+            // Assert
+            assertThat(straightMove).as("Straight move").isFalse();
+            assertThat(diagonalMove).as("Pure diagonal move").isFalse();
+            assertThat(sameSquareMove).as("Same square").isFalse();
         }
     }
 
@@ -82,7 +84,7 @@ class KnightTest {
         @DisplayName("Should capture enemy piece at the destination")
         void shouldCaptureEnemy() {
             // Arrange
-            Position target = new Position(5, 6); // f7
+            Position target = new Position(5, 6);
             Knight knight = new Knight(Color.WHITE, centerPos);
             board.setPieceAt(centerPos, knight);
             board.setPieceAt(target, new Pawn(Color.BLACK, target));
@@ -141,7 +143,7 @@ class KnightTest {
         @DisplayName("Should restrict moves correctly at board boundaries (corners)")
         void shouldHandleCornerBoundaries() {
             // Arrange
-            Position corner = new Position(0, 0); // a1
+            Position corner = new Position(0, 0);
             Knight knight = new Knight(Color.WHITE, corner);
             board.setPieceAt(corner, knight);
 

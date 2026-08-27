@@ -1,6 +1,5 @@
 package com.batuhan.chess.domain.model.chess;
 
-import com.batuhan.chess.domain.model.chess.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -15,10 +14,6 @@ import java.util.Locale;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-/**
- * Technical test suite for PieceFactory.
- * Validates the instantiation of chess pieces and promotion logic handling.
- */
 @DisplayName("PieceFactory Technical Test Suite")
 class PieceFactoryTest {
 
@@ -78,7 +73,7 @@ class PieceFactoryTest {
     class PromotionLogicTests {
 
         @ParameterizedTest
-        @ValueSource(strings = {"ROOK", "bishop", "  knight  "})
+        @ValueSource(strings = {"rook", "b", "  knight  "})
         @DisplayName("Should handle various string formats and case-insensitivity for promotion")
         void shouldHandleSanitizedInputForPromotion(String typeStr) {
             // Arrange
@@ -89,7 +84,14 @@ class PieceFactoryTest {
 
             // Assert
             assertThat(piece).isNotNull();
-            assertThat(piece.getType().name()).isEqualTo(typeStr.trim().toUpperCase(Locale.ROOT));
+            String normalizedInput = typeStr.trim().toLowerCase(Locale.ROOT);
+            // Act & Assert
+            switch (normalizedInput) {
+                case "r", "rook" -> assertThat(piece).isExactlyInstanceOf(Rook.class);
+                case "b", "bishop" -> assertThat(piece).isExactlyInstanceOf(Bishop.class);
+                case "n", "knight" -> assertThat(piece).isExactlyInstanceOf(Knight.class);
+                default -> throw new IllegalStateException("Unexpected value: " + normalizedInput);
+            }
         }
 
         @ParameterizedTest

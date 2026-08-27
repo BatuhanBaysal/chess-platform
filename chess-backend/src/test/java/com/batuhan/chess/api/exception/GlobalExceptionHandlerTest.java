@@ -19,11 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-/**
- * Updated technical test suite for GlobalExceptionHandler.
- * Validates the mapping of domain-specific exceptions (GameOperation, Conflicts)
- * and generic fallback handlers with HttpServletRequest context.
- */
 @DisplayName("Global Exception Handler Technical Tests")
 class GlobalExceptionHandlerTest {
 
@@ -76,6 +71,23 @@ class GlobalExceptionHandlerTest {
             assertThat(body.message()).isEqualTo("User already exists");
             assertThat(body.path()).isEqualTo("/api/test-uri");
         }
+
+        @Test
+        @DisplayName("Should map EmailAlreadyExistsException to 409 Conflict")
+        void shouldHandleEmailAlreadyExistsConflict() {
+            // Arrange
+            EmailAlreadyExistsException ex = new EmailAlreadyExistsException("Email already exists");
+
+            // Act
+            ResponseEntity<ErrorResponse> response = handler.handleConflict(ex, requestMock);
+            ErrorResponse body = response.getBody();
+
+            // Assert
+            assertThat(body).isNotNull();
+            assertThat(body.status()).isEqualTo(409);
+            assertThat(body.message()).isEqualTo("Email already exists");
+            assertThat(body.path()).isEqualTo("/api/test-uri");
+        }
     }
 
     @Nested
@@ -124,8 +136,7 @@ class GlobalExceptionHandlerTest {
             assertThat(response).satisfies(res -> {
                 assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
                 assertThat(res.getBody()).isNotNull();
-                assertThat(res.getBody().validationErrors()).containsKey("username");
-                assertThat(res.getBody().validationErrors().get("username")).isEqualTo("must not be empty");
+                assertThat(res.getBody().validationErrors()).containsEntry("username", "must not be empty");
                 assertThat(res.getBody().path()).isEqualTo("/api/test-uri");
             });
         }

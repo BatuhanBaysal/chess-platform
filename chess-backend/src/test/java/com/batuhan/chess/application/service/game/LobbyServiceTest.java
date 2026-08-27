@@ -15,7 +15,6 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -24,11 +23,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-/**
- * Technical test suite for LobbyService.
- * Validates the room lifecycle, player match-making logic, and STOMP message
- * broadcasting for real-time game initialization.
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Lobby Service Match-Making Tests")
 class LobbyServiceTest {
@@ -61,10 +55,9 @@ class LobbyServiceTest {
             assertThat(roomId).isNotBlank().hasSize(8);
             assertThat(lobbyService.getAllActiveRooms()).hasSize(1);
 
-            Optional<GameRoomResponse> roomOpt = lobbyService.getRoom(roomId);
-            assertThat(roomOpt).isPresent()
-                .satisfies(opt -> {
-                    GameRoomResponse r = opt.get();
+            assertThat(lobbyService.getRoom(roomId))
+                .isPresent()
+                .hasValueSatisfying(r -> {
                     assertThat(r.hostId()).isEqualTo(userId);
                     assertThat(r.status()).isEqualTo("WAITING");
                     assertThat(r.theme()).isEqualTo(theme);

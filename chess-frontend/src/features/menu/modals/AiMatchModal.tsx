@@ -7,9 +7,9 @@ interface AiMatchModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedTime: TimeControl;
-  setSelectedTime: (time: TimeControl) => void; 
-  selectedTheme: string;                         
-  setSelectedTheme: (theme: string) => void; 
+  setSelectedTime: (time: TimeControl) => void;
+  selectedTheme: string;
+  setSelectedTheme: (theme: string) => void;
   aiPlayAsWhite: boolean;
   setAiPlayAsWhite: (val: boolean) => void;
   aiDifficulty: number;
@@ -72,21 +72,21 @@ export const AiMatchModal: React.FC<AiMatchModalProps> = ({
             <Shield size={12} /> Choose Your Side
           </label>
           <div className="grid grid-cols-2 gap-2">
-            <button 
+            <button
               onClick={() => setAiPlayAsWhite(true)}
               className={`py-3.5 rounded-2xl text-[10px] font-black uppercase transition-all duration-300 border ${
-                aiPlayAsWhite 
-                  ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/20 scale-[1.02]' 
+                aiPlayAsWhite
+                  ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/20 scale-[1.02]'
                   : 'bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50 text-slate-600 dark:text-slate-300 hover:border-slate-400'
               }`}
             >
               White (First)
             </button>
-            <button 
+            <button
               onClick={() => setAiPlayAsWhite(false)}
               className={`py-3.5 rounded-2xl text-[10px] font-black uppercase transition-all duration-300 border ${
-                !aiPlayAsWhite 
-                  ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/20 scale-[1.02]' 
+                !aiPlayAsWhite
+                  ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/20 scale-[1.02]'
                   : 'bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50 text-slate-600 dark:text-slate-300 hover:border-slate-400'
               }`}
             >
@@ -105,8 +105,8 @@ export const AiMatchModal: React.FC<AiMatchModalProps> = ({
                 key={lvl}
                 onClick={() => setAiDifficulty(lvl)}
                 className={`py-3 rounded-2xl text-[10px] font-black uppercase transition-all duration-300 border ${
-                  aiDifficulty === lvl 
-                    ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/20 scale-[1.02]' 
+                  aiDifficulty === lvl
+                    ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/20 scale-[1.02]'
                     : 'bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50 text-slate-600 dark:text-slate-300 hover:border-slate-400'
                 }`}
               >
@@ -121,31 +121,27 @@ export const AiMatchModal: React.FC<AiMatchModalProps> = ({
             <Palette size={12} /> Board Theme
           </label>
           <div className="grid grid-cols-3 gap-2">
-            {(Object.keys(CHESS_THEMES) as ChessThemeKey[]).map((theme) => {
-              const previewColors = {
-                classic: { dark: '#b58863', light: '#f0d9b5' },
-                modern: { dark: '#4b7399', light: '#e2e8f0' },
-                emerald: { dark: '#6a8d5c', light: '#eceed1' }
-              };
+            {(Object.keys(CHESS_THEMES) as ChessThemeKey[]).map((themeKey) => {
+              const themeConfig = CHESS_THEMES[themeKey];
 
               return (
                 <button
-                  key={theme}
-                  onClick={() => setSelectedTheme(theme)}
+                  key={themeKey}
+                  onClick={() => setSelectedTheme(themeKey)}
                   className={`relative p-3 rounded-2xl transition-all duration-300 border-2 flex flex-col items-center gap-2.5 ${
-                    selectedTheme === theme 
-                      ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/10 shadow-md scale-[1.02]' 
+                    selectedTheme === themeKey
+                      ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/10 shadow-md scale-[1.02]'
                       : 'border-transparent bg-slate-100 dark:bg-slate-800/50 hover:border-slate-700/50'
                   }`}
                 >
                   <div className="w-8 h-8 grid grid-cols-2 rounded-lg overflow-hidden shadow-inner border border-black/5 dark:border-white/5">
-                    <div style={{ backgroundColor: previewColors[theme].light }}></div>
-                    <div style={{ backgroundColor: previewColors[theme].dark }}></div>
-                    <div style={{ backgroundColor: previewColors[theme].dark }}></div>
-                    <div style={{ backgroundColor: previewColors[theme].light }}></div>
+                    <div className={themeConfig.light}></div>
+                    <div className={themeConfig.dark}></div>
+                    <div className={themeConfig.dark}></div>
+                    <div className={themeConfig.light}></div>
                   </div>
                   <span className="text-[9px] font-black uppercase tracking-tighter text-slate-900 dark:text-white">
-                    {theme}
+                    {themeKey}
                   </span>
                 </button>
               );
@@ -154,13 +150,13 @@ export const AiMatchModal: React.FC<AiMatchModalProps> = ({
         </div>
 
         <div className="flex gap-3 pt-2">
-          <button 
+          <button
             onClick={onClose}
             className="flex-1 py-4 bg-slate-200 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-300 dark:hover:bg-slate-800 transition-all"
           >
             Cancel
           </button>
-          <button 
+          <button
             onClick={onStartMatch}
             disabled={isAiLoading}
             className="flex-1 py-4 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 disabled:opacity-50"

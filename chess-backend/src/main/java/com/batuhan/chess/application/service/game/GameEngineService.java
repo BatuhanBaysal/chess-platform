@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -25,6 +26,7 @@ import java.util.concurrent.*;
 public class GameEngineService {
 
     private static final Long AI_PLAYER_ID = -1L;
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final GameSessionManager sessionManager;
     private final GameTimerService timerService;
@@ -154,7 +156,7 @@ public class GameEngineService {
         Long nextPlayerId = (game.getCurrentTurn() == Color.WHITE) ? game.getWhitePlayerId() : game.getBlackPlayerId();
 
         if (AI_PLAYER_ID.equals(nextPlayerId)) {
-            long randomDelay = ThreadLocalRandom.current().nextLong(2000, 5001);
+            long randomDelay = 2000 + (long) (SECURE_RANDOM.nextDouble() * 3001);
             scheduler.schedule(() -> executeAiMove(gameId, game), randomDelay, TimeUnit.MILLISECONDS);
         }
     }

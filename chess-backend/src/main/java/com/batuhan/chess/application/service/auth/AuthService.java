@@ -31,7 +31,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
-    private static final String GUEST_DUMMY_PASSWORD_HASH = "$2a$10$DummyHashForGuestUsersOptimizationOnlyToAvoidHeavyCpuLoad";
+    private static final String GUEST_DUMMY_HASH = "$2a$10$DummyHashForGuestUsersOptimizationOnlyToAvoidHeavyCpuLoad";
 
     @Transactional
     public void register(RegisterRequest request) {
@@ -92,7 +92,7 @@ public class AuthService {
         UserEntity guestUser = UserEntity.builder()
             .username(guestUsername)
             .email(guestUsername + "@chess.com")
-            .password(GUEST_DUMMY_PASSWORD_HASH)
+            .password(GUEST_DUMMY_HASH)
             .role(UserRole.ROLE_GUEST)
             .eloRating(400)
             .build();

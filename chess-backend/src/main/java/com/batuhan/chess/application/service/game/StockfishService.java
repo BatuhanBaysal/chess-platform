@@ -1,5 +1,6 @@
 package com.batuhan.chess.application.service.game;
 
+import com.batuhan.chess.api.exception.StockfishEngineException;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
@@ -77,7 +78,7 @@ public class StockfishService {
         } catch (IOException e) {
             log.error("Failed to start Stockfish engine: {}", e.getMessage(), e);
             restartEngineUnsafe();
-            throw new RuntimeException("Failed to start Stockfish engine", e);
+            throw new StockfishEngineException("Failed to start Stockfish engine", e);
         } finally {
             engineLock.unlock();
         }
@@ -91,7 +92,7 @@ public class StockfishService {
         sendCommandInternal("isready");
     }
 
-    private File extractEngineToTemp(String resourcePath) throws IOException {
+    private File extractEngineToTemp(String resourcePath) {
         try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
             if (inputStream == null) {
                 throw new FileNotFoundException("Stockfish binary not found in resources/" + resourcePath);
@@ -111,6 +112,8 @@ public class StockfishService {
             }
 
             return tempFile;
+        } catch (IOException e) {
+            throw new StockfishEngineException("Failed to extract Stockfish binary to temp directory", e);
         }
     }
 
@@ -251,7 +254,7 @@ public class StockfishService {
                 reader.close();
             }
         } catch (IOException e) {
-            log.debug("Failed to close reader smoothly during engine restart: {}", e.getMessage());
+            log.debug("Found exception closing reader during engine restart: {}", e.getMessage());
         }
 
         try {
@@ -267,7 +270,7 @@ public class StockfishService {
         }
     }
 
-    private String sendAndReadUntilBestMove(String positionCmd, int depth) throws IOException {
+    String sendAndReadUntilBestMove(String positionCmd, int depth) throws IOException {
         ensureEngineRunning();
         sendCommandInternal(positionCmd);
         sendCommandInternal("go depth " + depth);

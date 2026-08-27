@@ -7,14 +7,14 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.*;
 
 @Slf4j
-@Component
+@Service
 public class GameTimerService {
 
     private final GameSessionManager sessionManager;

@@ -49,6 +49,10 @@ public class UserEntity {
     private UserRole role;
 
     @Builder.Default
+    @Column(name = "is_guest", nullable = false)
+    private boolean isGuest = false;
+
+    @Builder.Default
     private boolean active = true;
 
     private LocalDateTime createdAt;

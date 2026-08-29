@@ -2,7 +2,10 @@ global:
     scrape_interval: 15s
 
 scrape_configs:
-    - job_name: 'chess-backend'
+    - job_name: 'chess-backend-docker'
+      dockerswarm_sd_configs: ~
       metrics_path: '/actuator/prometheus'
-      static_configs:
-          - targets: ['backend:8080']
+      dns_sd_configs:
+          - names: ['backend']
+            type: 'A'
+            port: 8080

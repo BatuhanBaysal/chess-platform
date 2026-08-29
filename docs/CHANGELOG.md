@@ -27,13 +27,20 @@ All notable changes to this project will be documented in this file. This projec
 - ✅ **Phase 18: Security, Resilience & Quality** 🛡️ - Hardening game state integrity by enforcing a "Dismiss = Loss" policy within the WebSocket reconnection handler.
 - ✅ **Phase 19: AI Integration & Training Ecosystem (v2.0.0)** 🤖 - Integrating the Stockfish engine via UCI protocol to enable real-time move analysis, blunder detection, and hint mechanisms.
 - 🔜⏳ **Phase 20: Enterprise Refactoring & Production Readiness (v2.1.0)** ⚡ - Domain-driven vertical slicing, performance optimization, and rigorous security audits for production deployment.
+- 🔜⏳
 
 ---
 
-## [2.1.0] - 2026-08-27
+## [2.1.0] - 2026-08-29
 
 ### 🚀 Phase 20: Enterprise Refactoring & Production Readiness 🏗️ (v2.1.0)
 > **Note:** Elevating backend architecture through domain-driven vertical slicing, decoupling monolithic services, and ensuring real-time production reliability.
+
+- **2026-08-29:**
+    - **Maven Dependency Audit, Build Plugin Consolidation & Build Pipeline Optimization (PR #137 | Issue #130):**
+        - Audited and consolidated Maven dependencies in `pom.xml`, maintaining stable and secure library versions while safely declining risky or incompatible major upgrades (such as unstable Spring Boot 4 versions) to prevent downstream compilation errors.
+        - Resolved build plugin warnings and optimized build configuration files, including modernizing Vite configuration standards (`import.meta.dirname`) to ensure completely clean build outputs and future-proof project tooling.
+        - Verified that multi-stage Docker builds successfully compile, package, and containerize the application with zero deprecation warnings related to updated core libraries.
 
 - **2026-08-27:**
     - **Comprehensive Backend Test Suite Expansion & Domain Refactoring (PR #133 | Issue #129):**

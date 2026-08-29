@@ -9,11 +9,16 @@ interface DroppableSquareProps {
   onClick: () => void;
 }
 
-export const DroppableSquare: React.FC<DroppableSquareProps> = ({ index, children, className, onClick }) => {
+export const DroppableSquare: React.FC<DroppableSquareProps> = ({ index, children, className, style, onClick }) => {
   const { setNodeRef, isOver } = useDroppable({ id: `square-${index}` });
   
   return (
-    <div ref={setNodeRef} onClick={onClick} className={`${className} ${isOver ? 'brightness-110 contrast-125' : ''}`}>
+    <div 
+      ref={setNodeRef} 
+      onClick={onClick} 
+      style={style} 
+      className={`${className} ${isOver ? 'brightness-110 contrast-125' : ''}`}
+    >
       {children}
     </div>
   );

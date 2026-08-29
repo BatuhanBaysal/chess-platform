@@ -58,8 +58,8 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
                 key={visualIndex} 
                 index={visualIndex} 
                 onClick={() => handleSquareClick(actualIndex)} 
-                style={{ backgroundColor: isDark ? currentTheme.previewDark : currentTheme.previewLight }}
-                className={`relative flex items-center justify-center aspect-square ${isSelected ? 'ring-4 ring-blue-500/50 z-30' : ''} ${isKingInDanger ? 'bg-red-600/90 animate-pulse' : ''}`}
+                style={{ backgroundColor: isKingInDanger ? undefined : (isDark ? currentTheme.previewDark : currentTheme.previewLight) }}
+                className={`relative flex items-center justify-center aspect-square ${isSelected ? 'ring-4 ring-blue-500/50 z-30' : ''} ${isKingInDanger ? 'bg-red-600! animate-pulse z-20' : ''}`}
               >
                 {col === (orientation === 'WHITE' ? 0 : 7) && (
                   <span className="absolute left-1.5 top-1 text-base font-black text-slate-900 z-10 drop-shadow-[0_1.2px_1.2px_rgba(255,255,255,0.5)]">

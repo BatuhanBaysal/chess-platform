@@ -12,18 +12,18 @@ import type { ChessBoardProps } from '../types/chess.types';
 import { CHESS_THEMES, type ChessThemeKey } from '../../../constants/chessThemes';
 
 const PIECE_IMAGES: { [key: string]: string } = {
-  'P': '/assets/pieces/wP.svg',
-  'N': '/assets/pieces/wN.svg',
-  'B': '/assets/pieces/wB.svg',
-  'R': '/assets/pieces/wR.svg',
-  'Q': '/assets/pieces/wQ.svg',
-  'K': '/assets/pieces/wK.svg',
-  'p': '/assets/pieces/bP.svg',
-  'n': '/assets/pieces/bN.svg',
-  'b': '/assets/pieces/bB.svg',
-  'r': '/assets/pieces/bR.svg',
-  'q': '/assets/pieces/bQ.svg',
-  'k': '/assets/pieces/bK.svg'
+  'P': './assets/pieces/wP.svg',
+  'N': './assets/pieces/wN.svg',
+  'B': './assets/pieces/wB.svg',
+  'R': './assets/pieces/wR.svg',
+  'Q': './assets/pieces/wQ.svg',
+  'K': './assets/pieces/wK.svg',
+  'p': './assets/pieces/bP.svg',
+  'n': './assets/pieces/bN.svg',
+  'b': './assets/pieces/bB.svg',
+  'r': './assets/pieces/bR.svg',
+  'q': './assets/pieces/bQ.svg',
+  'k': './assets/pieces/bK.svg'
 };
 
 export const ChessBoard: React.FC<ChessBoardProps> = ({

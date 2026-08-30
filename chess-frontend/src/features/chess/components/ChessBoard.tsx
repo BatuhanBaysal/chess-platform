@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import { Activity, ListOrdered } from 'lucide-react';
 import { useChessGameLogic } from '../hooks/useChessGameLogic';
@@ -37,17 +37,29 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   const currentTheme = CHESS_THEMES[theme as ChessThemeKey] || CHESS_THEMES.modern;
   const [activeTab, setActiveTab] = useState<'telemetry' | 'notation'>('telemetry');
+  const [delayedShowGameOver, setDelayedShowGameOver] = useState(false);
 
   const {
     selectedSquare, promotionPending, setPromotionPending, legalMoves, logs,
     activePiece, showGameOverModal, squares, isGameOver, showSyncing,
     isCheck, isMyTurn, whiteCaptured, blackCaptured, pairedMoves,
-    getEndGameReason, getActualIndex, getCoordsFromIndex, handleSquareClick,
+    getActualIndex, getCoordsFromIndex, handleSquareClick,
     handleDragStart, handleDragEnd, formatTime
   } = useChessGameLogic(
     boardRepresentation, isStarted, gameStatus, currentTurn, moveHistory,
     lastMoveMessage, orientation, onMove, fetchLegalMoves, game
   );
+
+  useEffect(() => {
+    if (showGameOverModal) {
+      const timer = setTimeout(() => {
+        setDelayedShowGameOver(true);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setDelayedShowGameOver(false);
+    }
+  }, [showGameOverModal]);
 
   return (
     <div className="flex flex-col items-center justify-center w-full px-4 -my-3 select-none overflow-x-auto">
@@ -161,9 +173,10 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
       )}
 
       <GameOverModal
-        show={showGameOverModal}
-        endGameReason={getEndGameReason()}
-        isTimeoutOrDismissed={gameStatus.includes('TIMEOUT') || gameStatus.includes('DISMISSED')}
+        show={delayedShowGameOver}
+        gameStatus={gameStatus}
+        currentTurn={currentTurn} 
+        orientation={orientation}
         onBackToMenu={onBackToMenu || (() => window.location.reload())}
       />
     </div>

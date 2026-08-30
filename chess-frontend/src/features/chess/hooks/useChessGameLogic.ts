@@ -29,8 +29,8 @@ export const useChessGameLogic = (
   const [legalMoves, setLegalMoves] = useState<{ file: number, rank: number }[]>([]);
   
   const matchFingerprint = useMemo(() => {
-    return moveHistory && moveHistory.length > 0 ? moveHistory[0] : 'empty_start';
-  }, [moveHistory?.[0]]);
+    return moveHistory && moveHistory.length > 0 ? moveHistory[0] : (boardRepresentation ? boardRepresentation.split('|')[0].slice(0, 16) : 'empty_start');
+  }, [moveHistory, boardRepresentation]);
 
   const storageKey = `chess_game_logs_active`;
 
@@ -128,14 +128,37 @@ export const useChessGameLogic = (
   }, [isStarted, logs.length]);
 
   const getEndGameReason = () => {
-    if (upperStatus.includes('DISMISSED') || upperStatus.includes('ABANDONED')) return "Game Dismissed / Abandoned";
+    if (upperStatus.includes('DISMISSED') || upperStatus.includes('ABANDONED')) {
+      return "Game Dismissed / Abandoned";
+    }
     if (upperStatus.includes('TIMEOUT')) {
       const loser = upperStatus.split('_')[1];
       return loser === orientation.toUpperCase() ? "You timed out!" : "Opponent timed out!";
     }
-    if (upperStatus.includes('WON')) return "You won!";
-    if (upperStatus.includes('LOST')) return "You lost.";
-    if (upperStatus.includes('DRAW') || upperStatus.includes('STALEMATE')) return "Draw!";
+    if (upperStatus.includes('DRAW') || upperStatus.includes('STALEMATE')) {
+      return "Draw!";
+    }
+
+    const isWhite = orientation === 'WHITE';
+    
+    if (upperStatus.includes('WON')) {
+      const winnerIsWhite = upperStatus.includes('WHITE');
+      return (isWhite === winnerIsWhite) ? "Victory!" : "Defeat!";
+    }
+    
+    if (upperStatus.includes('LOST')) {
+      const loserIsWhite = upperStatus.includes('WHITE');
+      return (isWhite === loserIsWhite) ? "Defeat!" : "Victory!";
+    }
+
+    if (upperStatus.includes('CHECKMATE')) {
+      const loser = upperStatus.split('_')[1];
+      if (loser) {
+        return loser === orientation.toUpperCase() ? "Defeat!" : "Victory!";
+      }
+      return "Defeat!";
+    }
+
     return "Game Over";
   };
 
@@ -252,7 +275,7 @@ export const useChessGameLogic = (
 
   return {
     selectedSquare, promotionPending, setPromotionPending, legalMoves, logs, activePiece,
-    showGameOverModal, squares, isGameOver, showSyncing, isCheck, isMyTurn,
+    showGameOverModal, setShowGameOverModal, squares, isGameOver, showSyncing, isCheck, isMyTurn,
     whiteCaptured, blackCaptured, pairedMoves, getEndGameReason,
     getActualIndex, getCoordsFromIndex, handleSquareClick, handleDragStart, handleDragEnd,
     formatTime

@@ -3,13 +3,15 @@ import React from 'react';
 const releases = [
   {
     version: 'v2.1.0',
-    date: '2026-08-25',
-    title: 'Phase 20: Core Domain Modeling & Piece Logic',
-    description: 'Completion of all individual piece movement rules, board initialization, and the central game orchestrator.',
+    date: '2026-08-31',
+    title: 'Phase 20: Enterprise Refactoring & Production Readiness',
+    description: 'Enforcing strict transaction boundaries, ACID compliance, distributed locks, enterprise-grade decoupling, and core domain modeling.',
     features: [
+      'Transaction Boundaries & Distributed Locks: Enforced strict @Transactional boundaries, transaction propagation, and Redisson distributed locks across critical paths (LobbyService and GameEngineService) to eliminate race conditions during simultaneous lobby joins and move submissions.',
+      'Data Integrity & ACID Compliance: Secured database integrity under simultaneous multi-user interactions and validated atomic state consistency during active game sessions.',
+      'Comprehensive Concurrency Testing: Added robust unit testing coverage to validate lock acquisition safety, timeout behaviors, and concurrency rules under simulated multi-threaded operations.',
       'Game Orchestration: Implemented Game.java as the central domain orchestrator for turn management, move execution, and game lifecycle.',
-      'King & Queen Implementation: Finalized king/queen validation logic and sliding diagonal/linear movement patterns.',
-      'Rook, Bishop, Knight & Pawn Implementation: Comprehensive validation for orthogonal, diagonal, L-move, and double-step initial conditional capturing.'
+      'Piece Logic Implementation: Finalized king, queen, rook, bishop, knight, and pawn validation logic for sliding diagonal/linear, L-move, and double-step initial conditional capturing.'
     ],
   },
   {

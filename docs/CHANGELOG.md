@@ -31,10 +31,16 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
-## [2.1.0] - 2026-08-29
+## [2.1.0] - 2026-08-30
 
 ### 🚀 Phase 20: Enterprise Refactoring & Production Readiness 🏗️ (v2.1.0)
 > **Note:** Elevating backend architecture through domain-driven vertical slicing, decoupling monolithic services, and ensuring real-time production reliability.
+
+- **2026-08-30:**
+    - **Transaction Boundaries, ACID Compliance & Distributed Locks Implementation (PR #138 | Issue #134):**
+        - Enforced strict `@Transactional` boundaries, transaction propagation, and Redisson distributed locks across critical paths (`LobbyService` and `GameEngineService`) to eliminate race conditions during simultaneous lobby joins and move submissions.
+        - Secured database integrity under simultaneous multi-user interactions and validated atomic state consistency during active game sessions.
+        - Comprehensive unit testing coverage added to validate lock acquisition safety, timeout behaviors, and concurrency rules under simulated multi-threaded operations.
 
 - **2026-08-29:**
     - **Maven Dependency Audit, Build Plugin Consolidation & Build Pipeline Optimization (PR #137 | Issue #130):**

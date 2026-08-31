@@ -1,6 +1,6 @@
 # 🚀 Git & GitHub Deployment Guide
 
-This guide outlines the essential Git workflows and best practices to maintain version control integrity for the **Chess Platform** project.
+This guide outlines the essential Git workflows, CI/CD integrations, and best practices to maintain version control integrity for the **Chess Platform** project.
 
 ---
 
@@ -48,7 +48,7 @@ git commit -m "feat: initial commit with project scaffolding"
 
 # 4. Set the primary branch to 'main' and link the remote repository
 git branch -M main
-git remote add origin https://github.com/username/repository-name.git
+git remote add origin [https://github.com/username/repository-name.git](https://github.com/username/repository-name.git)
 
 # 5. Push files and track the remote branch
 git push -u origin main

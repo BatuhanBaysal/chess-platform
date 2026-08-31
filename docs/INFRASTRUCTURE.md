@@ -1,6 +1,6 @@
 # 🏗️ Infrastructure & Quality Assurance Report
 
-This document details the architectural foundation, monitoring stack, and code quality standards of the **Chess Platform**. It serves as a visual and technical proof of the project's engineering lifecycle.
+This document details the architectural foundation, monitoring stack, and code quality standards of the **Chess Platform**, integrating the setup configuration files (`deploy/monitoring/`) and system verification proof.
 
 ---
 
@@ -24,7 +24,10 @@ Database schemas are managed via Liquibase. The following confirms the successfu
 > **Goal:** Implement the LGTM stack (Loki, Grafana, Tempo, Prometheus) for real-time system transparency.
 
 ### 📊 System Health & Metrics
-We monitor JVM runtime and infrastructure health through centralized Grafana dashboards. The raw configurations for these dashboards are available in the [**dashboards/ folder**](../docs/assets/dashboards/).
+We monitor JVM runtime and infrastructure health through centralized Grafana dashboards. The raw provisioning and dashboard files are organized under the `deploy/monitoring/` directory:
+* **Dashboard JSON:** Defined in `deploy/monitoring/grafana/dashboards/chess-metrics.json`.
+* **Provisioning:** Managed via `deploy/monitoring/grafana/provisioning/` (datasources configured for Prometheus, Loki, and Tempo).
+* **Scraping Configurations:** Scraped via Prometheus (`deploy/monitoring/prometheus.yml`), Loki (`deploy/monitoring/loki-config.yml`), Promtail (`deploy/monitoring/promtail-config.yml`), and Tempo (`deploy/monitoring/tempo.yml`).
 
 * **Infrastructure Overview:** [LGTM Stack Connection Map](../docs/assets/screenshots/01-infrastructure/observability-stack/08-lgtm-stack-connection.png)
 * **JVM Performance:**
@@ -51,10 +54,10 @@ The project has officially cleared the Quality Gate with "A" ratings across all 
 ### 🧪 Code Coverage
 Significant expansion of the test suite to ensure the integrity of FIDE chess logic.
 
-| Metric | Status | Proof                                                                                                     |
-| :--- | :--- |:----------------------------------------------------------------------------------------------------------|
+| Metric | Status | Proof |
+| :--- | :--- | :--- |
 | **Code Coverage** | 91.5% | ![Coverage List](../docs/assets/screenshots/01-infrastructure/sonarqube/final/03-final-coverage-list.png) |
-| **Test Suite** | 222 Passed | ![Test Results](../docs/assets/screenshots/01-infrastructure/sonarqube/test-suite-pass.png)               |
+| **Test Suite** | 222 Passed | ![Test Results](../docs/assets/screenshots/01-infrastructure/sonarqube/test-suite-pass.png) |
 
 ### 🧹 Clean Code & Debt Elimination
 Rigorous refactoring to eliminate technical debt and code smells.

@@ -11,7 +11,7 @@ The frontend module of the Chess Platform, built with **React 19**, **TypeScript
 
 ## 🖼️ Visuals
 
-![Chess Platform Demo](../docs/assets/screenshots/02-gameplay-features/03-chess-board/01-user-chess-board.png)
+![Chess Platform Demo](../docs/assets/screenshots/02-gameplay-features/03-chess-board/01.c-white-hint.png)
 *Initial state of the chessboard, showcasing the responsive UI and piece positioning.*
 
 
@@ -45,12 +45,30 @@ This frontend follows a **"Type-Safe Domain Mirroring"** approach to maintain pe
 
 ---
 
-## 🚀 Engineering Pillars
-* **Optimistic UI Updates:** The board state updates locally instantly for fluid UX, with automatic rollback logic if the server rejects the move.
-* **Contract-First Development:** API and WebSocket payloads are strictly governed by shared TypeScript models, preventing runtime serialization errors.
-* **Atomic State Management:** UI is decomposed into small, reusable atoms, ensuring that state transitions are predictable and easily testable.
-* **Resilient Connectivity:** Implements automatic reconnection strategies and heartbeat monitoring for STOMP to ensure seamless real-time play.
-* **High-Frequency Telemetry Handling:** Optimized the `useChess` hook and dynamic components (such as `EvaluationBar`) to handle heavy WebSocket streams smoothly without stuttering or frame drops under high-frequency Stockfish evaluation outputs.
+## 🚀 Engineering Pillars & Core Modules
+
+* **Modular UI Component Architecture & State Management:**
+    * The core `ChessBoard` component integrates `BoardGrid`, `MatchInfoPanel`, `TelemetrySidebar`, `NotationSidebar`, and modals (`PromotionModal`, `GameOverModal`) into a cohesive, modular hierarchy.
+    * `useChessGameLogic` reactively manages selected squares, legal moves, pawn promotion states, and end-of-game workflows.
+    * Tab management (`activeTab`) dynamically controls `TelemetrySidebar` and `NotationSidebar` within a unified panel space.
+    * `EvaluationBar` calculates advantage percentages using `useMemo`, optimizing high-frequency centipawn (CP) or mate evaluation metrics while preventing unnecessary re-renders via `React.memo`.
+    * `GameOverModal` implements robust focus management (`buttonRef`) and keyboard event listeners (`Escape`/`Enter`) for seamless navigation.
+
+* **Real-Time Networking & Session Recovery:**
+    * `ActiveGameView` provides modern loading and connection recovery screens featuring an "Abort Deployment" button when WebSocket connectivity (`isConnected`) or game data is missing.
+    * `showSyncing` layers deliver instant network status alerts during synchronization drops, while `dismissGame` and `onDismissGame` ensure safe termination of orphaned or abandoned sessions.
+    * Robust fallback handling for user dropouts and automated session cleanup mechanisms.
+
+* **Interactive Board Customization & Accessibility:**
+    * `@dnd-kit/core` powers the `BoardGrid`, `DraggablePiece`, and `DroppableSquare` components, providing fluid drag-and-drop and click-to-move interactions.
+    * Dynamic theme engines (`CHESS_THEMES`) allow comprehensive board color and style personalization.
+    * Coordinate indicators, check danger animations (`isKingInDanger`), legal target indicators (`isLegalTarget`), and shortcut key bindings (`Q`, `R`, `B`, `N` in `PromotionModal`) elevate accessibility and user experience.
+
+* **Performance & Observability:**
+    * Stockfish telemetry data (`evaluationScore`, `hintData`) is monitored in real-time through `AnalyticsSidebar` and `MatchInfoPanel`.
+    * `sessionStorage` and `matchFingerprint` integrations cache game logs and move histories securely without performance degradation.
+    * `requestAnimationFrame` and optimized re-render cycles maintain fluidity during heavy matrix updates.
+    * `TelemetrySidebar` uses memoized unique log calculations to filter duplicates and tracks user scroll states (`isUserScrolledUp`) for smooth auto-scrolling.
 
 ---
 
@@ -141,12 +159,16 @@ src/
 ├── api/                # Infrastructure: API clients
 ├── components/         # Atomic UI components and reusable layout units
 │   ├── charts/         # Data visualization components
-│   ├── chess/          # Chess engine visualization
 │   └── common/         # Shared UI elements
+├── constants/          # Global application constants and themes
 ├── features/           # Modular business logic
+│   ├── admin/          # Administrator control panels and management features
 │   ├── auth/           # Authentication and user session features
-│   └── menu/           # Menu-related navigation and logic features
-├── hooks/              # Custom React hooks
+│   ├── chess/          # Real-time chess game engine, components, hooks, and types
+│   ├── menu/           # Navigation, dashboards, landing pages, and views
+│   └── user/           # User profile and settings management features
+├── hooks/              # Global custom React hooks
+├── routes/             # Route configurations and protection wrappers
 ├── App.tsx             # Global routing and context orchestration
 ├── index.css           # Global Tailwind CSS and theme variables
 └── main.tsx            # Application entry point and DOM initialization
@@ -161,7 +183,6 @@ src/
 ---
 
 ## 📝 Credits
-* **Chess Piece Assets:** High-fidelity SVGs sourced from [Wikimedia Commons](https://commons.wikimedia.org/).
 * **Icons:** Powered by [Lucide React](https://lucide.dev/).
 
 ---

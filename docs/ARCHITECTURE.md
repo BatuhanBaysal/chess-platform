@@ -1,11 +1,11 @@
 # 🏗️ Architectural Blueprint
 
-This document outlines the unified architectural vision for the **Chess Platform**, covering both the Backend Engine and the Frontend UI.
+This document outlines the unified architectural vision for the **Chess Platform**, covering both the Backend Engine (`chess-backend`) and the Frontend UI (`chess-frontend`).
 
 ---
 
 ## 🧩 Backend: Hexagonal Architecture (Ports & Adapters)
-To ensure the core chess logic remains independent of frameworks, we follow the Hexagonal pattern:
+To ensure the core chess logic remains independent of frameworks, we follow the Hexagonal pattern inside `chess-backend`:
 
 * **Domain Hexagon:** Contains pure Java 17+ logic. **Zero dependencies** on Spring or DB drivers.
 * **Driving Adapters (Input):** REST Controllers and WebSocket (STOMP) handlers.
@@ -19,13 +19,16 @@ To ensure the core chess logic remains independent of frameworks, we follow the 
 ---
 
 ## 🎨 Frontend: Feature-Based Modular Architecture
-The frontend follows a **Modular, Feature-Sliced** approach to scale with the backend's complexity.
+The frontend (`chess-frontend`) follows a **Modular, Feature-Sliced** approach to scale with the backend's complexity.
 
-### 1. Feature-Sliced Architecture
-Instead of grouping by file type, we group by **Business Features**:
-* `features/game`: Handles board rendering, move animation, and move validation.
-* `features/auth`: Manages JWT storage, login/register logic.
-* `features/lobby`: Real-time room listing via WebSockets.
+### 1. Feature-Based Directory Structure
+Instead of grouping by file type, we group by business features and architectural domains:
+* `src/features/chess/`: Real-time chess game engine components, hooks, and types.
+* `src/features/auth/`: Manages JWT storage, login/register logic.
+* `src/features/menu/`: Navigation, dashboards, landing pages, and views.
+* `src/features/admin/`: Administrator control panels and management features.
+* `src/features/user/`: User profile and settings management features.
+* `src/constants/` & `src/routes/`: Global constants, themes, and route protection wrappers.
 
 ### 2. Atomic Design & Component Purity
 * **Atoms:** Low-level elements (Buttons, Square components, Chess Pieces).
@@ -35,11 +38,11 @@ Instead of grouping by file type, we group by **Business Features**:
 ### 3. Type-Safe Domain Mirroring
 To maintain the **Single Source of Truth (SSOT)**:
 * **Domain Mirroring:** We mirror backend DTOs into TypeScript `interfaces` and `zod` schemas.
-* **WebSocket Client:** Uses a custom service layer to wrap STOMP clients, ensuring incoming game states strictly adhere to our **domain models**.
+* **WebSocket Client:** Uses a custom service layer to wrap STOMP clients, ensuring incoming game states strictly adhere to our domain models.
 
 ---
 
-## 🔗 Unified Communication & Observability
+## 🔗 Unified Communication & Synchronization
 The bridge between the Hexagon (Backend) and the Components (Frontend):
 
 | Communication | Protocol | Purpose |
@@ -47,12 +50,6 @@ The bridge between the Hexagon (Backend) and the Components (Frontend):
 | **Request/Response** | REST API | Authentication, User Profile, Game History. |
 | **Real-time Engine** | WebSocket (STOMP) | Live moves, timer synchronization, opponent status. |
 | **Data Validation** | JSON Schema / Zod | Ensures payload integrity on both ends of the wire. |
-
-### 🔍 Observability Stack (LGTM)
-* **Logging (Loki):** Centralized log management.
-* **Metrics (Prometheus):** System performance and telemetry tracking.
-* **Tracing (Tempo):** Distributed tracing for API and WebSocket lifecycle.
-* **Visualization (Grafana):** Unified dashboard for system health.
 
 ---
 
@@ -62,43 +59,4 @@ The backend is the **sole authority** for game state.
 * Any move initiated by the user is treated as a "request" until the backend broadcasts the *validated* new board state via WebSocket.
 
 ---
-
-## 🧠 Engineering Challenges & Solutions
-
-### 1. 🗄️ Database Versioning & Schema Integrity (Liquibase)
-* **The Challenge:** Hibernate's `ddl-auto: update` is risky in containerized environments. Schema changes must be traceable and consistent.
-* **The Solution:** Integrated **Liquibase** to manage database migrations through versioned SQL changelogs.
-* **The Result:** Professional, auditable database evolution with **guaranteed 1:1 schema parity** across all environments.
-
-### 2. 🐳 Service Orchestration & Deterministic Startup
-* **The Challenge:** Simultaneous service startup causes "Connection Refused" errors before DB/Redis readiness.
-* **The Solution:** Implemented custom **Docker Health Checks** with `depends_on: service_healthy` conditions.
-* **The Result:** A resilient, **zero-fail deployment flow** where services initialize in the correct order.
-
-### 3. ♟️ Simulation & Rollback Pattern (Java Records)
-* **The Challenge:** Validating King safety (check detection) risks corrupting live game state during execution.
-* **The Solution:** Developed a cloning mechanism using immutable **Java Records** to simulate moves on a virtual board.
-* **The Result:** **100% side-effect-free move validation**, ensuring total state integrity at every turn.
-
-### 4. ⏱️ Server-Authoritative Timer & Synchronization
-* **The Challenge:** Client-side timing is insecure, prone to drift, and susceptible to network latency or browser throttling.
-* **The Solution:** Centralized timer orchestration in the **Backend (`GameService`)**, broadcasting heartbeats via WebSockets.
-* **The Result:** **Absolute temporal consistency** across all clients, eliminating clock drift entirely.
-
-### 5. 🛡️ Automated Quality Gate & Technical Debt (SonarQube)
-* **The Challenge:** Preventing architectural decay and maintaining "Grade A" code quality in a rapidly evolving codebase.
-* **The Solution:** Enforced a strict **SonarQube Quality Gate** in the CI/CD pipeline to block builds on coverage drops or security hotspots.
-* **The Result:** Mechanized code hygiene with **>90% test coverage** and 0.0% duplication.
-
-### 6. 🔌 WebSocket Session Resilience
-* **The Challenge:** Network flickers or refreshes cause session loss and synchronization drift.
-* **The Solution:** Implemented a **Stateful Reconnection Handler** with `gameId` handshakes to auto-sync state upon reconnection.
-* **The Result:** A seamless user experience resilient to transient network failures.
-
-### 7. 🔗 Atomic State Consistency (Redisson)
-* **The Challenge:** Preventing race conditions in multi-node backends during concurrent move events.
-* **The Solution:** Enforced **Atomic State Broadcasting** using Redisson distributed locks.
-* **The Result:** Guaranteed protection against concurrency issues, ensuring a **Single Source of Truth** for the game state.
-
----
-*Status: Architecture established. Backend follows Hexagonal/DDD (Java 17); Frontend follows Feature-Sliced/Type-Safe principles.*
+*Note: For infrastructure orchestration, monitoring stacks (Grafana/Prometheus/Loki/Tempo), and database migration details (Liquibase), please refer to [INFRASTRUCTURE.md](./INFRASTRUCTURE.md).*

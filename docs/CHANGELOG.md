@@ -27,7 +27,33 @@ All notable changes to this project will be documented in this file. This projec
 - ✅ **Phase 18: Security, Resilience & Quality** 🛡️ - Hardening game state integrity by enforcing a "Dismiss = Loss" policy within the WebSocket reconnection handler.
 - ✅ **Phase 19: AI Integration & Training Ecosystem (v2.0.0)** 🤖 - Integrating the Stockfish engine via UCI protocol to enable real-time move analysis, blunder detection, and hint mechanisms.
 - ✅ **Phase 20: Enterprise Refactoring & Production Readiness (v2.1.0)** ⚡ - Domain-driven vertical slicing, performance optimization, and rigorous security audits for production deployment.
-- ⏳🔜
+- ⏳ **Phase 21: Production Deployment & Cloud Demo (v2.2.0)** ☁️ - Provisioning multi-container environments, setting up Vercel static hosting, and deploying the full backend, database, SonarQube, and LGTM observability stack via Docker Compose on Oracle Cloud.
+- 🔜 **Phase 22: Enterprise Data & Identity Management (v2.3.0)** 🔑 - Integrating MinIO object storage for artifacts and Keycloak for centralized OAuth2/OIDC RBAC security.
+- 🔜 **Phase 23: Asynchronous Eventing & Observability (v2.4.0)** ⚡ - Decoupling heavy Stockfish analysis tasks via RabbitMQ and integrating OpenTelemetry with the LGTM stack.
+- 🔜 **Phase 24: Quality Assurance & Advanced Scaling (v2.5.0)** 🧪 - Implementing automated Playwright E2E testing, Redis Cluster session synchronization, and local Kubernetes manifests.
+- 🔜 **Phase 25: Final Polish, Strict Typing & UX Refinement (v2.6.0)** 💎 - Enforcing strict TypeScript DTO alignment, resolving runtime micro-bugs, and maximizing interface consistency.
+
+---
+
+## [2.2.0] - 2026-09-04
+
+### 🚀 Phase 21: Production Deployment & Cloud Demo ☁️ (v2.2.0)
+> **Note:** Provisioning multi-container environments, setting up Vercel static hosting, and deploying the full backend, database, and observability stack via Docker Compose on Oracle Cloud.
+
+- **2026-09-04:**
+    - **Multi-Container Backend Deployment via Docker Compose (PR #143 | Issue #142):**
+        - Developed optimized multi-stage Dockerfiles tailored for the Spring Boot backend running on ARM architecture.
+        - Configured production environment variables (`.env`) and deployed the full backend, database, and monitoring services stack via Docker Compose on Oracle Cloud.
+
+- **2026-09-02:**
+    - **Oracle Cloud Infrastructure & Firewall Provisioning (Issue #141):**
+        - Provisioned an Oracle Cloud Always Free ARM (Ampere) virtual private server running Ubuntu 24.04 with Docker engine and Docker Compose installed.
+        - Configured Virtual Cloud Network (VCN) security lists and host UFW firewall rules to securely expose necessary ports (e.g., 22, 80, 443, 8088, 3000, 9000).
+
+- **2026-09-01:**
+    - **Vercel Static Hosting & Frontend Deployment (Issue #140):**
+        - Configured Vite build targets and connected the React 19 frontend repository to Vercel for automated continuous deployments.
+        - Verified that production builds successfully execute and public URLs resolve the client application accurately.
 
 ---
 

@@ -38,10 +38,10 @@ This document outlines the core architectural decisions, concurrency controls, s
 
 ## 🔒 3. Enterprise Security & Resiliency
 
-### Stateless Authentication & RBAC
+### Stateless Authentication, RBAC & Production CORS Origins
 * **Implementation:** Built a secure authentication service using Spring Security 6, `AuthenticationManager`, and the `jjwt` library to deliver **stateless JWT-based authentication** alongside custom role hierarchies.
 * **Method-Level Authorization:** Protected sensitive user actions against abuse via `@PreAuthorize` annotations and **Resilience4j Rate Limiter**.
-* **DTO Validation:** Ensured secure user registration and data transfer using Java Bean Validation and advanced Regex constraints.
+* **DTO Validation & WebSocket Security:** Ensured secure user registration and data transfer using Java Bean Validation and advanced Regex constraints. Configured production-grade STOMP endpoint CORS patterns supporting both local development (`localhost`) and production Vercel environments (`https://chess-platform-app.vercel.app` and `https://chess-platform-*.vercel.app`).
 
 ### Centralized Exception Handling & Observability
 * **Global Error Management:** Implemented a standardized, UTC-based global error handling infrastructure across both REST and WebSocket layers using Spring `@RestControllerAdvice`.
@@ -63,6 +63,6 @@ This document outlines the core architectural decisions, concurrency controls, s
 * **Architecture:** Developed a modular React, TypeScript, and Tailwind CSS frontend featuring FIDE time controls, a dynamic theme engine (`CHESS_THEMES`), and robust `ErrorBoundary` error management.
 * **State Management:** Utilized custom hooks (`useChess`, `useChessActions`, `useLobby`) to handle real-board matrices, asynchronous API calls, and optimized state updates via `requestAnimationFrame`, `useMemo`, and `useCallback`.
 
-### WebSocket Resilience & Session Recovery
-* **Real-Time Layer:** Designed a low-latency, secure, and CORS-compliant WebSocket communication pipeline using STOMP protocols and SockJS.
+### WebSocket Resilience, Production Routing & Session Recovery
+* **Real-Time Layer:** Designed a low-latency, secure, and CORS-compliant WebSocket communication pipeline using STOMP protocols and SockJS targeting both local and Vercel production hosting environments.
 * **Session Recovery:** Engineered automated session recovery components (`useAuth`, `useChessSocket`, `ReconnectAlert`) with `gameId` handshakes, periodic heartbeat pings, and graceful disconnection handlers to protect user sessions against transient network interruptions.

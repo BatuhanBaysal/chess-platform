@@ -27,18 +27,24 @@ All notable changes to this project will be documented in this file. This projec
 - ✅ **Phase 18: Security, Resilience & Quality** 🛡️ - Hardening game state integrity by enforcing a "Dismiss = Loss" policy within the WebSocket reconnection handler.
 - ✅ **Phase 19: AI Integration & Training Ecosystem (v2.0.0)** 🤖 - Integrating the Stockfish engine via UCI protocol to enable real-time move analysis, blunder detection, and hint mechanisms.
 - ✅ **Phase 20: Enterprise Refactoring & Production Readiness (v2.1.0)** ⚡ - Domain-driven vertical slicing, performance optimization, and rigorous security audits for production deployment.
-- ⏳ **Phase 21: Production Deployment & Cloud Demo (v2.2.0)** ☁️ - Provisioning multi-container environments, setting up Vercel static hosting, and deploying the full backend, database, SonarQube, and LGTM observability stack via Docker Compose on Oracle Cloud.
-- 🔜 **Phase 22: Enterprise Data & Identity Management (v2.3.0)** 🔑 - Integrating MinIO object storage for artifacts and Keycloak for centralized OAuth2/OIDC RBAC security.
+- ✅ **Phase 21: Production Deployment & Cloud Demo (v2.2.0)** ☁️ - Provisioning multi-container environments, setting up Vercel static hosting, and deploying the full backend, database, SonarQube, and LGTM observability stack via Docker Compose on Oracle Cloud.
+- ⏳ **Phase 22: Enterprise Data & Identity Management (v2.3.0)** 🔑 - Integrating MinIO object storage for artifacts and Keycloak for centralized OAuth2/OIDC RBAC security.
 - 🔜 **Phase 23: Asynchronous Eventing & Observability (v2.4.0)** ⚡ - Decoupling heavy Stockfish analysis tasks via RabbitMQ and integrating OpenTelemetry with the LGTM stack.
 - 🔜 **Phase 24: Quality Assurance & Advanced Scaling (v2.5.0)** 🧪 - Implementing automated Playwright E2E testing, Redis Cluster session synchronization, and local Kubernetes manifests.
 - 🔜 **Phase 25: Final Polish, Strict Typing & UX Refinement (v2.6.0)** 💎 - Enforcing strict TypeScript DTO alignment, resolving runtime micro-bugs, and maximizing interface consistency.
 
 ---
 
-## [2.2.0] - 2026-09-04
+## [2.2.0] - 2026-09-06
 
 ### 🚀 Phase 21: Production Deployment & Cloud Demo ☁️ (v2.2.0)
 > **Note:** Provisioning multi-container environments, setting up Vercel static hosting, and deploying the full backend, database, and observability stack via Docker Compose on Oracle Cloud.
+
+- **2026-09-06:**
+    - **Finalize CORS Policies, Secure WebSockets, and End-to-End System Health (PR #146 | Issue #145):**
+        - Finalized and fine-tuned CORS policies in the Spring Boot backend to explicitly allow production cross-origin requests from the Vercel-hosted frontend to the Oracle Cloud infrastructure.
+        - Configured and validated secure WebSocket (`wss://`) handshake endpoints to ensure real-time communication operates cleanly without mixed-content or SSL blockages.
+        - Performed end-to-end system health checks, verifying container metrics, API response times, and live telemetry through Grafana dashboards.
 
 - **2026-09-04:**
     - **Multi-Container Backend Deployment via Docker Compose (PR #143 | Issue #142):**

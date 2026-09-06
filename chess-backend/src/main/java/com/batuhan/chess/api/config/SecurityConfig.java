@@ -45,7 +45,13 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(request -> {
                 var config = new CorsConfiguration();
                 config.setAllowCredentials(true);
-                config.setAllowedOriginPatterns(List.of("http://localhost:5173", "http://localhost", "http://localhost:*"));
+                config.setAllowedOriginPatterns(List.of(
+                    "http://localhost:5173",
+                    "http://localhost",
+                    "http://localhost:*",
+                    "https://chess-platform-app.vercel.app",
+                    "https://chess-platform-*.vercel.app"
+                ));
                 config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
                 config.setAllowedHeaders(List.of("*"));
                 return config;

@@ -1,18 +1,15 @@
 # ♟️ Chess Platform
 
-> *An Enterprise-Grade, Full-Stack Chess Ecosystem Featuring Server-Authoritative Logic, AI Integration, and Robust Security.*
+> *An Enterprise-Grade, Full-Stack Chess Ecosystem Featuring Server-Authoritative Logic, AI Integration, and Hybrid Cloud Production Deployment.*
 
-![Status](https://img.shields.io/badge/Status-Active-brightgreen) ![Version](https://img.shields.io/badge/Version-v2.1.0-blue) ![License](https://img.shields.io/badge/License-MIT-yellow)
+![Status](https://img.shields.io/badge/Status-Active-brightgreen) ![Version](https://img.shields.io/badge/Version-v2.2.0-blue) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ---
 
 ## 📖 Overview
-**Chess Platform** is a professional-grade, real-time multiplayer chess ecosystem. Designed as a **single source of truth** for game state, the platform synchronizes complex board interactions between the server and client with sub-millisecond precision.
+**Chess Platform** is a professional-grade, real-time multiplayer chess ecosystem. Designed as a **single source of truth** for game state, the platform synchronizes complex board interactions between the server and client through a low-latency, throttled WebSocket pipeline.
 
 > **In simple terms:** Think of this as a "referee-in-the-cloud" chess game. By keeping all the core business logic, validation rules, and timers on the server, we ensure that client-side manipulation is impossible and the game remains perfectly synced.
-
-> 💡 **Project Milestone & Stability:**
-> The core chess ecosystem is fully stable, production-ready, and continuously optimized under enterprise architecture standards. You can track our ongoing improvements and roadmap via the [Chess Platform Kanban Board](https://github.com/users/BatuhanBaysal/projects/2).
 
 ### 🎯 What We Do
 * **Secure Onboarding & RBAC:** A robust authentication flow featuring **Spring Security, JWT, and Role-Based Access Control (Admin vs. User)** with dedicated administrative dashboards.
@@ -31,7 +28,10 @@
 * **🔄 Full-Stack Observability & Tracing:** Real-time system health, centralized logging, and distributed tracing managed end-to-end by the **LGTM stack**.
 * **🖥️ Modern React (v19) Stack & UI/UX:** High-performance user interface utilizing Tailwind CSS, interactive dashboards, and modular components designed for low-latency, real-time interaction.
 * **🛡️ Server-Authoritative State Machine & RBAC:** Granular role-based access control protecting administrative operations via stateless JWT architecture, alongside decoupled business rules enforcing strict server-side validation to eliminate client-side tampering and race conditions.
-* **🏆 Zero Technical Debt & Quality Gates:** CI/CD-driven quality standards enforced via **SonarQube** (Achieved **A-Grade Quality Gate** with **91.5% test coverage**).
+* **🏆 Quality Gates:** CI/CD-driven quality standards enforced via **SonarQube** — **A-Grade Quality Gate**, 0 code smells, 0 open technical debt, with **74.0% test coverage** across 384 passing tests.
+* **🌐 Production Deployment & Hybrid Cloud Architecture:**
+    * **Frontend Hosting (Vercel):** The React 19 single-page application is hosted globally on Vercel’s edge network, ensuring high-performance static asset delivery, automated continuous deployments from GitHub, and minimal latency for client interactions.
+    * **Backend Infrastructure (Oracle Cloud):** The Spring Boot backend, PostgreSQL database, Redis instance, and LGTM observability stack are containerized via Docker Compose and deployed on an Oracle Cloud Infrastructure (OCI) Always Free ARM virtual private server, providing a robust, persistent production-grade backend environment.
 
 > *For a deep dive into the underlying design patterns, concurrency controls, and architectural decisions, see our [Engineering Decisions Guide](docs/ENGINEERING_DECISIONS.md).*
 
@@ -41,42 +41,35 @@
 
 > *Curious about how everything comes together? This section walks you through the actual user journey, features, and capabilities built into the platform from scratch.*
 
-#### 👥 Multiplayer Mode
 <img src="docs/assets/videos/v2.1.0-gameplay-highlight.gif" style="max-width: 100%; height: auto;" alt="Multiplayer Gameplay Highlight">
 
-> **Real-Time Multiplayer Synchronization:** A demonstration of the platform's reactive architecture. The side-by-side view shows a game session synchronized across two independent browser sessions, highlighting instant state updates, server-authoritative move validation, and low-latency WebSocket communication.
+> **👥 Real-Time Multiplayer Synchronization:** A demonstration of the platform's reactive architecture. The side-by-side view shows a game session synchronized across two independent browser sessions, highlighting instant state updates, server-authoritative move validation, and low-latency WebSocket communication.
 
----
-
-#### 🤖 Player vs. AI (Stockfish Engine) Mode
-<img src="docs/assets/videos/v2.1.0-stockfish-ai-match.gif" style="max-width: 100%; height: auto;" alt="AI Stockfish Gameplay Highlight">
-
-> **Engine Analysis & AI Match:** A demonstration of single-player training mode against the Stockfish AI opponent. This view highlights real-time move evaluations, live centipawn/mate scores via the evaluation bar, and intelligent engine hint suggestions guiding optimal move choices under high-frequency telemetry.
+> **🤖 Engine Analysis & AI Match:** The same server-authoritative core also powers single-player training mode against the Stockfish AI opponent — real-time move evaluations, live centipawn/mate scores via the evaluation bar, and intelligent engine hint suggestions guiding optimal move choices under high-frequency telemetry.
 
 ---
 
 ### 🗺️ The Complete User Journey & What I Built
 
-As a solo developer, I designed and built this entire platform end-to-end to replicate a production-grade SaaS experience. Here is how users interact with the system and what happens behind the scenes:
+As a solo developer, I designed and built this production-grade SaaS chess platform end-to-end. Here is how users interact with the system across key modules:
 
-* **🔐 Secure Authentication & Onboarding:** Users start by registering or logging in through a secure authentication flow powered by Spring Security and JWT, establishing their identity and role context.
-* **🧭 Interactive Lobby & Navigation:** Once logged in, users land on a dynamic dashboard menu. From here, they can navigate through different game modes, inspect system health, check release updates via the changelog, or view project details.
-* **♟️ Game Modes, Room Management & AI Integration:**
-    * **Multiplayer & Room Control:** Players have full control over creating custom game rooms, configuring timers, selecting board themes, and joining existing lobbies. All game state data, move validations, and timers flow entirely from the backend; client-side manipulation is completely eliminated to guarantee zero cheating or race conditions.
-    * **AI Training Mode & Difficulty Scaling:** Players can test their skills against the integrated **Stockfish engine** by choosing from configurable difficulty levels.
-    * **Real-Time Move Hint Engine:** Available across both online multiplayer and AI match modes, an integrated engine-driven hint system assists players with optimal move suggestions.
-* **📊 Player Stats, Leaderboard & Match History:** Every completed game is automatically persisted to PostgreSQL (running locally via Docker). The profile dashboard displays comprehensive analytics including overall **Win/Loss/Draw ratios**, **ELO ratings**, visual charts, and a detailed history of the **last 5 matches** (with a "View All" option for full match history). A global **Leaderboard** showcases the top players.
-* **👑 Role-Based Access Control & Admin Dashboard:** Depending on the assigned user role, the UI dynamically adapts. Users with **Admin privileges** gain access to a dedicated Admin Dashboard to oversee users, manage system operations, and moderate matches.
-* **🔄 Seamless Session Recovery:** If a user loses connection or refreshes mid-game, state-recovery handlers automatically re-sync their session using `gameId` handshakes so they can seamlessly jump right back into the action.
+* **🔐 Authentication & Lobby:** Secure JWT-based onboarding through Spring Security leads users to a dynamic dashboard for game modes, system health, and changelogs.
+* **♟️ Gameplay & AI Engine:**
+    * Fully backend-authoritative multiplayer and room controls with zero client-side manipulation to prevent cheating.
+    * Integrated **Stockfish AI** training mode with configurable difficulty levels.
+    * Real-time move hint engine available across matches.
+* **📊 Stats & Leaderboards:** PostgreSQL-backed match persistence powering comprehensive analytics, ELO ratings, win/loss ratios, match history, and global leaderboards.
+* **👑 Admin & Recovery:** Dynamic role-based UI adaptation for administrative oversight and automated `gameId`-powered session recovery for dropped connections.
 
-> **Visual Archives & Demos:** You can explore the complete visual catalog directly through our repository folders:
+> **Visual Archives & Demos:**
 > * [Video Guides Directory](docs/assets/videos/) 🎬
 > * [Screenshots & Dashboards Directory](docs/assets/screenshots/) 📸
 
 ---
 
-## 🏛️ Project Ecosystem & Governance
-This project is architected as a **high-cohesion monorepo**. Operational processes, architectural blueprints, and testing guides are documented across the following modules:
+## 🏛️ Project Ecosystem, Governance & Workflow
+
+This project is architected as a **high-cohesion monorepo** governed by a strict professional workflow to ensure code quality, automated validation, and project transparency. Operational processes, architectural blueprints, and testing guides are documented across the core modules:
 
 | Module / Document | Purpose & Brief | Location                                         |
 | :--- | :--- |:-------------------------------------------------|
@@ -91,6 +84,12 @@ This project is architected as a **high-cohesion monorepo**. Operational process
 | **🚀 Setup Guide** | Local environment config, prerequisites, and dependency management | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)       |
 | **📝 Git Flow** | Version control standards, branching strategies, and conventional commits | [docs/GIT_GUIDE.md](docs/GIT_GUIDE.md)           |
 | **📜 Changelog** | Version history, milestone tracking, and lifecycle events | [docs/CHANGELOG.md](docs/CHANGELOG.md)           |
+
+We maintain rigorous standards across our development lifecycle:
+* **Agile Management:** Track our active roadmap, sprints, and task progress via the [**Chess Platform Kanban Board**](https://github.com/users/BatuhanBaysal/projects/2).
+* **Release Lifecycle:** Track all version milestones, production-ready releases, and [**version tags**](https://github.com/BatuhanBaysal/chess-platform/tags) through our [**GitHub Releases**](https://github.com/BatuhanBaysal/chess-platform/releases).
+* **Continuous Integration & Quality Gates:** Code health, automated test suites, and build pipelines are continuously validated via **GitHub Actions** ([**Pipeline Status**](https://github.com/BatuhanBaysal/chess-platform/actions)).
+* **Automation & Standardisation:** Governance is enforced via standardized templates for [Bug Reports](https://github.com/BatuhanBaysal/chess-platform/issues/new?assignees=&labels=bug&template=bug_report.md), [Feature Requests](https://github.com/BatuhanBaysal/chess-platform/issues/new?assignees=&labels=enhancement&template=feature_request.md), and our reviewed [Pull Request Template](https://github.com/BatuhanBaysal/chess-platform/blob/main/.github/pull_request_template.md).
 
 **Additional Resources & Policies:** For further details, please review our [Security Policy](docs/SECURITY.md), [Code of Conduct](CODE_OF_CONDUCT.md), [Contributing Guidelines](docs/CONTRIBUTING.md), and project [License](LICENSE).
 
@@ -125,36 +124,24 @@ The entire application ecosystem is managed using **Docker Compose** to ensure a
 
 ---
 
-## 📋 Project Governance & Workflow
-We maintain a strict professional workflow to ensure code quality, automated validation, and project transparency:
-
-* **Agile Management:** Track our active roadmap, sprints, and task progress via the [**Chess Platform Kanban Board**](https://github.com/users/BatuhanBaysal/projects/2).
-* **Release Lifecycle:** Track all version milestones, production-ready releases, and [**version tags**](https://github.com/BatuhanBaysal/chess-platform/tags) through our [**GitHub Releases**](https://github.com/BatuhanBaysal/chess-platform/releases).
-* **Continuous Integration & Quality Gates:** Code health, automated test suites, and build pipelines are continuously validated via **GitHub Actions**. You can inspect the status of active workflows, build statuses, and quality checks directly on our [**GitHub Actions Pipeline**](https://github.com/BatuhanBaysal/chess-platform/actions).
-* **Automation & Standardisation:** Our repository is governed by standardized contribution templates for issue reporting and pull requests.
-    * **Issue Tracking:** Use our pre-defined templates for [Bug Reports](https://github.com/BatuhanBaysal/chess-platform/issues/new?assignees=&labels=bug&template=bug_report.md) and [Feature Requests](https://github.com/BatuhanBaysal/chess-platform/issues/new?assignees=&labels=enhancement&template=feature_request.md).
-    * **Pull Requests:** All contributions follow a strictly reviewed and automated PR verification process using our standard [Pull Request Template](https://github.com/BatuhanBaysal/chess-platform/blob/main/.github/pull_request_template.md).
-
----
-
 ### 💡 Behind the Code: My Journey with This Project
 
-> *“This platform is the culmination of a continuous learning curve that started during my corporate internship in the summer of 2024, where I first laid hands on Java, Spring Boot, React, and PostgreSQL.”*
+> *"This platform is the culmination of a continuous learning curve that started during my corporate internship in the summer of 2024, where I first laid hands on Java, Spring Boot, React, and PostgreSQL."*
 
-After graduation, through dedicated self-study, online programs, and hands-on GitHub development, I wanted to build something that goes beyond standard CRUD applications. This project stands as my most comprehensive and production-grade work to date:
-* **The Stack Evolution:** Building upon my prior secure full-stack applications, I elevated my workflow by incorporating containerization with **Docker** and full-stack observability via the **LGTM stack**.
-* **Pushing Technical Boundaries:** To build the multiplayer feature, I moved past conventional request-response cycles to master **WebSockets** for event-driven real-time synchronization. Integrating the **Stockfish engine** also gave me hands-on experience with UCI protocols, sidecar patterns, and thread-safe telemetry handling.
-* **Engineering Discipline:** Rather than treating this as a casual hobby project, I managed its lifecycle with strict enterprise governance—leveraging GitHub Issues, PR workflows, Milestones, Tags, Releases, and comprehensive documentation.
+After graduation, through dedicated self-study, online programs, and hands-on GitHub development, I wanted to build something that goes beyond standard CRUD applications. This project stands as my most comprehensive work to date:
+* **The Stack Evolution:** Moving beyond prior full-stack applications, I elevated my workflow by integrating containerization with **Docker** and full-stack observability via the **LGTM stack**.
+* **Pushing Technical Boundaries:** To build multiplayer functionality, I bypassed conventional request-response cycles to master **WebSockets** for event-driven real-time synchronization. Integrating the **Stockfish engine** also provided deep experience with UCI protocols, sidecar patterns, and thread-safe telemetry.
+* **Engineering Discipline:** Rather than treating this as a casual hobby project, I managed its lifecycle with the same discipline I'd want to bring to a professional team — leveraging GitHub Issues, PR workflows, Milestones, Tags, Releases, and comprehensive documentation.
 
 > **What This Project Taught Me as an Engineer:**
-> Successfully completing this end-to-end ecosystem fundamentally transformed how I approach software development:
-> * **Taking Full Ownership:** Steering a complex multi-module project entirely by myself taught me how to bridge frontend, backend, and infrastructure gaps independently without relying on external scaffolding.
-> * **Architectural Resilience & Decision Making:** I learned how to anticipate edge cases—such as network disconnections, state inconsistencies, and concurrent race conditions—and design structural safeguards from day one rather than fixing them reactively.
-> * **From Code to Product Mindset:** Moving past isolated coding exercises, I gained the confidence to manage a product's entire lifecycle, balancing code maintainability, automated quality gates, and structured documentation just like a professional production environment.
+> Successfully completing this end-to-end ecosystem transformed my approach to software development:
+> * **Taking Full Ownership:** Steering a complex multi-module project independently taught me how to seamlessly bridge frontend, backend, and infrastructure gaps.
+> * **Architectural Resilience:** I learned to anticipate edge cases—such as disconnections, state inconsistencies, and race conditions—designing structural safeguards from day one.
+> * **Product-First Mindset:** Moving past isolated coding exercises, I gained the confidence to manage a full product lifecycle, balancing maintainability, automated quality gates, and structured documentation like a true production environment.
 
 ---
 
 ## 👨‍💻 Developed By
-**Batuhan Baysal** - *Software Engineer*
+**Batuhan Baysal** - *Junior Software Developer*
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/in/batuhan-baysal) [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/BatuhanBaysal)

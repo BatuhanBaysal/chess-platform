@@ -15,7 +15,7 @@ Thumbs.db
 # Important: Protect your sensitive data and logs
 .env
 .env.local
-.env.development
+chess-frontend/.env.development
 .env.production
 *.log
 logs/

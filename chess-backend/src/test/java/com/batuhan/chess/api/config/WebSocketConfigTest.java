@@ -63,7 +63,13 @@ class WebSocketConfigTest {
 
         // Assert
         verify(registryMock).addEndpoint("/ws-chess");
-        verify(registrationMock).setAllowedOriginPatterns("http://localhost:5173", "http://localhost", "http://localhost:*");
+        verify(registrationMock).setAllowedOriginPatterns(
+            "http://localhost:5173",
+            "http://localhost",
+            "http://localhost:*",
+            "https://chess-platform-app.vercel.app",
+            "https://chess-platform-*.vercel.app"
+        );
         verify(registrationMock).withSockJS();
     }
 }

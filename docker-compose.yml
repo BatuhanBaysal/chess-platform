@@ -38,6 +38,8 @@ services:
         profiles: [ "core" ]
         container_name: chess-server
         restart: always
+        env_file:
+            - .env
         ports:
             - "8080:8080"
         volumes:
@@ -52,6 +54,9 @@ services:
             CHESS_REDIS_PORT: 6379
             CHESS_JWT_SECRET: ${CHESS_JWT_SECRET}
             CHESS_JWT_EXPIRATION: ${CHESS_JWT_EXPIRATION}
+            ADMIN_USERNAME: ${ADMIN_USERNAME}
+            ADMIN_EMAIL: ${ADMIN_EMAIL}
+            ADMIN_PASSWORD: ${ADMIN_PASSWORD}
             SPRING_LIQUIBASE_ENABLED: "true"
             MANAGEMENT_OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
             MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
@@ -62,7 +67,7 @@ services:
             redis:
                 condition: service_healthy
         healthcheck:
-            test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8080/actuator/health" ]
+            test: [ "CMD", "wget", "--spider", -q, "http://localhost:8080/actuator/health" ]
             interval: 10s
             timeout: 5s
             retries: 10

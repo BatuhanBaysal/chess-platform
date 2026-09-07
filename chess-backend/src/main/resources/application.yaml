@@ -81,6 +81,10 @@ chess:
         jwt:
             secret-key: ${CHESS_JWT_SECRET}
             expiration: ${CHESS_JWT_EXPIRATION}
+    admin:
+        username: ${ADMIN_USERNAME}
+        email: ${ADMIN_EMAIL}
+        password: ${ADMIN_PASSWORD}
 
 resilience4j:
     circuitbreaker:

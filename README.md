@@ -128,7 +128,7 @@ To update and deploy the application to the production server:
 
 3.1. Connect to your Oracle Cloud instance via SSH (ensure you have your private SSH key downloaded and proper permissions set):
 ```bash
-ssh -i "/path/to/your/ssh-key.key" ubuntu@130.162.254.229
+ssh -i "/path/to/your/ssh-key.key" ubuntu@xxx.xxx.xxx.xxx
 ```
 
 3.2. Navigate to the project directory and pull the latest changes:

@@ -73,8 +73,6 @@ services:
         profiles: ["core"]
         container_name: chess-ui
         restart: always
-        ports:
-            - "80:80"
         networks:
             - chess-network
         environment:

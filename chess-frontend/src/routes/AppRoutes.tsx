@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from '../features/menu/LandingPage';
 import ProfileDashboard from '../features/user/ProfileDashboard';
 import FullLeaderboardPage from '../features/menu/views/FullLeaderboardPage';
@@ -54,7 +54,8 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
         <Route path="/admin" element={<AdminDashboard />} />
       </Route>
 
-      <Route path="/" element={<LandingPage onStart={handleStartMatch} />} />
+      <Route path="/menu" element={<LandingPage onStart={handleStartMatch} />} />
+      <Route path="/" element={<Navigate to="/menu" replace />} />
       <Route path="/profile" element={<ProfileDashboard />} />
       <Route path="/leaderboard" element={<FullLeaderboardPage />} />
       <Route path="/history" element={<AllMatchHistory userId={user?.id} />} />
@@ -83,7 +84,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
         } 
       />
 
-      <Route path="*" element={<LandingPage onStart={handleStartMatch} />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };

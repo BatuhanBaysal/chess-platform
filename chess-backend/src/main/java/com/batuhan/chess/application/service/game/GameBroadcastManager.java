@@ -3,11 +3,13 @@ package com.batuhan.chess.application.service.game;
 import com.batuhan.chess.api.controller.GameWebSocketController;
 import com.batuhan.chess.domain.model.chess.Game;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class GameBroadcastManager {
@@ -22,7 +24,11 @@ public class GameBroadcastManager {
 
         if (lastTime == null || (now - lastTime) >= BROADCAST_THROTTLE_MS) {
             lastBroadcastTimes.put(gameId, now);
-            webSocketController.broadcastGameUpdate(gameId, game);
+            try {
+                webSocketController.broadcastGameUpdate(gameId, game);
+            } catch (Exception e) {
+                log.error("Broadcast failed for game {}: {}", gameId, e.getMessage(), e);
+            }
         }
     }
 

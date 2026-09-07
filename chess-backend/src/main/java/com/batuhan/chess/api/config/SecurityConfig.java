@@ -36,6 +36,7 @@ public class SecurityConfig {
                 .ignoringRequestMatchers(
                     "/api/auth/**",
                     "/api/lobby/**",
+                    "/api/users/**",
                     "/api/health/**",
                     "/api/games/**",
                     "/ws-chess/**",
@@ -60,7 +61,7 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/swagger-ui.html"
                 ).permitAll()
-                .requestMatchers("/api/users/me/**").hasAnyRole(ADMIN, USER, GUEST)
+                .requestMatchers("/api/users/me", "/api/users/me/**").hasAnyRole(ADMIN, USER, GUEST)
                 .requestMatchers("/api/games/**").hasAnyRole(ADMIN, USER, GUEST)
                 .anyRequest().authenticated()
             )

@@ -25,12 +25,6 @@ const AuthContainer: React.FC<AuthContainerProps> = ({
         </div>
 
         <div className="z-10 w-full max-w-115 p-12 rounded-[3.5rem] border border-slate-200 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/40 backdrop-blur-3xl shadow-2xl transition-all duration-500">
-          <div className="text-center mb-10">
-            <h1 className="text-4xl font-black tracking-tighter mb-2 text-slate-950 dark:text-white">
-              CHESS PLATFORM
-            </h1>
-          </div>
-          
           <AuthForm 
             onLogin={onLogin} 
             onRegister={onRegister} 

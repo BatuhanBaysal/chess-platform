@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useChess } from './features/chess/hooks/useChess.ts';
 import { useAuth } from './hooks/useAuth';
 import { useGameNavigation } from './hooks/useGameNavigation.ts';
@@ -112,6 +112,21 @@ function App() {
     return (
       <ErrorBoundary>
         <Routes>
+          <Route path="/register" element={
+            <AuthCard 
+              onLogin={handleLogin} 
+              onRegister={handleRegister} 
+              onGuestLogin={loginAsGuest} 
+            />
+          } />
+          <Route path="/login" element={
+            <AuthCard 
+              onLogin={handleLogin} 
+              onRegister={handleRegister} 
+              onGuestLogin={loginAsGuest} 
+            />
+          } />
+          <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={
             <AuthCard 
               onLogin={handleLogin} 

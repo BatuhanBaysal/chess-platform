@@ -27,6 +27,10 @@ public class StockfishService {
     private final Map<String, CachedEvaluation> evaluationCache = new ConcurrentHashMap<>();
     private static final long THROTTLE_INTERVAL_MS = 250;
 
+    private volatile File cachedEngineBinary;
+    private volatile long lastRestartAttempt = 0;
+    private static final long RESTART_COOLDOWN_MS = 10_000;
+
     private final ExecutorService engineExecutor = Executors.newCachedThreadPool(r -> {
         Thread t = new Thread(r, "Stockfish-Worker");
         t.setDaemon(true);
@@ -63,15 +67,10 @@ public class StockfishService {
             }
 
             restartEngineUnsafe();
-            String osName = System.getProperty("os.name").toLowerCase();
-            String engineResourcePath = osName.contains("win")
-                ? "engine/stockfish.exe"
-                : "engine/stockfish";
-
+            String engineResourcePath = resolveEngineResourcePath();
             File tempEngineFile = extractEngineToTemp(engineResourcePath);
-            ProcessBuilder builder = new ProcessBuilder(tempEngineFile.getAbsolutePath());
 
-            this.process = builder.start();
+            this.process = startProcess(tempEngineFile);
             initializeProcessStreams(this.process);
             log.info("Stockfish engine successfully started using binary: {}", engineResourcePath);
 
@@ -82,6 +81,20 @@ public class StockfishService {
         } finally {
             engineLock.unlock();
         }
+    }
+
+    private String resolveEngineResourcePath() {
+        String osName = System.getProperty("os.name").toLowerCase();
+        if (osName.contains("win")) {
+            return "engine/stockfish.exe";
+        }
+
+        String osArch = System.getProperty("os.arch").toLowerCase();
+        if (osArch.contains("aarch64") || osArch.contains("arm64")) {
+            return "engine/stockfish-arm64";
+        }
+
+        return "engine/stockfish";
     }
 
     private void initializeProcessStreams(Process activeProcess) throws IOException {
@@ -100,6 +113,10 @@ public class StockfishService {
     }
 
     private File extractEngineToTemp(String resourcePath) {
+        if (cachedEngineBinary != null && cachedEngineBinary.exists() && cachedEngineBinary.canExecute()) {
+            return cachedEngineBinary;
+        }
+
         try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
             if (inputStream == null) {
                 throw new FileNotFoundException("Stockfish binary not found in resources path: " + resourcePath);
@@ -118,6 +135,7 @@ public class StockfishService {
                 throw new IOException("Failed to set execution permission for Stockfish binary.");
             }
 
+            cachedEngineBinary = tempFile;
             return tempFile;
         } catch (IOException e) {
             throw new StockfishEngineException("Failed to extract Stockfish binary to temp directory: " + e.getMessage(), e);
@@ -189,18 +207,33 @@ public class StockfishService {
 
     private void ensureEngineRunning() throws IOException {
         if (process == null || !process.isAlive()) {
+            long now = System.currentTimeMillis();
+            if (now - lastRestartAttempt < RESTART_COOLDOWN_MS) {
+                throw new IOException("Engine restart on cooldown, skipping");
+            }
+            lastRestartAttempt = now;
             startEngineInternal();
         }
     }
 
     private void startEngineInternal() throws IOException {
-        String osName = System.getProperty("os.name").toLowerCase();
-        String engineResourcePath = osName.contains("win") ? "engine/stockfish.exe" : "engine/stockfish";
+        String engineResourcePath = resolveEngineResourcePath();
         File tempEngineFile = extractEngineToTemp(engineResourcePath);
 
+        this.process = startProcess(tempEngineFile);
+        initializeProcessStreams(this.process);
+    }
+
+    private Process startProcess(File tempEngineFile) throws IOException {
         ProcessBuilder builder = new ProcessBuilder(tempEngineFile.getAbsolutePath());
-        process = builder.start();
-        initializeProcessStreams(process);
+        builder.redirectErrorStream(true);
+        Process activeProcess = builder.start();
+
+        activeProcess.onExit().thenAccept(p ->
+            log.error("Stockfish process terminated unexpectedly, exitCode={}", p.exitValue())
+        );
+
+        return activeProcess;
     }
 
     private String buildPositionCommand(List<String> moveHistory) {

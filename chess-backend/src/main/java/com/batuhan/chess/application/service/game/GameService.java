@@ -1,6 +1,5 @@
 package com.batuhan.chess.application.service.game;
 
-import com.batuhan.chess.api.dto.game.GameHistory;
 import com.batuhan.chess.api.dto.game.GameResponse;
 import com.batuhan.chess.api.dto.game.HintResponse;
 import com.batuhan.chess.api.dto.lobby.GameRoomResponse;
@@ -25,7 +24,6 @@ public class GameService {
     private final GameEngineService engineService;
     private final GamePersistenceService persistenceService;
     private final LobbyService lobbyService;
-    private final StockfishService stockfishService;
     private final GameBroadcastManager broadcastManager;
 
     private static final int DEFAULT_TIME_LIMIT = 10;
@@ -145,10 +143,6 @@ public class GameService {
         persistenceService.processPlayerDismiss(gameId, userId);
     }
 
-    public void cleanupSession(String gameId) {
-        persistenceService.cleanupSession(gameId);
-    }
-
     public String getActiveGameIdByUserId(Long userId) {
         return sessionManager.getActiveGameIdByUserId(userId);
     }
@@ -174,23 +168,6 @@ public class GameService {
         return persistenceService.getGameHistory(userId);
     }
 
-    @Transactional(readOnly = true)
-    public List<GameHistory> getPlayerGameHistoryDtos(Long userId) {
-        List<GameEntity> games = persistenceService.getGameHistory(userId);
-
-        return games.stream().map(game -> GameHistory.builder()
-            .id(game.getId())
-            .whitePlayerId(game.getWhitePlayer() != null ? game.getWhitePlayer().getId() : null)
-            .whitePlayerName(game.getWhitePlayer() != null ? game.getWhitePlayer().getUsername() : "Guest")
-            .blackPlayerId(game.getBlackPlayer() != null ? game.getBlackPlayer().getId() : null)
-            .blackPlayerName(game.getBlackPlayer() != null ? game.getBlackPlayer().getUsername() : "Guest")
-            .result(game.getResult())
-            .finishMethod(game.getFinishMethod())
-            .playedAt(game.getPlayedAt())
-            .build()
-        ).toList();
-    }
-
     public GameResponse convertToResponse(String gameId, Game game) {
         int timeLimit = game.isAiGame() ? game.getTimeLimit() : lobbyService.getRoom(gameId)
             .map(GameRoomResponse::timeLimit)
@@ -207,19 +184,9 @@ public class GameService {
                 int fromRow = Character.getNumericValue(lastMoveUci.charAt(1)) - 1;
                 int toCol = lastMoveUci.charAt(2) - 'a';
                 int toRow = Character.getNumericValue(lastMoveUci.charAt(3)) - 1;
-                int currentEval = stockfishService.getEvaluation(history, 10);
-
-                int previousEval = 0;
-                if (history.size() > 1) {
-                    List<String> previousHistory = history.subList(0, history.size() - 1);
-                    previousEval = stockfishService.getEvaluation(previousHistory, 10);
-                }
-
-                Color playerWhoMoved = game.getCurrentTurn().opposite();
-                String quality = classifyMove(previousEval, currentEval, playerWhoMoved);
 
                 lastMovesList.add(new GameResponse.ExecutedMove(
-                    fromCol, fromRow, toCol, toRow, "UNKNOWN", currentEval, quality
+                    fromCol, fromRow, toCol, toRow, "UNKNOWN", 0, "GOOD"
                 ));
             }
         }
@@ -239,14 +206,5 @@ public class GameService {
             game.getBlackRemainingTimeMs(),
             timeLimit
         );
-    }
-
-    private String classifyMove(int previousEval, int currentEval, Color turn) {
-        int diff = (turn == Color.WHITE) ? (previousEval - currentEval) : (currentEval - previousEval);
-
-        if (diff > 300) return "BLUNDER";
-        if (diff > 150) return "MISTAKE";
-        if (diff > 75) return "INACCURACY";
-        return "GOOD";
     }
 }

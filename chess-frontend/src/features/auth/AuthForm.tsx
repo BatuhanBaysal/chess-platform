@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import FormField from '../../components/common/FormField';
 
 interface AuthFormProps {
@@ -8,7 +9,10 @@ interface AuthFormProps {
 }
 
 const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin }) => {
-  const [isRegistering, setIsRegistering] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isRegistering = location.pathname === '/register';
+
   const [success, setSuccess] = useState(false); 
   const [formData, setFormData] = useState({ username: '', email: '', password: '' });
   const [errors, setErrors] = useState({ username: '', email: '', password: '' });
@@ -24,6 +28,15 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin }
   const resetForm = () => {
     setFormData({ username: '', email: '', password: '' });
     setErrors({ username: '', email: '', password: '' });
+  };
+
+  const handleToggleMode = () => {
+    resetForm();
+    if (isRegistering) {
+      navigate('/login');
+    } else {
+      navigate('/register');
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,7 +61,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin }
     if (strength <= 1) return 0; 
     if (strength <= 2) return 1; 
     if (strength <= 3) return 2; 
-    return 3;             
+    return 3;            
   };
 
   const strength = getPasswordStrength();
@@ -114,6 +127,14 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin }
 
   return (
     <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6">
+      {!success && (
+        <div className="text-center mb-2">
+          <h1 className="text-4xl font-black tracking-tighter mb-2 text-slate-950 dark:text-white">
+            {isRegistering ? 'REGISTER' : 'LOGIN'}
+          </h1>
+        </div>
+      )}
+
       {success ? (
         <div className="p-8 bg-emerald-500/5 border border-emerald-500/10 rounded-3xl text-center flex flex-col items-center max-w-sm mx-auto">
           <h3 className="text-emerald-500 font-black uppercase tracking-[0.2em] mb-4">Welcome to the Board!</h3>
@@ -121,7 +142,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin }
             Your account <span className="text-white font-bold">{formData.username}</span> has been successfully created. 
             You are starting your chess journey with an initial Elo rating of <span className="text-emerald-500 font-bold"> 1200</span>.
           </p>
-          <button type="button" onClick={() => { setSuccess(false); setIsRegistering(false); }} className="w-full px-8 py-3 bg-emerald-600 text-white font-black uppercase tracking-widest rounded-xl hover:bg-emerald-500 transition-all active:scale-95 cursor-pointer">
+          <button type="button" onClick={() => { setSuccess(false); navigate('/login'); }} className="w-full px-8 py-3 bg-emerald-600 text-white font-black uppercase tracking-widest rounded-xl hover:bg-emerald-500 transition-all active:scale-95 cursor-pointer">
             Sign In & Play
           </button>
         </div>
@@ -201,7 +222,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin }
           </div>
 
           <div className="text-center mt-2">
-            <button type="button" onClick={() => { setIsRegistering(!isRegistering); resetForm(); }} className="text-xs font-bold text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer">
+            <button type="button" onClick={handleToggleMode} className="text-xs font-bold text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer">
               {isRegistering ? <>Already have an account? <span className="underline">Sign In</span></> : <>Don't have an account? <span className="underline">Register Now</span></>}
             </button>
           </div>

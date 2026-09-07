@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Cpu, Layers, GitBranch, Terminal } from 'lucide-react';
+import { Terminal, Layers, Activity, Cpu, ArrowUpRight } from 'lucide-react';
 
 const aboutImages = [
   { src: '/assets/images/king.jpg', alt: 'Chess King Piece', title: 'Core Strategy & Leadership' },
@@ -8,7 +8,30 @@ const aboutImages = [
   { src: '/assets/images/knight.jpg', alt: 'Chess Knight Piece', title: 'Architectural Flexibility' },
   { src: '/assets/images/rook.jpg', alt: 'Chess Rook Piece', title: 'Robust Foundation' },
   { src: '/assets/images/pawn.jpg', alt: 'Chess Pawn Piece', title: 'Scalable Growth' },
-  { src: '/assets/images/chess-platform.jpg', alt: 'Chess Platform Arena', title: 'Distributed Multiplayer' }
+  { src: '/assets/images/chess-platform.jpg', alt: 'Chess Platform Arena', title: 'Distributed Multiplayer' },
+];
+
+const journey = [
+  {
+    year: '2024',
+    title: 'First hands-on experience',
+    body: "A Full Stack Developer internship at Chippin (Tanı Pazarlama, part of Koç Group) — my first real exposure to Java, Spring Boot, and PostgreSQL in a production setting.",
+  },
+  {
+    year: '2024–2025',
+    title: 'Self-directed deep dive',
+    body: 'Certifications and hands-on building across Spring Security, Docker, Kubernetes, AWS, and React/TypeScript — turning internship fundamentals into a real stack.',
+  },
+  {
+    year: '2026',
+    title: 'Chess Platform',
+    body: 'My most complete project: a self-written FIDE rule engine, real-time multiplayer, and an AI opponent — built and run with the same discipline I want to bring to a team.',
+  },
+];
+
+const competencies = [
+  'Java 17', 'Spring Boot 3', 'Spring Cloud', 'React 19', 'TypeScript',
+  'PostgreSQL', 'Redis', 'RabbitMQ', 'Keycloak', 'Docker & Kubernetes', 'OpenTelemetry',
 ];
 
 export const About: React.FC = () => {
@@ -16,29 +39,30 @@ export const About: React.FC = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % aboutImages.length);
+      setCurrentImageIndex((prev) => (prev + 1) % aboutImages.length);
     }, 15000);
-
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="w-full min-h-[calc(100vh-140px)] text-slate-800 dark:text-slate-300 py-12 px-4 sm:px-6 lg:px-8 pt-24 transition-colors">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <div className="space-y-4 bg-[#111827]/90 backdrop-blur-2xl border border-slate-800/80 rounded-3xl p-8 shadow-2xl">
-          <div className="flex items-center gap-2 text-indigo-400 font-mono text-xs uppercase tracking-widest">
-            <Terminal size={14} /> Software Engineer & Systems Architect
+    <div className="w-full min-h-[calc(100vh-140px)] bg-[#070d13] text-slate-300 py-16 px-4 sm:px-6 lg:px-8 pt-28">
+      <div className="max-w-4xl mx-auto space-y-16">
+
+        <div className="space-y-5">
+          <div className="flex items-center gap-2 text-[#5fa8d3] font-mono text-xs">
+            <Terminal size={14} /> Junior Software Developer
           </div>
-          <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">
-            About Me & The Ecosystem <span className="inline-block animate-pulse">👋</span>
+          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-[1.05]">
+            Hi, I'm Batuhan.
           </h1>
-          <p className="text-slate-300 text-sm md:text-base leading-relaxed">
-            I am a Software Engineer specialized in backend and full-stack development, focusing heavily on enterprise software design principles, 
-            <strong> Clean Architecture</strong>, <strong>Domain-Driven Design (DDD)</strong>, and distributed systems.
+          <p className="text-slate-400 text-base md:text-lg leading-relaxed max-w-2xl">
+            I build backend systems in Java and Spring Boot, and I learn by shipping —
+            this platform, and the five projects before it, are how I taught myself
+            distributed systems, security, and observability from the ground up.
           </p>
         </div>
 
-        <div className="relative w-full h-80 md:h-105 rounded-3xl overflow-hidden shadow-2xl border border-slate-800 group bg-slate-900">
+        <div className="relative w-full h-64 md:h-80 rounded-2xl overflow-hidden border border-[#16232f] bg-[#0c141d]">
           {aboutImages.map((img, index) => (
             <div
               key={img.src}
@@ -46,29 +70,19 @@ export const About: React.FC = () => {
                 index === currentImageIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
               }`}
             >
-              <img
-                src={img.src}
-                alt={img.alt}
-                className="w-full h-full object-cover transform scale-105 group-hover:scale-100 transition-transform duration-1000 ease-out"
-              />
-              <div className="absolute inset-0 bg-linear-to-t from-slate-950/90 via-slate-950/30 to-transparent flex flex-col justify-end p-6 md:p-8">
-                <span className="text-xs font-bold uppercase tracking-widest text-indigo-400 mb-2 bg-indigo-500/10 px-3 py-1 rounded-full w-fit border border-indigo-500/20">
-                  Architectural Milestone
-                </span>
-                <h2 className="text-2xl md:text-3xl font-black text-white tracking-wide">
-                  {img.title}
-                </h2>
+              <img src={img.src} alt={img.alt} className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-linear-to-t from-[#070d13]/95 via-[#070d13]/20 to-transparent flex flex-col justify-end p-6">
+                <h2 className="text-xl md:text-2xl font-bold text-white">{img.title}</h2>
               </div>
             </div>
           ))}
-
-          <div className="absolute bottom-6 right-6 z-20 flex gap-2 bg-slate-950/40 backdrop-blur-md px-3 py-2 rounded-full border border-white/10">
+          <div className="absolute bottom-5 right-5 z-20 flex gap-1.5">
             {aboutImages.map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => setCurrentImageIndex(idx)}
-                className={`h-2 rounded-full transition-all duration-500 cursor-pointer ${
-                  idx === currentImageIndex ? 'w-8 bg-indigo-500' : 'w-2 bg-white/40 hover:bg-white/70'
+                className={`h-1.5 rounded-full transition-all duration-500 cursor-pointer ${
+                  idx === currentImageIndex ? 'w-6 bg-[#5fa8d3]' : 'w-1.5 bg-white/30 hover:bg-white/60'
                 }`}
                 aria-label={`Go to slide ${idx + 1}`}
               />
@@ -76,59 +90,70 @@ export const About: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-[#111827]/90 backdrop-blur-xl border border-slate-800/80 rounded-2xl p-6 flex flex-col gap-3 shadow-xl">
-            <div className="flex items-center gap-3 text-indigo-400 font-bold text-sm">
-              <Layers size={18} /> Backend & Architecture
+        <div className="space-y-8">
+          <h2 className="text-lg font-bold text-white">How I got here</h2>
+          <div className="relative pl-8 space-y-10 before:content-[''] before:absolute before:left-1.75 before:top-2 before:bottom-2 before:w-px before:bg-[#1c2e3d]">
+            {journey.map((step) => (
+              <div key={step.title} className="relative">
+                <div className="absolute -left-8 top-1.5 w-3.5 h-3.5 rounded-full bg-[#070d13] border-2 border-[#5fa8d3]" />
+                <div className="text-xs font-mono text-[#5fa8d3] mb-1">{step.year}</div>
+                <h3 className="text-white font-bold mb-1.5">{step.title}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed max-w-xl">{step.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-2">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-white font-bold text-sm">
+              <Layers size={16} className="text-[#5fa8d3]" /> Backend & architecture
             </div>
-            <p className="text-slate-400 text-xs md:text-sm leading-relaxed">
-              Applying Clean Architecture, DDD, and concurrency control mechanisms (pessimistic/optimistic locking) 
-              to eliminate deadlocks and guarantee ACID compliance in distributed environments.
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Hexagonal architecture, domain-driven design, and concurrency control —
+              learned by hitting real race conditions and fixing them, not from a tutorial.
             </p>
           </div>
-
-          <div className="bg-[#111827]/90 backdrop-blur-xl border border-slate-800/80 rounded-2xl p-6 flex flex-col gap-3 shadow-xl">
-            <div className="flex items-center gap-3 text-emerald-400 font-bold text-sm">
-              <Activity size={18} /> Observability & DevOps (LGTM)
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-white font-bold text-sm">
+              <Activity size={16} className="text-[#5fa8d3]" /> Observability
             </div>
-            <p className="text-slate-400 text-xs md:text-sm leading-relaxed">
-              Leveraging the LGTM Stack (Loki, Grafana, Jaeger, Prometheus) alongside OpenTelemetry and Micrometer 
-              to achieve end-to-end distributed tracing and reduced MTTR.
+            <p className="text-slate-400 text-sm leading-relaxed">
+              The LGTM stack (Loki, Grafana, Jaeger, Prometheus) alongside OpenTelemetry —
+              so I can see what a system is actually doing, not just assume it.
             </p>
           </div>
         </div>
 
-        <div className="bg-[#111827]/90 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-6 md:p-8 shadow-xl flex flex-col gap-4">
-          <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-            <Cpu size={16} className="text-blue-400" /> Engineering Competency Set
-          </h2>
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-white font-bold text-sm">
+            <Cpu size={16} className="text-[#5fa8d3]" /> What I work with
+          </div>
           <div className="flex flex-wrap gap-2">
-            {['Java 17', 'Spring Boot 3', 'Spring Cloud', 'React 19', 'TypeScript', 'Tailwind CSS', 'PostgreSQL', 'Redis', 'RabbitMQ', 'Keycloak IAM', 'Docker & K8s', 'OpenTelemetry'].map((tech) => (
-              <span key={tech} className="bg-slate-800/80 border border-slate-700/60 text-slate-300 px-3 py-1.5 rounded-xl text-xs font-mono font-medium">
+            {competencies.map((tech) => (
+              <span
+                key={tech}
+                className="bg-[#0f1b28] border border-[#1c2e3d] text-slate-300 px-3 py-1.5 rounded-lg text-xs font-mono"
+              >
                 {tech}
               </span>
             ))}
           </div>
         </div>
 
-        <div className="bg-[#111827]/90 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-6 md:p-8 shadow-xl space-y-4">
-          <p className="text-sm md:text-base text-slate-300 leading-relaxed">
-            This chess platform project is a core part of my engineering portfolio—built as a real-time, server-authoritative distributed multiplayer application leveraging Java 17, Spring Boot 3, Spring Cloud, React 19, TypeScript, and advanced telemetry stacks (LGTM).
+        <div className="border-l-2 border-[#5fa8d3] pl-6 py-1">
+          <p className="text-slate-300 text-sm md:text-base leading-relaxed">
+            I've been building toward this since my internship at Chippin (Tanı Pazarlama, part of Koç Group) —
+            I'm looking for my first full-time role where I can keep working on
+            distributed systems and concurrency problems like the ones in this project,
+            alongside a team.
           </p>
-          <p className="text-sm md:text-base text-slate-400 leading-relaxed border-t border-slate-800 pt-4">
-            Every piece on the board represents a decoupled domain logic, carefully orchestrated through clean separation of concerns and robust event-driven patterns.
-          </p>
-        </div>
-
-        <div className="bg-linear-to-r from-indigo-950/50 to-slate-900/50 border border-indigo-500/20 rounded-3xl p-6 md:p-8 shadow-xl flex flex-col gap-3">
-          <div className="text-white font-bold text-sm flex items-center gap-2">
-            <GitBranch size={16} className="text-indigo-400" /> Objective & Vision
-          </div>
-          <p className="text-slate-300 text-xs md:text-sm leading-relaxed">
-            Committed to mastering enterprise-level development since my internship experience at <strong>Chippin (Koç Holding)</strong>. 
-            My goal is to build highly available distributed systems, tackle complex concurrency scenarios, and contribute 
-            to innovative engineering teams that demand reliability at scale.
-          </p>
+          <a
+            href="/contact"
+            className="inline-flex items-center gap-1 text-[#5fa8d3] text-sm font-medium mt-3 hover:gap-2 transition-all"
+          >
+            Get in touch <ArrowUpRight size={14} />
+          </a>
         </div>
 
       </div>

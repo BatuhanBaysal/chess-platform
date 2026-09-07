@@ -58,6 +58,20 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame }) => {
 
     const subNavItems = [
         {
+            id: 'admin',
+            show: !isAuthPage && !isGamePage && !!user && isAdmin,
+            element: (
+                <button 
+                    key="admin"
+                    onClick={() => navigate('/admin')}
+                    className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-350 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer whitespace-nowrap bg-transparent border-none p-0"
+                >
+                    <ShieldAlert size={15} />
+                    <span>ADMIN DASHBOARD</span>
+                </button>
+            )
+        },
+        {
             id: 'profile',
             show: !isAuthPage && !isGamePage && !!user && !isGuest,
             element: (
@@ -124,20 +138,6 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame }) => {
                 >
                     <Activity size={15} />
                     <span>SYSTEM HEALTH</span>
-                </button>
-            )
-        },
-        {
-            id: 'admin',
-            show: !isAuthPage && !isGamePage && !!user && isAdmin,
-            element: (
-                <button 
-                    key="admin"
-                    onClick={() => navigate('/admin')}
-                    className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-350 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer whitespace-nowrap bg-transparent border-none p-0"
-                >
-                    <ShieldAlert size={15} />
-                    <span>ADMIN DASHBOARD</span>
                 </button>
             )
         }

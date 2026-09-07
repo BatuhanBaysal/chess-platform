@@ -67,6 +67,8 @@ class WebSocketConfigTest {
             "http://localhost:5173",
             "http://localhost",
             "http://localhost:*",
+            "https://chess-app.duckdns.org",
+            "https://chess-app.duckdns.org",
             "https://chess-platform-app.vercel.app",
             "https://chess-platform-*.vercel.app"
         );

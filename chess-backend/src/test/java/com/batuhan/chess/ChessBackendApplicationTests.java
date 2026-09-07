@@ -7,6 +7,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,6 +15,11 @@ import static org.mockito.Mockito.mock;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@TestPropertySource(properties = {
+    "ADMIN_USERNAME=admin",
+    "ADMIN_EMAIL=admin@chess.com",
+    "ADMIN_PASSWORD=Admin123!"
+})
 @Import(ChessBackendApplicationTests.MockConfig.class)
 class ChessBackendApplicationTests {
 

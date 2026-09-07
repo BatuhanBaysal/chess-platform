@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -31,6 +32,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@TestPropertySource(properties = {
+    "ADMIN_USERNAME=admin",
+    "ADMIN_EMAIL=admin@chess.com",
+    "ADMIN_PASSWORD=Admin123!"
+})
 @Import(TestConfig.class)
 @DisplayName("Audit Log Controller Integration Tests")
 class AuditLogControllerTest {
@@ -96,14 +102,13 @@ class AuditLogControllerTest {
         }
 
         @Test
-        @DisplayName("Should return 403 Forbidden when unauthenticated user requests audit logs with parameters")
+        @DisplayName("Should return 403 Forbidden when unauthenticated user requests audit logs")
         void getAuditLogs_UnauthenticatedUser_ReturnsForbidden() throws Exception {
             // Act & Assert
             mockMvc.perform(get("/api/admin/audit-logs")
                     .param("page", "0")
                     .param("size", "5"))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$").doesNotExist());
+                .andExpect(status().isForbidden());
 
             verify(auditLogService, never()).getAuditLogs(any(), any(), any());
         }

@@ -50,6 +50,10 @@ management:
 
 chess:
     security:
+        admin:
+            ADMIN_USERNAME: ${ADMIN_USERNAME:admin}
+            ADMIN_EMAIL: ${ADMIN_EMAIL:admin@chess.com}
+            ADMIN_PASSWORD: ${ADMIN_PASSWORD:Admin123!}
         jwt:
             secret-key: ${JWT_SECRET:638B4D6251655468576D5A7134743777217A25432A462D4A614E645267556B58}
             expiration: 3600000

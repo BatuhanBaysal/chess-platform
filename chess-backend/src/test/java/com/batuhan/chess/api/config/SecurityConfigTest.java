@@ -19,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -31,6 +32,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@TestPropertySource(properties = {
+    "ADMIN_USERNAME=admin",
+    "ADMIN_EMAIL=admin@chess.com",
+    "ADMIN_PASSWORD=Admin123!"
+})
 @DisplayName("Security Configuration Integration Tests")
 @Import({SecurityConfig.class})
 class SecurityConfigTest {
@@ -92,7 +98,7 @@ class SecurityConfigTest {
         @DisplayName("Should deny access to protected endpoints without authentication")
         void shouldDenyUnauthenticatedAccessToProtectedResource() throws Exception {
             // Act
-            var result = mockMvc.perform(get("/api/v1/secure/resource"));
+            var result = mockMvc.perform(get("/api/admin/dashboard"));
 
             // Assert
             result.andExpect(status().isForbidden());

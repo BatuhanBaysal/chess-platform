@@ -37,6 +37,7 @@ export const SystemHealth: React.FC = () => {
   const isUp = health?.status === 'UP';
   const dbStatus = health?.components?.db?.status || (isUp ? 'UP' : 'DOWN');
   const redisStatus = health?.components?.redis?.status || (isUp ? 'UP' : 'DOWN');
+  const showMonitoring = import.meta.env.VITE_SHOW_MONITORING === 'true';
 
   return (
     <div className="w-full min-h-[calc(100vh-140px)] text-slate-800 dark:text-slate-300 py-12 px-4 sm:px-6 lg:px-8 pt-24 transition-colors">
@@ -131,65 +132,69 @@ export const SystemHealth: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-6 rounded-3xl bg-[#111827]/90 backdrop-blur-xl border border-slate-800/80 flex flex-col justify-between gap-4 shadow-xl">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-mono uppercase tracking-wider text-slate-400">Metrics & Tracing</span>
-                <Activity size={20} className="text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-white mb-2">
-                  LGTM Stack Active
-                </p>
-                <a
-                  href="http://localhost:3000"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-xs font-black text-indigo-400 hover:underline uppercase tracking-wider"
-                >
-                  Open Grafana Dashboard &rarr;
-                </a>
-              </div>
-            </div>
+            {showMonitoring && (
+              <>
+                <div className="p-6 rounded-3xl bg-[#111827]/90 backdrop-blur-xl border border-slate-800/80 flex flex-col justify-between gap-4 shadow-xl">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono uppercase tracking-wider text-slate-400">Metrics & Tracing</span>
+                    <Activity size={20} className="text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white mb-2">
+                      LGTM Stack Active
+                    </p>
+                    <a
+                      href="http://localhost:3000"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-xs font-black text-indigo-400 hover:underline uppercase tracking-wider"
+                    >
+                      Open Grafana Dashboard &rarr;
+                    </a>
+                  </div>
+                </div>
 
-            <div className="p-6 rounded-3xl bg-[#111827]/90 backdrop-blur-xl border border-slate-800/80 flex flex-col justify-between gap-4 shadow-xl">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-mono uppercase tracking-wider text-slate-400">Code Quality</span>
-                <HardDrive size={20} className="text-purple-400" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-white mb-2">
-                  SonarQube QA
-                </p>
-                <a
-                  href="http://localhost:9000"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-xs font-black text-indigo-400 hover:underline uppercase tracking-wider"
-                >
-                  Open SonarQube &rarr;
-                </a>
-              </div>
-            </div>
+                <div className="p-6 rounded-3xl bg-[#111827]/90 backdrop-blur-xl border border-slate-800/80 flex flex-col justify-between gap-4 shadow-xl">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono uppercase tracking-wider text-slate-400">Code Quality</span>
+                    <HardDrive size={20} className="text-purple-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white mb-2">
+                      SonarQube QA
+                    </p>
+                    <a
+                      href="http://localhost:9000"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-xs font-black text-indigo-400 hover:underline uppercase tracking-wider"
+                    >
+                      Open SonarQube &rarr;
+                    </a>
+                  </div>
+                </div>
 
-            <div className="p-6 rounded-3xl bg-[#111827]/90 backdrop-blur-xl border border-slate-800/80 flex flex-col justify-between gap-4 shadow-xl">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-mono uppercase tracking-wider text-slate-400">Time-Series Data</span>
-                <Server size={20} className="text-orange-400" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-white mb-2">
-                  Prometheus Server
-                </p>
-                <a
-                  href="http://localhost:9090"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-xs font-black text-indigo-400 hover:underline uppercase tracking-wider"
-                >
-                  Open Prometheus &rarr;
-                </a>
-              </div>
-            </div>
+                <div className="p-6 rounded-3xl bg-[#111827]/90 backdrop-blur-xl border border-slate-800/80 flex flex-col justify-between gap-4 shadow-xl">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono uppercase tracking-wider text-slate-400">Time-Series Data</span>
+                    <Server size={20} className="text-orange-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white mb-2">
+                      Prometheus Server
+                    </p>
+                    <a
+                      href="http://localhost:9090"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-xs font-black text-indigo-400 hover:underline uppercase tracking-wider"
+                    >
+                      Open Prometheus &rarr;
+                    </a>
+                  </div>
+                </div>
+              </>
+            )}
 
           </div>
         )}

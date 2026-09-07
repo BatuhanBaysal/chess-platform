@@ -30,8 +30,9 @@
 * **🛡️ Server-Authoritative State Machine & RBAC:** Granular role-based access control protecting administrative operations via stateless JWT architecture, alongside decoupled business rules enforcing strict server-side validation to eliminate client-side tampering and race conditions.
 * **🏆 Quality Gates:** CI/CD-driven quality standards enforced via **SonarQube** — **A-Grade Quality Gate**, 0 code smells, 0 open technical debt, with **74.0% test coverage** across 384 passing tests.
 * **🌐 Production Deployment & Hybrid Cloud Architecture:**
-    * **Frontend Hosting (Vercel):** The React 19 single-page application is hosted globally on Vercel’s edge network, ensuring high-performance static asset delivery, automated continuous deployments from GitHub, and minimal latency for client interactions.
-    * **Backend Infrastructure (Oracle Cloud):** The Spring Boot backend, PostgreSQL database, Redis instance, and LGTM observability stack are containerized via Docker Compose and deployed on an Oracle Cloud Infrastructure (OCI) Always Free ARM virtual private server, providing a robust, persistent production-grade backend environment.
+    * **Frontend Hosting (Vercel):** The React 19 single-page application is hosted globally on Vercel (`https://chess-platform-app.vercel.app`), ensuring instant static asset delivery, automated continuous deployments tied to GitHub, and low-latency client interactions.
+    * **Backend Infrastructure & Database (Oracle Cloud & Docker Compose):** The Spring Boot backend, PostgreSQL database, Redis instance, and LGTM observability stack are fully containerized and orchestrated via Docker Compose on an Oracle Cloud Infrastructure (OCI) Always Free ARM (Ampere) virtual private server.
+    * **API & Domain Routing (Duck DNS):** The backend services communicate securely through the Oracle Cloud infrastructure mapped via Duck DNS, handling real-time REST and WebSocket traffic requested dynamically by the Vercel-hosted client.
 
 > *For a deep dive into the underlying design patterns, concurrency controls, and architectural decisions, see our [Engineering Decisions Guide](docs/ENGINEERING_DECISIONS.md).*
 
@@ -96,9 +97,9 @@ We maintain rigorous standards across our development lifecycle:
 ---
 
 ## 🚀 Quick Start
-
 Ensure you have [Docker](https://www.docker.com/) and Docker Compose installed on your machine.
 
+### 1. Development Mode (Docker)
 To spin up the core services (Backend, Frontend, DB, Redis) required for development:
 
 ```bash
@@ -111,7 +112,48 @@ To spin up the entire ecosystem, including monitoring tools and SonarQube:
 docker compose --profile core --profile monitoring up -d
 ```
 
-*For detailed setup instructions, please refer to the [Development Guide](docs/DEVELOPMENT.md).*
+### 2. Running Backend Locally (Without Docker)
+If you prefer to run only the Spring Boot backend locally via your IDE (e.g., IntelliJ IDEA) while keeping supporting services (like DB/Redis) up:
+
+1. **Active Profiles**: Set your Spring Boot active profile to `local` in your Run/Debug Configurations.
+2. **EnvFile Plugin**: Install the EnvFile plugin in IntelliJ to securely load environment variables.
+3. **Configuration Setup**: In your `ChessBackendApplication` run configuration, check **Enable EnvFile** and add your local `.env` file to the list as shown below:
+
+⚠️ **Security Warning**: Never commit or share your `.env` file publicly. It contains sensitive credentials and configuration secrets.
+
+### 3. Production Deployment
+> ℹ️ **Note:** SonarQube and the `monitoring` profile have been removed from the production setup to avoid unnecessary data/resource usage on the server. Only the `core` profile is used in production.
+
+To update and deploy the application to the production server:
+
+3.1. Connect to your Oracle Cloud instance via SSH (ensure you have your private SSH key downloaded and proper permissions set):
+```bash
+ssh -i "/path/to/your/ssh-key.key" ubuntu@130.162.254.229
+```
+
+3.2. Navigate to the project directory and pull the latest changes:
+```bash
+cd ~/chess-platform
+git pull origin main
+```
+
+3.3. Stop existing containers and clean up:
+> ⚠️ **Important Note on Data Persistence:**
+* If you want to **keep your database and volumes intact** (preserving user data, game history, and settings), run:
+```bash
+docker compose down
+```
+* If you want to **wipe everything and reset all data volumes** (useful for a completely fresh start or clean testing), use the `-v` flag:
+```bash
+docker compose down -v
+```
+
+3.4.Rebuild and restart the production services:
+```bash
+docker compose --profile core up --build -d
+```
+
+For detailed setup instructions, please refer to the [Development Guide](docs/DEVELOPMENT.md).
 
 ---
 

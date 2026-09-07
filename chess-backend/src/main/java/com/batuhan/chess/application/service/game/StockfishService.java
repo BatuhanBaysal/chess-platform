@@ -122,23 +122,22 @@ public class StockfishService {
                 throw new FileNotFoundException("Stockfish binary not found in resources path: " + resourcePath);
             }
 
-            Path userTemp = Path.of(System.getProperty("java.io.tmpdir"));
-            Path tempDir = Files.createDirectories(userTemp.resolve("chess-engine-" + System.currentTimeMillis()));
+            Path appDir = Path.of(System.getProperty("user.dir"), "engine-runtime");
+            Path targetDir = Files.createDirectories(appDir);
 
             String fileName = resourcePath.contains("win") ? "stockfish.exe" : "stockfish";
-            File tempFile = tempDir.resolve(fileName).toFile();
+            File targetFile = targetDir.resolve(fileName).toFile();
+            Files.copy(inputStream, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-            Files.copy(inputStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-
-            boolean isExecutableSet = tempFile.setExecutable(true);
-            if (!isExecutableSet && !tempFile.canExecute()) {
+            boolean isExecutableSet = targetFile.setExecutable(true);
+            if (!isExecutableSet && !targetFile.canExecute()) {
                 throw new IOException("Failed to set execution permission for Stockfish binary.");
             }
 
-            cachedEngineBinary = tempFile;
-            return tempFile;
+            cachedEngineBinary = targetFile;
+            return targetFile;
         } catch (IOException e) {
-            throw new StockfishEngineException("Failed to extract Stockfish binary to temp directory: " + e.getMessage(), e);
+            throw new StockfishEngineException("Failed to extract Stockfish binary to runtime directory: " + e.getMessage(), e);
         }
     }
 

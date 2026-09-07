@@ -26,6 +26,3 @@ tmp/
 temp/
 dist/
 node_modules/
-
-# --- Chess Engine Binaries ---
-chess-backend/src/main/resources/engine/

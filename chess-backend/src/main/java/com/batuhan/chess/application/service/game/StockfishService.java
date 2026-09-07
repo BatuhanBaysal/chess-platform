@@ -90,12 +90,19 @@ public class StockfishService {
 
         sendCommandInternal("uci");
         sendCommandInternal("isready");
+
+        String line;
+        while ((line = reader.readLine()) != null) {
+            if (line.equals("readyok")) {
+                break;
+            }
+        }
     }
 
     private File extractEngineToTemp(String resourcePath) {
         try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
             if (inputStream == null) {
-                throw new FileNotFoundException("Stockfish binary not found in resources/" + resourcePath);
+                throw new FileNotFoundException("Stockfish binary not found in resources path: " + resourcePath);
             }
 
             Path userTemp = Path.of(System.getProperty("java.io.tmpdir"));
@@ -113,7 +120,7 @@ public class StockfishService {
 
             return tempFile;
         } catch (IOException e) {
-            throw new StockfishEngineException("Failed to extract Stockfish binary to temp directory", e);
+            throw new StockfishEngineException("Failed to extract Stockfish binary to temp directory: " + e.getMessage(), e);
         }
     }
 

@@ -35,12 +35,24 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
-## [2.2.0] - 2026-09-06
+## [2.2.0] - 2026-09-07
 
 ### 🚀 Phase 21: Production Deployment & Cloud Demo ☁️ (v2.2.0)
 > **Note:** Provisioning multi-container environments, setting up Vercel static hosting, and deploying the full backend, database, and observability stack via Docker Compose on Oracle Cloud.
 
+- **2026-09-07:**
+    - **Fix Stockfish Engine Process Stream Synchronization and Buffer Management (PR #150):**
+        - Updated the `StockfishService` implementation to properly consume and clear initial process startup outputs (`uciok`, `readyok` etc.) inside `initializeProcessStreams`.
+        - Prevented protocol synchronization drift and dangling buffer states that previously caused `Stream closed` or `Broken pipe` exceptions during early engine communication.
+        - Ensured robust and reliable process execution and stream handling for local Windows environments during pre-warming and gameplay evaluations.
+
 - **2026-09-06:**
+    - **Implement Bean-Based CORS Configuration Source for Security Filter Chain (PR #149):**
+        - Configured an explicit bean-based `CorsConfigurationSource` to integrate cleanly with Spring Security, ensuring proper evaluation order for incoming cross-origin requests.
+    - **Update Security Config for CORS Preflight Options and Nginx Settings (PR #148):**
+        - Updated the backend security filter chain configuration to properly handle CORS preflight (`OPTIONS`) requests and adjusted Nginx reverse proxy settings to correctly pass headers.
+    - **Update Axios BaseURL to Dynamic Environment Variable (PR #147):**
+        - Refactored the frontend API client configuration to use a dynamic environment variable for the Axios `baseURL`, allowing seamless configuration across local development and production environments.
     - **Finalize CORS Policies, Secure WebSockets, and End-to-End System Health (PR #146 | Issue #145):**
         - Finalized and fine-tuned CORS policies in the Spring Boot backend to explicitly allow production cross-origin requests from the Vercel-hosted frontend to the Oracle Cloud infrastructure.
         - Configured and validated secure WebSocket (`wss://`) handshake endpoints to ensure real-time communication operates cleanly without mixed-content or SSL blockages.

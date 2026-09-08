@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { useChess } from './features/chess/hooks/useChess.ts';
 import { useAuth } from './hooks/useAuth';
 import { useGameNavigation } from './hooks/useGameNavigation.ts';
@@ -135,6 +136,7 @@ function App() {
             />
           } />
         </Routes>
+        <Analytics />
       </ErrorBoundary>
     );
   }
@@ -162,6 +164,7 @@ function App() {
           fetchHint={fetchHint}
         />
       </Layout>
+      <Analytics />
     </ErrorBoundary>
   );
 }

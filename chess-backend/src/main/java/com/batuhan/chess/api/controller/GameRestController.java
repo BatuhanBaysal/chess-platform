@@ -1,9 +1,12 @@
 package com.batuhan.chess.api.controller;
 
+import com.batuhan.chess.api.dto.game.GameExportResponse;
 import com.batuhan.chess.api.dto.game.GameHistory;
 import com.batuhan.chess.api.dto.game.GameResponse;
 import com.batuhan.chess.api.dto.game.HintResponse;
+import com.batuhan.chess.api.dto.storage.FileDownloadDTO;
 import com.batuhan.chess.api.exception.ResourceNotFoundException;
+import com.batuhan.chess.application.service.game.GameArtifactService;
 import com.batuhan.chess.application.service.game.GameService;
 import com.batuhan.chess.application.service.game.GameTimerService;
 import com.batuhan.chess.domain.model.chess.Game;
@@ -14,8 +17,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -28,6 +34,7 @@ public class GameRestController {
 
     private final GameService gameService;
     private final GameTimerService timerService;
+    private final GameArtifactService artifactService;
 
     @Operation(
         summary = "Get game by ID",
@@ -162,6 +169,36 @@ public class GameRestController {
 
         log.info("GAME_ACTION: Requesting engine hint for gameId: {} with depth: {}", gameId, depth);
         HintResponse response = gameService.getEngineHint(gameId, depth);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+        summary = "Export game as PGN",
+        description = "Generates and exports the PGN record of a match from storage."
+    )
+    @ApiResponse(responseCode = "200", description = "PGN file exported successfully")
+    @GetMapping("/{gameId}/export/pgn")
+    public ResponseEntity<byte[]> exportGamePgn(@PathVariable String gameId) {
+        log.info("GAME_ACTION: Exporting PGN for gameId: {}", gameId);
+        FileDownloadDTO downloadDTO = artifactService.exportGamePgn(gameId);
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + downloadDTO.fileName() + "\"")
+            .contentType(MediaType.parseMediaType(downloadDTO.contentType()))
+            .body(downloadDTO.data());
+    }
+
+    @Operation(
+        summary = "Upload match artifact",
+        description = "Stores engine logs, telemetry, or match artifacts into object storage."
+    )
+    @ApiResponse(responseCode = "200", description = "Artifact saved successfully")
+    @PostMapping(value = "/{gameId}/artifacts", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<GameExportResponse> uploadMatchArtifact(
+        @PathVariable String gameId,
+        @RequestParam("file") MultipartFile file) {
+        log.info("GAME_ACTION: Uploading artifact for gameId: {}", gameId);
+        GameExportResponse response = artifactService.uploadMatchArtifact(gameId, file);
+        log.info("GAME_ACTION: Artifact uploaded successfully with key: {}", response.storageKey());
         return ResponseEntity.ok(response);
     }
 

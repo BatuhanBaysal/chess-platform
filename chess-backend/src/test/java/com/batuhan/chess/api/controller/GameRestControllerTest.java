@@ -1,8 +1,11 @@
 package com.batuhan.chess.api.controller;
 
+import com.batuhan.chess.api.dto.game.GameExportResponse;
 import com.batuhan.chess.api.dto.game.GameResponse;
 import com.batuhan.chess.api.dto.game.HintResponse;
+import com.batuhan.chess.api.dto.storage.FileDownloadDTO;
 import com.batuhan.chess.application.service.auth.JwtService;
+import com.batuhan.chess.application.service.game.GameArtifactService;
 import com.batuhan.chess.application.service.game.GameService;
 import com.batuhan.chess.application.service.game.GameTimerService;
 import com.batuhan.chess.application.service.game.StockfishService;
@@ -16,18 +19,17 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(GameRestController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -48,6 +50,9 @@ class GameRestControllerTest {
 
     @MockitoBean
     private JwtService jwtService;
+
+    @MockitoBean
+    private GameArtifactService artifactService;
 
     @Nested
     @DisplayName("Game Lifecycle Operations")
@@ -295,6 +300,55 @@ class GameRestControllerTest {
                 .andExpect(jsonPath("$.bestMoveUci").value("e2e4"))
                 .andExpect(jsonPath("$.evaluationScore").value(35))
                 .andExpect(jsonPath("$.message").value("Engine calculated best move."));
+        }
+    }
+
+    @Nested
+    @DisplayName("Game Artifact & Storage Operations")
+    class GameArtifactControllerTests {
+
+        @Test
+        @DisplayName("Should export game PGN successfully with download headers")
+        void shouldExportGamePgnSuccessfully() throws Exception {
+            // Arrange
+            String gameId = "game-123";
+            byte[] pgnBytes = "[Event \"Chess Platform Match\"]".getBytes();
+            FileDownloadDTO downloadDTO = new FileDownloadDTO(pgnBytes, "application/x-chess-pgn", gameId + ".pgn");
+            when(artifactService.exportGamePgn(gameId)).thenReturn(downloadDTO);
+
+            // Act & Assert
+            mockMvc.perform(get("/api/games/{gameId}/export/pgn", gameId))
+                .andExpect(status().isOk())
+                .andExpect(header().string(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"game-123.pgn\""))
+                .andExpect(content().contentType("application/x-chess-pgn"))
+                .andExpect(content().bytes(pgnBytes));
+
+            verify(artifactService, times(1)).exportGamePgn(gameId);
+        }
+
+        @Test
+        @DisplayName("Should upload match artifact successfully and return response")
+        void shouldUploadMatchArtifactSuccessfully() throws Exception {
+            // Arrange
+            String gameId = "game-123";
+            org.springframework.mock.web.MockMultipartFile file = new org.springframework.mock.web.MockMultipartFile(
+                "file", "engine-telemetry.log", MediaType.TEXT_PLAIN_VALUE, "sample log content".getBytes()
+            );
+            GameExportResponse exportResponse = new GameExportResponse(
+                gameId, "matches/artifacts/game-123/engine-telemetry.log", "engine-telemetry.log", file.getSize()
+            );
+            when(artifactService.uploadMatchArtifact(eq(gameId), any(MultipartFile.class))).thenReturn(exportResponse);
+
+            // Act & Assert
+            mockMvc.perform(multipart("/api/games/{gameId}/artifacts", gameId)
+                    .file(file))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.gameId").value(gameId))
+                .andExpect(jsonPath("$.fileName").value("engine-telemetry.log"))
+                .andExpect(jsonPath("$.storageKey").value("matches/artifacts/game-123/engine-telemetry.log"))
+                .andExpect(jsonPath("$.sizeInBytes").value(file.getSize()));
+
+            verify(artifactService, times(1)).uploadMatchArtifact(eq(gameId), any(MultipartFile.class));
         }
     }
 }

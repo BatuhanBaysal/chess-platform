@@ -1,14 +1,13 @@
 package com.batuhan.chess.application.service.user;
 
-import com.batuhan.chess.api.dto.user.ChangePasswordRequest;
-import com.batuhan.chess.api.dto.user.DeleteAccountRequest;
-import com.batuhan.chess.api.dto.user.UpdateProfileRequest;
-import com.batuhan.chess.api.dto.user.UserResponseDTO;
+import com.batuhan.chess.api.dto.storage.FileDownloadDTO;
+import com.batuhan.chess.api.dto.user.*;
 import com.batuhan.chess.api.exception.EmailAlreadyExistsException;
 import com.batuhan.chess.api.exception.GameOperationException;
 import com.batuhan.chess.api.exception.ResourceNotFoundException;
 import com.batuhan.chess.api.exception.UserAlreadyExistsException;
 import com.batuhan.chess.domain.model.user.UserEntity;
+import com.batuhan.chess.domain.repository.FileStoragePort;
 import com.batuhan.chess.domain.repository.UserRepository;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import lombok.RequiredArgsConstructor;
@@ -16,11 +15,14 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @Service
@@ -29,6 +31,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final FileStoragePort fileStoragePort;
 
     public UserEntity getCurrentUserEntity() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -91,6 +94,46 @@ public class UserService {
 
         user.setPassword(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
+    }
+
+    public AvatarUploadResponse uploadAvatar(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Avatar file cannot be empty");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || (!contentType.equals(MediaType.IMAGE_PNG_VALUE) && !contentType.equals(MediaType.IMAGE_JPEG_VALUE))) {
+            throw new IllegalArgumentException("Only PNG and JPEG formats are supported");
+        }
+
+        if (file.getSize() > 2 * 1024 * 1024) {
+            throw new IllegalArgumentException("Avatar size must not exceed 2MB");
+        }
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        String extension = contentType.equals(MediaType.IMAGE_PNG_VALUE) ? ".png" : ".jpg";
+        String storageKey = "avatars/" + username + extension;
+
+        try {
+            fileStoragePort.uploadFile(storageKey, file.getInputStream(), file.getSize(), contentType);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read avatar file stream", e);
+        }
+
+        return new AvatarUploadResponse("/api/users/" + username + "/avatar", "Avatar uploaded successfully");
+    }
+
+    public FileDownloadDTO getAvatar(String username) {
+        String baseKey = "avatars/" + username;
+        String key = fileStoragePort.doesFileExist(baseKey + ".png") ? baseKey + ".png" : baseKey + ".jpg";
+
+        if (!fileStoragePort.doesFileExist(key)) {
+            throw new ResourceNotFoundException("Avatar not found for user: " + username);
+        }
+
+        byte[] data = fileStoragePort.downloadFile(key);
+        String contentType = key.endsWith(".png") ? MediaType.IMAGE_PNG_VALUE : MediaType.IMAGE_JPEG_VALUE;
+        return new FileDownloadDTO(data, contentType, username + (key.endsWith(".png") ? ".png" : ".jpg"));
     }
 
     @Transactional

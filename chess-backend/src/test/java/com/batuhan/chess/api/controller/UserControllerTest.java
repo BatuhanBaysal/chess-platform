@@ -1,6 +1,7 @@
 package com.batuhan.chess.api.controller;
 
 import com.batuhan.chess.api.config.JwtAuthenticationFilter;
+import com.batuhan.chess.api.dto.storage.FileDownloadDTO;
 import com.batuhan.chess.api.dto.user.*;
 import com.batuhan.chess.api.exception.UserAlreadyExistsException;
 import com.batuhan.chess.application.service.user.UserService;
@@ -22,6 +23,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.multipart.MultipartFile;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -169,6 +171,51 @@ class UserControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
+    @DisplayName("Avatar Operations Tests")
+    class AvatarControllerTests {
+
+        @Test
+        @WithMockUser
+        @DisplayName("Should return 200 OK when avatar is uploaded successfully")
+        void uploadAvatar_ValidFile_ReturnsOk() throws Exception {
+            // Arrange
+            org.springframework.mock.web.MockMultipartFile file = new org.springframework.mock.web.MockMultipartFile(
+                "file", "avatar.png", MediaType.IMAGE_PNG_VALUE, "dummy image bytes".getBytes()
+            );
+            AvatarUploadResponse mockResponse = new AvatarUploadResponse("/api/users/batuhan/avatar", "Avatar uploaded successfully");
+            when(userService.uploadAvatar(any(MultipartFile.class))).thenReturn(mockResponse);
+
+            // Act & Assert
+            mockMvc.perform(multipart("/api/users/me/avatar")
+                    .file(file)
+                    .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.avatarUrl").value("/api/users/batuhan/avatar"))
+                .andExpect(jsonPath("$.message").value("Avatar uploaded successfully"));
+
+            verify(userService, times(1)).uploadAvatar(any(MultipartFile.class));
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("Should return 200 OK and image bytes when avatar exists")
+        void getAvatar_UserExists_ReturnsImageBytes() throws Exception {
+            // Arrange
+            byte[] imageBytes = "image-byte-data".getBytes();
+            FileDownloadDTO downloadDTO = new FileDownloadDTO(imageBytes, MediaType.IMAGE_PNG_VALUE, "batuhan.png");
+            when(userService.getAvatar("batuhan")).thenReturn(downloadDTO);
+
+            // Act & Assert
+            mockMvc.perform(get("/api/users/{username}/avatar", "batuhan"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.IMAGE_PNG_VALUE))
+                .andExpect(content().bytes(imageBytes));
+
+            verify(userService, times(1)).getAvatar("batuhan");
         }
     }
 

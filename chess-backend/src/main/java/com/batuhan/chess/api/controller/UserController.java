@@ -1,9 +1,7 @@
 package com.batuhan.chess.api.controller;
 
-import com.batuhan.chess.api.dto.user.ChangePasswordRequest;
-import com.batuhan.chess.api.dto.user.DeleteAccountRequest;
-import com.batuhan.chess.api.dto.user.UpdateProfileRequest;
-import com.batuhan.chess.api.dto.user.UserResponseDTO;
+import com.batuhan.chess.api.dto.storage.FileDownloadDTO;
+import com.batuhan.chess.api.dto.user.*;
 import com.batuhan.chess.application.service.user.UserService;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,8 +10,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -95,6 +95,35 @@ public class UserController {
         userService.changePassword(request);
         log.info("USER_ACTION: Password successfully changed");
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(
+        summary = "Upload user avatar",
+        description = "Uploads profile avatar image (PNG/JPEG, max 2MB) for authenticated user."
+    )
+    @ApiResponse(responseCode = "200", description = "Avatar uploaded successfully")
+    @PostMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @RateLimiter(name = "profileUpdateLimiter")
+    public ResponseEntity<AvatarUploadResponse> uploadAvatar(@RequestParam("file") MultipartFile file) {
+        log.info("USER_ACTION: Avatar upload initiated");
+        AvatarUploadResponse response = userService.uploadAvatar(file);
+        log.info("USER_ACTION: Avatar successfully uploaded");
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+        summary = "Get user avatar",
+        description = "Retrieves the avatar image bytes for the requested username."
+    )
+    @ApiResponse(responseCode = "200", description = "Avatar retrieved successfully")
+    @ApiResponse(responseCode = "404", description = "Avatar not found")
+    @GetMapping("/{username}/avatar")
+    public ResponseEntity<byte[]> getAvatar(@PathVariable String username) {
+        log.info("USER_ACTION: Fetching avatar for username: {}", username);
+        FileDownloadDTO fileDownload = userService.getAvatar(username);
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType(fileDownload.contentType()))
+            .body(fileDownload.data());
     }
 
     @Operation(

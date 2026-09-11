@@ -29,3 +29,11 @@ chess:
         username: ${ADMIN_USERNAME}
         email: ${ADMIN_EMAIL}
         password: ${ADMIN_PASSWORD}
+    storage:
+        s3:
+            endpoint: http://localhost:9000
+            region: us-east-1
+            access-key: minioadmin
+            secret-key: minioadmin
+            bucket-name: chess-storage
+            path-style-access-enabled: true

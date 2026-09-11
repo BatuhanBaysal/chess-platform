@@ -29,7 +29,6 @@ class StockfishServiceTest {
     @BeforeAll
     static void initService() {
         stockfishService = new StockfishService();
-        ReflectionTestUtils.setField(stockfishService, "cachedEngineBinary", null);
         stockfishService.startEngine();
     }
 

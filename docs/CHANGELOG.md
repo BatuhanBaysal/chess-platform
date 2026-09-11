@@ -35,12 +35,37 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
-## [2.2.0] - 2026-09-07
+## [2.3.0] - 2026-09-11
+
+### 📦 Phase 22: Enterprise Data & Identity Management 🗄️ (v2.3.0)
+> **Note:** Decoupling file management via S3-compatible cloud storage (MinIO locally and OCI Object Storage in production) and centralizing IAM authentication via Keycloak OAuth2/OIDC.
+
+- **2026-09-11:**
+    - **Integrate MinIO and AWS S3 SDK for File Operations (PR #158 | Issue #156):**
+        - Added ARM and x86-64 compatible MinIO container alongside persistent volume storage in `docker-compose.yml` for local development.
+        - Integrated AWS SDK v2 (`software.amazon.awssdk:s3`) with configurable path-style access to support both local MinIO and production OCI Object Storage transparently via `S3Properties` and `S3Config`.
+        - Implemented `FileStoragePort` domain repository interface and `S3StorageAdapter` following Hexagonal Architecture principles.
+        - Extended `UserService` and `UserController` with endpoints (`POST /api/users/me/avatar`, `GET /api/users/{username}/avatar`) and validation for avatar image uploads and downloads.
+        - Developed `GameArtifactService` and updated `GameRestController` to support PGN game record exports (`GET /api/games/{gameId}/export/pgn`) and raw telemetry artifact storage.
+        - Resolved a Windows runtime file-locking issue in `StockfishService` test extraction by switching to dynamic `.exe` resolving and skipping existing binary overwrites.
+        - Added comprehensive unit, contract, and mock tests covering storage adapters, services, configuration beans, and DTO records.
+
+---
+
+## [2.2.0] - 2026-09-08
 
 ### 🚀 Phase 21: Production Deployment & Cloud Demo ☁️ (v2.2.0)
 > **Note:** Provisioning multi-container environments, setting up Vercel static hosting, and deploying the full backend, database, and observability stack via Docker Compose on Oracle Cloud.
 
+- **2026-09-08:**
+    - **Install Vercel Web Analytics (PR #155):**
+        - Integrated `@vercel/analytics` package into the React frontend application layout to track page views and visitor metrics.
+
 - **2026-09-07:**
+    - **Fix Configuration and Application Yaml Files (PR #154):**
+        - Refined SSH connection instructions in `README.md` for clearer Oracle Cloud server access guidelines.
+        - Updated `application-local.yaml` and `application.yaml` to include dynamic environment mappings for JWT configuration and admin credentials (`ADMIN_USERNAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`).
+        - Updated `docker-compose.yml` service configurations to link environment files and optimize backend actuator health check parameters.
     - **Implement Secure Environment-Driven Administration and Production Configuration (PR #153):**
         - Added automated `AdminSeeder` component implementing `CommandLineRunner` to securely provision default administrator credentials from environment variables (`ADMIN_USERNAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`) on application startup.
         - Refactored frontend and backend configurations (`SecurityConfig`, `WebSocketConfig`, `Footer.tsx`, `Header.tsx`, `SystemHealth.tsx`) to support dynamic environment URLs and hide debugging tools in production using the `VITE_SHOW_MONITORING` flag.

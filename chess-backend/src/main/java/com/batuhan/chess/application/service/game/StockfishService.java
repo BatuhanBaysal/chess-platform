@@ -117,27 +117,39 @@ public class StockfishService {
             return cachedEngineBinary;
         }
 
-        try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
-            if (inputStream == null) {
-                throw new FileNotFoundException("Stockfish binary not found in resources path: " + resourcePath);
-            }
-
+        try {
             Path appDir = Path.of(System.getProperty("user.dir"), "engine-runtime");
             Path targetDir = Files.createDirectories(appDir);
 
-            String fileName = resourcePath.contains("win") ? "stockfish.exe" : "stockfish";
+            boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
+            String fileName = isWindows ? "stockfish.exe" : "stockfish";
             File targetFile = targetDir.resolve(fileName).toFile();
-            Files.copy(inputStream, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-            boolean isExecutableSet = targetFile.setExecutable(true);
-            if (!isExecutableSet && !targetFile.canExecute()) {
-                throw new IOException("Failed to set execution permission for Stockfish binary.");
+            if (targetFile.exists() && targetFile.length() > 0) {
+                ensureExecutable(targetFile, isWindows);
+                cachedEngineBinary = targetFile;
+                return targetFile;
             }
 
+            try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
+                if (inputStream == null) {
+                    throw new FileNotFoundException("Stockfish binary not found in resources path: " + resourcePath);
+                }
+                Files.copy(inputStream, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            ensureExecutable(targetFile, isWindows);
             cachedEngineBinary = targetFile;
             return targetFile;
         } catch (IOException e) {
             throw new StockfishEngineException("Failed to extract Stockfish binary to runtime directory: " + e.getMessage(), e);
+        }
+    }
+
+    private void ensureExecutable(File file, boolean isWindows) throws IOException {
+        boolean isExecutableSet = file.setExecutable(true);
+        if (!isWindows && !isExecutableSet && !file.canExecute()) {
+            throw new IOException("Failed to set execution permission for Stockfish binary: " + file.getAbsolutePath());
         }
     }
 

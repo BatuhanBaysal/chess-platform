@@ -34,6 +34,21 @@ spring:
             - org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration
             - org.redisson.spring.starter.RedissonAutoConfigurationV2
 
+    security:
+        oauth2:
+            resourceserver:
+                jwt:
+                    issuer-uri: http://localhost:8081/realms/chess-realm
+                    jwk-set-uri: http://localhost:8081/realms/chess-realm/protocol/openid-connect/certs
+
+keycloak:
+    guest-client-id: chess-guest-client
+    guest-client-secret: ""
+    server-url: http://localhost:8081
+    token-uri: http://localhost:8081/realms/chess-realm/protocol/openid-connect/token
+    admin-username: admin
+    admin-password: admin
+
 management:
     health:
         redis:
@@ -54,6 +69,3 @@ chess:
             ADMIN_USERNAME: ${ADMIN_USERNAME:admin}
             ADMIN_EMAIL: ${ADMIN_EMAIL:admin@chess.com}
             ADMIN_PASSWORD: ${ADMIN_PASSWORD:Admin123!}
-        jwt:
-            secret-key: ${JWT_SECRET:638B4D6251655468576D5A7134743777217A25432A462D4A614E645267556B58}
-            expiration: 3600000

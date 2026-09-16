@@ -3,7 +3,6 @@ package com.batuhan.chess.api.controller;
 import com.batuhan.chess.api.dto.lobby.CreateRoomRequest;
 import com.batuhan.chess.api.dto.lobby.GameRoomResponse;
 import com.batuhan.chess.api.dto.lobby.JoinRoomRequest;
-import com.batuhan.chess.application.service.auth.JwtService;
 import com.batuhan.chess.application.service.game.LobbyService;
 import com.batuhan.chess.api.exception.ResourceNotFoundException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,9 +38,6 @@ class LobbyControllerTest {
 
     @MockitoBean
     private LobbyService lobbyService;
-
-    @MockitoBean
-    private JwtService jwtService;
 
     @Nested
     @DisplayName("Room Management Operations")

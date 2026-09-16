@@ -4,7 +4,6 @@ import com.batuhan.chess.api.dto.game.GameExportResponse;
 import com.batuhan.chess.api.dto.game.GameResponse;
 import com.batuhan.chess.api.dto.game.HintResponse;
 import com.batuhan.chess.api.dto.storage.FileDownloadDTO;
-import com.batuhan.chess.application.service.auth.JwtService;
 import com.batuhan.chess.application.service.game.GameArtifactService;
 import com.batuhan.chess.application.service.game.GameService;
 import com.batuhan.chess.application.service.game.GameTimerService;
@@ -47,9 +46,6 @@ class GameRestControllerTest {
 
     @MockitoBean
     private StockfishService stockfishService;
-
-    @MockitoBean
-    private JwtService jwtService;
 
     @MockitoBean
     private GameArtifactService artifactService;

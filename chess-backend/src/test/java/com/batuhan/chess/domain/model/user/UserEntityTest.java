@@ -33,13 +33,36 @@ class UserEntityTest {
             // Assert
             assertThat(user).isNotNull().satisfies(u -> {
                 assertThat(u.getUsername()).isEqualTo(username);
+                assertThat(u.getEmail()).isEqualTo(email);
                 assertThat(u.getExternalId()).isNotNull();
                 assertThat(u.getEloRating()).isEqualTo(1200);
                 assertThat(u.getTotalWins()).isZero();
                 assertThat(u.getTotalLosses()).isZero();
                 assertThat(u.getTotalDraws()).isZero();
+                assertThat(u.isGuest()).isFalse();
+                assertThat(u.isActive()).isTrue();
+                assertThat(u.getPassword()).isNull();
                 assertThat(u.getRole()).isEqualTo(UserRole.ROLE_USER);
             });
+        }
+
+        @Test
+        @DisplayName("Should allow creating guest user without password and with isGuest true")
+        void shouldSupportGuestUserCreationWithoutPassword() {
+            // Arrange & Act
+            UserEntity guest = UserEntity.builder()
+                .username("guest_12345678")
+                .email("guest_12345678@chessplatform.local")
+                .role(UserRole.ROLE_GUEST)
+                .isGuest(true)
+                .password(null)
+                .build();
+
+            // Assert
+            assertThat(guest.isGuest()).isTrue();
+            assertThat(guest.getPassword()).isNull();
+            assertThat(guest.getRole()).isEqualTo(UserRole.ROLE_GUEST);
+            assertThat(guest.isActive()).isTrue();
         }
     }
 

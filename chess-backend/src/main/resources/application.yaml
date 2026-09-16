@@ -1,6 +1,12 @@
 spring:
     application:
         name: chess-backend
+    security:
+        oauth2:
+            resourceserver:
+                jwt:
+                    issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/chess-realm}
+                    jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:${KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/chess-realm}/protocol/openid-connect/certs}
 
     datasource:
         url: ${CHESS_DB_URL}
@@ -128,3 +134,8 @@ resilience4j:
                 limitForPeriod: 3
                 limitRefreshPeriod: 1m
                 timeoutDuration: 500ms
+
+keycloak:
+    guest-client-id: chess-guest-client
+    guest-client-secret: ${KEYCLOAK_GUEST_CLIENT_SECRET}
+    token-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/chess-realm}/protocol/openid-connect/token

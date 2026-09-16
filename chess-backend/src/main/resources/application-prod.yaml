@@ -6,10 +6,11 @@ spring:
         url: ${DATABASE_URL}
         username: ${DB_USERNAME}
         password: ${DB_PASSWORD}
-    redis:
-        host: ${REDIS_HOST}
-        port: ${REDIS_PORT}
-        password: ${REDIS_PASSWORD:-}
+    data:
+        redis:
+            host: ${REDIS_HOST}
+            port: ${REDIS_PORT}
+            password: ${REDIS_PASSWORD:-}
 
 chess:
     storage:

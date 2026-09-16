@@ -26,5 +26,6 @@ tmp/
 temp/
 dist/
 node_modules/
+engine-runtime/
 chess-backend/engine-runtime/
 chess-backend/engine-bin/

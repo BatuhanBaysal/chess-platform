@@ -21,6 +21,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import java.io.IOException;
 import java.util.List;
@@ -32,9 +35,24 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final FileStoragePort fileStoragePort;
+    private final UserSyncService userSyncService;
 
     public UserEntity getCurrentUserEntity() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication instanceof JwtAuthenticationToken jwtAuth) {
+            Jwt jwt = jwtAuth.getToken();
+            String username = jwt.getClaimAsString("preferred_username");
+            if (username == null) {
+                username = jwt.getSubject();
+            }
+
+            final String finalUsername = username;
+            return userRepository.findByUsernameAndActiveTrue(finalUsername)
+                .orElseGet(() -> userSyncService.syncKeycloakUser(jwt, finalUsername));
+        }
+
+        String username = authentication.getName();
         return userRepository.findByUsernameAndActiveTrue(username)
             .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
     }

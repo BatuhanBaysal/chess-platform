@@ -1,8 +1,10 @@
 package com.batuhan.chess.application.service.auth;
 
-import com.batuhan.chess.api.dto.auth.AuthResponse;
 import com.batuhan.chess.api.dto.auth.LoginRequest;
 import com.batuhan.chess.api.dto.auth.RegisterRequest;
+import com.batuhan.chess.api.exception.EmailAlreadyExistsException;
+import com.batuhan.chess.api.exception.GameOperationException;
+import com.batuhan.chess.api.exception.UserAlreadyExistsException;
 import com.batuhan.chess.domain.model.user.UserEntity;
 import com.batuhan.chess.domain.model.user.UserRole;
 import com.batuhan.chess.domain.repository.UserRepository;
@@ -15,12 +17,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -33,13 +35,7 @@ class AuthServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private PasswordEncoder passwordEncoder;
-
-    @Mock
     private AuthenticationManager authenticationManager;
-
-    @Mock
-    private JwtService jwtService;
 
     @InjectMocks
     private AuthService authService;
@@ -60,7 +56,15 @@ class AuthServiceTest {
             .password("encodedPassword")
             .role(UserRole.ROLE_USER)
             .eloRating(1200)
+            .active(true)
             .build();
+
+        ReflectionTestUtils.setField(authService, "guestClientId", "chess-guest-client");
+        ReflectionTestUtils.setField(authService, "guestClientSecret", "");
+        ReflectionTestUtils.setField(authService, "keycloakServerUrl", "http://localhost:8081");
+        ReflectionTestUtils.setField(authService, "keycloakTokenUri", "http://localhost:8081/realms/chess-realm/protocol/openid-connect/token");
+        ReflectionTestUtils.setField(authService, "keycloakAdminUsername", "admin");
+        ReflectionTestUtils.setField(authService, "keycloakAdminPassword", "admin");
     }
 
     @Nested
@@ -68,37 +72,21 @@ class AuthServiceTest {
     class RegistrationTests {
 
         @Test
-        @DisplayName("Should encode password and save user when credentials are unique")
-        void shouldRegisterUserSuccessfully() {
-            // Arrange
-            when(userRepository.existsByUsername(registerRequest.username())).thenReturn(false);
-            when(userRepository.existsByEmail(registerRequest.email())).thenReturn(false);
-            when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
-
-            // Act
-            authService.register(registerRequest);
-
-            // Assert
-            verify(userRepository).save(any(UserEntity.class));
-            verify(passwordEncoder).encode(registerRequest.password());
-        }
-
-        @Test
-        @DisplayName("Should throw RuntimeException when the chosen username is already taken")
+        @DisplayName("Should throw UserAlreadyExistsException when username already exists")
         void shouldThrowExceptionWhenUsernameExists() {
             // Arrange
             when(userRepository.existsByUsername(registerRequest.username())).thenReturn(true);
 
             // Act & Assert
             assertThatThrownBy(() -> authService.register(registerRequest))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(UserAlreadyExistsException.class)
                 .hasMessage("Username already exists");
 
             verify(userRepository, never()).save(any());
         }
 
         @Test
-        @DisplayName("Should throw RuntimeException when the provided email is already registered")
+        @DisplayName("Should throw EmailAlreadyExistsException when email already exists")
         void shouldThrowExceptionWhenEmailExists() {
             // Arrange
             when(userRepository.existsByUsername(registerRequest.username())).thenReturn(false);
@@ -106,8 +94,23 @@ class AuthServiceTest {
 
             // Act & Assert
             assertThatThrownBy(() -> authService.register(registerRequest))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(EmailAlreadyExistsException.class)
                 .hasMessage("Email already exists");
+
+            verify(userRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Should abort registration and throw GameOperationException if Keycloak connection fails")
+        void shouldThrowExceptionWhenKeycloakSyncFails() {
+            // Arrange
+            when(userRepository.existsByUsername(registerRequest.username())).thenReturn(false);
+            when(userRepository.existsByEmail(registerRequest.email())).thenReturn(false);
+
+            // Act & Assert
+            assertThatThrownBy(() -> authService.register(registerRequest))
+                .isInstanceOf(GameOperationException.class)
+                .hasMessageContaining("Failed to register user in Keycloak");
 
             verify(userRepository, never()).save(any());
         }
@@ -118,28 +121,7 @@ class AuthServiceTest {
     class LoginTests {
 
         @Test
-        @DisplayName("Should return AuthResponse with token when login credentials are valid")
-        void shouldReturnAuthResponseOnValidLogin() {
-            // Arrange
-            when(userRepository.findByUsernameAndActiveTrue(loginRequest.usernameOrEmail())).thenReturn(Optional.of(testUser));
-            when(jwtService.generateToken(any(UserDetails.class))).thenReturn("mock-jwt-token");
-
-            // Act
-            AuthResponse response = authService.login(loginRequest);
-
-            // Assert
-            assertThat(response)
-                .isNotNull()
-                .satisfies(res -> {
-                    assertThat(res.token()).isEqualTo("mock-jwt-token");
-                    assertThat(res.username()).isEqualTo("batuhan");
-                });
-
-            verify(authenticationManager).authenticate(any());
-        }
-
-        @Test
-        @DisplayName("Should throw exception and abort token generation if user does not exist")
+        @DisplayName("Should throw UsernameNotFoundException when user is not found or inactive")
         void shouldThrowExceptionWhenUserNotFound() {
             // Arrange
             when(userRepository.findByUsernameAndActiveTrue(loginRequest.usernameOrEmail())).thenReturn(Optional.empty());
@@ -147,34 +129,95 @@ class AuthServiceTest {
 
             // Act & Assert
             assertThatThrownBy(() -> authService.login(loginRequest))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("User not found or account is deleted: " + loginRequest.usernameOrEmail());
+                .isInstanceOf(UsernameNotFoundException.class)
+                .hasMessageContaining("User not found or account is deleted");
 
-            verify(jwtService, never()).generateToken(any());
+            verify(authenticationManager, never()).authenticate(any());
         }
 
         @Test
-        @DisplayName("Should create a temporary guest user and return a guest JWT")
-        void shouldHandleGuestLoginSuccessfully() {
+        @DisplayName("Should resolve user by email when username lookup misses")
+        void shouldResolveUserByEmailWhenUsernameMisses() {
             // Arrange
-            UserEntity guestUser = UserEntity.builder()
-                .username("guest_123")
-                .password("encodedPassword")
-                .role(UserRole.ROLE_GUEST)
-                .build();
+            LoginRequest emailRequest = new LoginRequest("batuhan@chess.com", "Password123");
+            when(userRepository.findByUsernameAndActiveTrue("batuhan@chess.com")).thenReturn(Optional.empty());
+            when(userRepository.findByEmailAndActiveTrue("batuhan@chess.com")).thenReturn(Optional.of(testUser));
+            when(authenticationManager.authenticate(any())).thenReturn(null);
 
-            when(userRepository.save(any(UserEntity.class))).thenReturn(guestUser);
-            when(jwtService.generateToken(any())).thenReturn("guest-jwt-token");
+            // Act & Assert
+            assertThatThrownBy(() -> authService.login(emailRequest))
+                .isInstanceOf(GameOperationException.class)
+                .hasMessageContaining("Failed to authenticate session with identity provider");
 
-            // Act
-            AuthResponse response = authService.loginAsGuest();
+            verify(authenticationManager).authenticate(any());
+        }
 
-            // Assert
-            assertThat(response).isNotNull();
-            assertThat(response.token()).isEqualTo("guest-jwt-token");
-            assertThat(response.role()).isEqualTo(UserRole.ROLE_GUEST);
+        @Test
+        @DisplayName("Should throw BadCredentialsException when authentication manager fails credentials verification")
+        void shouldThrowExceptionWhenCredentialsAreInvalid() {
+            // Arrange
+            when(userRepository.findByUsernameAndActiveTrue(loginRequest.usernameOrEmail())).thenReturn(Optional.of(testUser));
+            when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("Bad credentials"));
 
-            verify(userRepository).save(any(UserEntity.class));
+            // Act & Assert
+            assertThatThrownBy(() -> authService.login(loginRequest))
+                .isInstanceOf(BadCredentialsException.class)
+                .hasMessage("Bad credentials");
+
+            verify(authenticationManager).authenticate(any());
+        }
+
+        @Test
+        @DisplayName("Should throw GameOperationException if Keycloak token exchange fails during login")
+        void shouldThrowExceptionWhenKeycloakTokenEndpointFails() {
+            // Arrange
+            when(userRepository.findByUsernameAndActiveTrue(loginRequest.usernameOrEmail())).thenReturn(Optional.of(testUser));
+            when(authenticationManager.authenticate(any())).thenReturn(null);
+
+            // Act & Assert
+            assertThatThrownBy(() -> authService.login(loginRequest))
+                .isInstanceOf(GameOperationException.class)
+                .hasMessageContaining("Failed to authenticate session with identity provider");
+        }
+
+        @Test
+        @DisplayName("Should throw GameOperationException if Keycloak user creation fails during guest login")
+        void shouldThrowExceptionWhenGuestKeycloakCreationFails() {
+            // Act & Assert
+            assertThatThrownBy(() -> authService.loginAsGuest())
+                .isInstanceOf(GameOperationException.class)
+                .hasMessageContaining("Failed to register user in Keycloak");
+
+            verify(userRepository, never()).save(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("Rate Limiting Fallback Handling")
+    class RateLimiterFallbackTests {
+
+        @Test
+        @DisplayName("Should throw GameOperationException with rate limit message on login fallback")
+        void shouldThrowRateLimitExceptionOnLoginFallback() {
+            // Arrange
+            Throwable cause = new RuntimeException("Rate limit triggered");
+
+            // Act & Assert
+            assertThatThrownBy(() -> authService.loginFallback(loginRequest, cause))
+                .isInstanceOf(GameOperationException.class)
+                .hasMessage("Too many login attempts. Please try again later.");
+        }
+
+        @Test
+        @DisplayName("Should throw GameOperationException with rate limit message on guest fallback")
+        void shouldThrowRateLimitExceptionOnGuestFallback() {
+            // Arrange
+            Throwable cause = new RuntimeException("Rate limit triggered");
+
+            // Act & Assert
+            assertThatThrownBy(() -> authService.guestFallback(cause))
+                .isInstanceOf(GameOperationException.class)
+                .hasMessage("Too many guest login attempts. Please try again later.");
         }
     }
 }

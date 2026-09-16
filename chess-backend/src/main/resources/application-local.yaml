@@ -2,6 +2,13 @@ server:
     port: 8080
 
 spring:
+    security:
+        oauth2:
+            resourceserver:
+                jwt:
+                    issuer-uri: http://localhost:8081/realms/chess-realm
+                    jwk-set-uri: http://localhost:8081/realms/chess-realm/protocol/openid-connect/certs
+
     datasource:
         url: ${CHESS_DB_URL}
         username: ${CHESS_DB_USERNAME}

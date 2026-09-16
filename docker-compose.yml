@@ -1,9 +1,11 @@
 services:
     db:
         image: postgres:15-alpine
-        profiles: ["core"]
+        profiles: [ "core" ]
         container_name: chess-postgres
         restart: always
+        ports:
+            - "5432:5432"
         environment:
             POSTGRES_DB: chess_db
             POSTGRES_USER: ${CHESS_DB_USERNAME}
@@ -66,15 +68,19 @@ services:
             MANAGEMENT_OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
             MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
             LOGGING_FILE_NAME: /app/logs/chess-backend.log
+            KEYCLOAK_SERVER_URL: http://keycloak:8081
+            KEYCLOAK_TOKEN_URI: http://keycloak:8081/realms/chess-realm/protocol/openid-connect/token
+            KEYCLOAK_ISSUER_URI: http://keycloak:8081/realms/chess-realm
+            SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8081/realms/chess-realm/protocol/openid-connect/certs
         depends_on:
             db:
                 condition: service_healthy
             redis:
                 condition: service_healthy
-            minio:
+            keycloak:
                 condition: service_healthy
         healthcheck:
-            test: [ "CMD", "wget", "--spider", -q, "http://localhost:8080/actuator/health" ]
+            test: [ "CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1" ]
             interval: 10s
             timeout: 5s
             retries: 10
@@ -82,9 +88,11 @@ services:
 
     frontend:
         build: ./chess-frontend
-        profiles: ["core"]
+        profiles: [ "core" ]
         container_name: chess-ui
         restart: always
+        ports:
+            - "${FRONTEND_PORT:-8082}:80"
         networks:
             - chess-network
         environment:
@@ -174,10 +182,10 @@ services:
             - loki
             - tempo
 
-    # --- OBJECT STORAGE (MINIO) ---
+    # --- OBJECT STORAGE (MINIO - LOCAL ONLY) ---
     minio:
-        image: minio/minio:RELEASE.2024-01-18T22-51-28Z
-        profiles: [ "core" ]
+        image: quay.io/minio/minio:latest
+        profiles: [ "storage-local" ]
         container_name: chess-minio
         restart: always
         ports:
@@ -192,10 +200,47 @@ services:
         networks:
             - chess-network
         healthcheck:
-            test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+            test: [ "CMD-SHELL", "mc ready local || exit 0" ]
             interval: 5s
             timeout: 5s
             retries: 5
+
+    keycloak:
+        image: quay.io/keycloak/keycloak:24.0.1
+        profiles: [ "core", "iam" ]
+        container_name: chess-keycloak
+        restart: always
+        env_file:
+            - .env
+        command: start-dev --import-realm
+        environment:
+            KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+            KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+            KC_DB: postgres
+            KC_DB_URL: jdbc:postgresql://db:5432/chess_db
+            KC_DB_USERNAME: ${CHESS_DB_USERNAME}
+            KC_DB_PASSWORD: ${CHESS_DB_PASSWORD}
+            KC_DB_SCHEMA: keycloak
+            KC_HTTP_PORT: 8081
+            KC_HEALTH_ENABLED: "true"
+            JAVA_OPTS_KC_HEAP: "-Xms128m -Xmx384m"
+        deploy:
+            resources:
+                limits:
+                    memory: 512m
+        ports:
+            - "${KEYCLOAK_PORT:-8081}:8081"
+        networks:
+            - chess-network
+        depends_on:
+            db:
+                condition: service_healthy
+        healthcheck:
+            test: [ "CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8081; echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3; grep -q 'HTTP/1.1 200 OK' <&3" ]
+            interval: 10s
+            timeout: 5s
+            retries: 15
+            start_period: 30s
 
 networks:
     chess-network:

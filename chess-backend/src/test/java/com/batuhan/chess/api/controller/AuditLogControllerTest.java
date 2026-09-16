@@ -15,7 +15,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -26,6 +26,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -35,7 +36,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {
     "ADMIN_USERNAME=admin",
     "ADMIN_EMAIL=admin@chess.com",
-    "ADMIN_PASSWORD=Admin123!"
+    "ADMIN_PASSWORD=Admin123!",
+    "spring.security.oauth2.resourceserver.jwt.issuer-uri=http://localhost:8081/realms/chess-realm",
+    "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=http://localhost:8081/realms/chess-realm/protocol/openid-connect/certs"
 })
 @Import(TestConfig.class)
 @DisplayName("Audit Log Controller Integration Tests")
@@ -60,7 +63,6 @@ class AuditLogControllerTest {
     class GetAuditLogsTests {
 
         @Test
-        @WithMockUser(roles = "ADMIN")
         @DisplayName("Should return 200 OK with paginated audit logs when admin requests")
         void getAuditLogs_ValidRequest_ReturnsOk() throws Exception {
             // Arrange
@@ -78,6 +80,7 @@ class AuditLogControllerTest {
 
             // Act & Assert
             mockMvc.perform(get("/api/admin/audit-logs")
+                    .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN")))
                     .param("page", "0")
                     .param("size", "10")
                     .param("actionType", "DELETE_USER"))
@@ -91,24 +94,24 @@ class AuditLogControllerTest {
         }
 
         @Test
-        @WithMockUser(roles = "USER")
         @DisplayName("Should return 403 Forbidden when non-admin user requests audit logs")
         void getAuditLogs_NonAdminUser_ReturnsForbidden() throws Exception {
             // Act & Assert
-            mockMvc.perform(get("/api/admin/audit-logs"))
+            mockMvc.perform(get("/api/admin/audit-logs")
+                    .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
                 .andExpect(status().isForbidden());
 
             verify(auditLogService, never()).getAuditLogs(any(), any(), any());
         }
 
         @Test
-        @DisplayName("Should return 403 Forbidden when unauthenticated user requests audit logs")
-        void getAuditLogs_UnauthenticatedUser_ReturnsForbidden() throws Exception {
+        @DisplayName("Should return 401 Unauthorized when unauthenticated user requests audit logs")
+        void getAuditLogs_UnauthenticatedUser_ReturnsUnauthorized() throws Exception {
             // Act & Assert
             mockMvc.perform(get("/api/admin/audit-logs")
                     .param("page", "0")
                     .param("size", "5"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
             verify(auditLogService, never()).getAuditLogs(any(), any(), any());
         }

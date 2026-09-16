@@ -9,7 +9,12 @@ To ensure the core chess logic remains independent of frameworks, we follow the 
 
 * **Domain Hexagon:** Contains pure Java 17+ logic. **Zero dependencies** on Spring or DB drivers.
 * **Driving Adapters (Input):** REST Controllers and WebSocket (STOMP) handlers.
-* **Driven Adapters (Output):** PostgreSQL persistence (JPA) and Redis caching adapters.
+* **Driven Adapters (Output):**
+    * **Relational Persistence:** PostgreSQL with Spring Data JPA and Liquibase migrations.
+    * **Distributed Cache & Concurrency:** Redis with Redisson distributed locks.
+    * **Identity & Access Management:** Keycloak OAuth2/OIDC Resource Server integration.
+    * **Object Storage:** AWS SDK for Java v2 (S3 Client) adapter supporting local MinIO and Oracle Cloud (OCI) Object Storage.
+    * **AI Sidecar:** Subprocess integration targeting the Stockfish engine via the UCI protocol.
 
 ### 🛡️ DDD & Modern Java Standards
 * **Aggregate Roots:** The `Board` maintains all invariants.
@@ -23,22 +28,22 @@ The frontend (`chess-frontend`) follows a **Modular, Feature-Sliced** approach t
 
 ### 1. Feature-Based Directory Structure
 Instead of grouping by file type, we group by business features and architectural domains:
-* `src/features/chess/`: Real-time chess game engine components, hooks, and types.
-* `src/features/auth/`: Manages JWT storage, login/register logic.
-* `src/features/menu/`: Navigation, dashboards, landing pages, and views.
-* `src/features/admin/`: Administrator control panels and management features.
-* `src/features/user/`: User profile and settings management features.
-* `src/constants/` & `src/routes/`: Global constants, themes, and route protection wrappers.
+* `src/features/chess/`: Real-time chess game engine components, hooks, evaluation bars, and move hint types.
+* `src/features/auth/`: Keycloak OIDC authentication flow, token introspection, guest session lifecycles, and route guards.
+* `src/features/menu/`: Navigation, interactive lobbies, active channel listeners, and landing views.
+* `src/features/admin/`: Administrator control panels and system telemetry oversight.
+* `src/features/user/`: User profiles, ELO progression stats, match distribution charts (Recharts), and avatar management.
+* `src/constants/` & `src/routes/`: Global constants, board theme definitions (`CHESS_THEMES`), and protected routing wrappers.
 
 ### 2. Atomic Design & Component Purity
 * **Atoms:** Low-level elements (Buttons, Square components, Chess Pieces).
-* **Molecules:** Functional groupings (ChessBoard, MoveHistoryTable).
-* **Organisms:** Complex UI sections (GameHUD, Sidebar, ModalDialogs).
+* **Molecules:** Functional groupings (ChessBoard, MoveHistoryTable, ActiveChannelsPanel).
+* **Organisms:** Complex UI sections (CommandCenter, GameHUD, Sidebar, ModalDialogs).
 
 ### 3. Type-Safe Domain Mirroring
 To maintain the **Single Source of Truth (SSOT)**:
-* **Domain Mirroring:** We mirror backend DTOs into TypeScript `interfaces` and `zod` schemas.
-* **WebSocket Client:** Uses a custom service layer to wrap STOMP clients, ensuring incoming game states strictly adhere to our domain models.
+* **Domain Mirroring:** We mirror backend DTOs into TypeScript `interfaces` and validation schemas.
+* **WebSocket Client:** Uses a custom service layer wrapping `@stomp/stompjs` and `sockjs-client`, ensuring incoming game states strictly adhere to domain models.
 
 ---
 
@@ -47,16 +52,17 @@ The bridge between the Hexagon (Backend) and the Components (Frontend):
 
 | Communication | Protocol | Purpose |
 | :--- | :--- | :--- |
-| **Request/Response** | REST API | Authentication, User Profile, Game History. |
-| **Real-time Engine** | WebSocket (STOMP) | Live moves, timer synchronization, opponent status. |
-| **Data Validation** | JSON Schema / Zod | Ensures payload integrity on both ends of the wire. |
+| **Identity & Access** | OAuth2 / OIDC | Token exchange, introspection, and role extraction via Keycloak. |
+| **Request/Response** | REST API (JSON) | Profile management, game history, leaderboards, and S3 presigned avatar URLs. |
+| **Real-time Engine** | WebSocket (STOMP) | Live move broadcasting, timer synchronization, opponent readiness, and telemetry. |
+| **Data Validation** | JSR 380 / TS Schemas | Enforces payload integrity and contract validation across client and server boundaries. |
 
 ---
 
 ## 🧠 Single Source of Truth (SSOT) Philosophy
 The backend is the **sole authority** for game state.
 * The frontend treats UI state as *ephemeral* (temporary).
-* Any move initiated by the user is treated as a "request" until the backend broadcasts the *validated* new board state via WebSocket.
+* Any move initiated by the user is treated as a "request" until the backend validates it, persists changes, and broadcasts the authoritative board state via WebSocket.
 
 ---
-*Note: For infrastructure orchestration, monitoring stacks (Grafana/Prometheus/Loki/Tempo), and database migration details (Liquibase), please refer to [INFRASTRUCTURE.md](./INFRASTRUCTURE.md).*
+*Note: For infrastructure orchestration, monitoring stacks (Grafana/Prometheus/Loki/Tempo), and database migration details (Liquibase), refer to [INFRASTRUCTURE.md](./INFRASTRUCTURE.md).*

@@ -28,17 +28,29 @@ All notable changes to this project will be documented in this file. This projec
 - ✅ **Phase 19: AI Integration & Training Ecosystem (v2.0.0)** 🤖 - Integrating the Stockfish engine via UCI protocol to enable real-time move analysis, blunder detection, and hint mechanisms.
 - ✅ **Phase 20: Enterprise Refactoring & Production Readiness (v2.1.0)** ⚡ - Domain-driven vertical slicing, performance optimization, and rigorous security audits for production deployment.
 - ✅ **Phase 21: Production Deployment & Cloud Demo (v2.2.0)** ☁️ - Provisioning multi-container environments, setting up Vercel static hosting, and deploying the full backend, database, SonarQube, and LGTM observability stack via Docker Compose on Oracle Cloud.
-- ⏳ **Phase 22: Enterprise Data & Identity Management (v2.3.0)** 🔑 - Integrating MinIO object storage for artifacts and Keycloak for centralized OAuth2/OIDC RBAC security.
-- 🔜 **Phase 23: Asynchronous Eventing & Observability (v2.4.0)** ⚡ - Decoupling heavy Stockfish analysis tasks via RabbitMQ and integrating OpenTelemetry with the LGTM stack.
+- ✅ **Phase 22: Enterprise Data & Identity Management (v2.3.0)** 🔑 - Integrating MinIO object storage for artifacts and Keycloak for centralized OAuth2/OIDC RBAC security.
+- ⏳ **Phase 23: Asynchronous Eventing & Observability (v2.4.0)** ⚡ - Decoupling heavy Stockfish analysis tasks via RabbitMQ and integrating OpenTelemetry with the LGTM stack.
 - 🔜 **Phase 24: Quality Assurance & Advanced Scaling (v2.5.0)** 🧪 - Implementing automated Playwright E2E testing, Redis Cluster session synchronization, and local Kubernetes manifests.
 - 🔜 **Phase 25: Final Polish, Strict Typing & UX Refinement (v2.6.0)** 💎 - Enforcing strict TypeScript DTO alignment, resolving runtime micro-bugs, and maximizing interface consistency.
 
 ---
 
-## [2.3.0] - 2026-09-11
+## [2.3.0] - 2026-09-16
 
 ### 📦 Phase 22: Enterprise Data & Identity Management 🗄️ (v2.3.0)
 > **Note:** Decoupling file management via S3-compatible cloud storage (MinIO locally and OCI Object Storage in production) and centralizing IAM authentication via Keycloak OAuth2/OIDC.
+
+- **2026-09-16:**
+    - **Centralize Identity & Access Management with Keycloak OAuth2/OIDC (PR #163 | Issue #157):**
+        - Spun up a local Keycloak IAM service alongside PostgreSQL in `docker-compose.yml` to support modern OIDC authentication and token issuance.
+        - Refactored Spring Security 6 to function as an OAuth2 Resource Server (`spring-boot-starter-oauth2-resource-server`), fully deprecating and removing custom stateless JWT components (`JwtAuthenticationFilter`, `JwtService`).
+        - Implemented `KeycloakRoleConverter` to map `realm_access.roles` claims into Spring Security granted authorities with standard role prefixes (`ROLE_ADMIN`, `ROLE_USER`, `ROLE_GUEST`).
+        - Established an explicit `RoleHierarchy` bean enforcing transitive authority delegation (`ADMIN` ➔ `USER` ➔ `GUEST`).
+        - Introduced `UserSyncService` to automate on-the-fly local `UserEntity` synchronization upon first token authentication, extracting UUIDs, claims, and role assignments.
+        - Updated database schema via Liquibase (`004-make-password-nullable.sql`) to decouple local credential storage for identity-brokered users.
+        - Refactored `AuthService` to delegate authentication, guest token generation, and account creation directly to Keycloak REST Admin/Token APIs.
+        - Updated Nginx proxy rules and application profiles (`application.yaml`, `application-local.yaml`, `application-prod.yaml`, `application-test.yml`) to support Keycloak issuer URIs and JWK cert validation endpoints.
+        - Achieved complete test coverage across modified services and controllers (`KeycloakRoleConverterTest`, `UserSyncServiceTest`, `SecurityConfigTest`, `AuthServiceTest`, `UserServiceTest`, `UserEntityTest`), ensuring full RBAC, rate-limiting edge cases, and token validation adherence under the AAA pattern.
 
 - **2026-09-11:**
     - **Integrate MinIO and AWS S3 SDK for File Operations (PR #158 | Issue #156):**

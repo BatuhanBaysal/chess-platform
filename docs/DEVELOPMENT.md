@@ -32,123 +32,115 @@ chess-platform/
 
 Before starting, ensure the following are installed and configured on your system to maintain a consistent development environment:
 
+* **Container Engine:** [Docker Desktop](https://www.docker.com/) or Docker Engine with Docker Compose (Required for local Keycloak, Redis, MinIO, and PostgreSQL orchestration).
 * **Java Development Kit:** [Amazon Corretto 17](https://aws.amazon.com/corretto/) (Required for Backend)
 * **Build Tool:** [Apache Maven 3.9+](https://maven.apache.org/)
 * **Runtime:** [Node.js (LTS v20+)](https://nodejs.org/) - *Required for React 19 and Vite compatibility.*
 * **Package Manager:** `npm` (comes with Node.js)
-* **Database Server:** [PostgreSQL](https://www.postgresql.org/) (Local instance for data persistence)
 * **IDE:** IntelliJ IDEA (Recommended for Backend) and VS Code (Recommended for Frontend)
 
-### 🗄️ Database Management Tools
-We utilize professional tooling for schema design, administration, and manual query execution:
-* **pgAdmin 4:** Primarily used for PostgreSQL server administration and initial database creation.
-* **DBeaver:** Primary SQL IDE used for advanced schema visualization, complex query execution, and manual data manipulation.
+### 🗄️ Database & Tooling
+* **DBeaver / pgAdmin 4:** Used for PostgreSQL schema visualization and manual query execution.
+* **MinIO Console:** Accessible locally at `http://localhost:9001` (`minioadmin:minioadmin`) for inspecting avatar artifacts and S3 bucket structures.
+* **Keycloak Admin Console:** Accessible locally at `http://localhost:8081` (`admin:admin`) for managing users, roles, and client credentials.
 
 ---
 
 ## 📥 Getting Started
 
 ### 1. Project Initialization
-You can either clone the existing repository or understand the initialization process:
+Clone the repository and prepare your environment:
 
-* **To Clone:**
 ```bash
-  git clone [https://github.com/BatuhanBaysal/chess-platform.git](https://github.com/BatuhanBaysal/chess-platform.git)
-  cd chess-platform
+git clone [https://github.com/BatuhanBaysal/chess-platform.git](https://github.com/BatuhanBaysal/chess-platform.git)
+cd chess-platform
 ```
 
-* **To Initialize from Scratch:**
-  If you are recreating this environment, initialize a **Git Monorepo** and ensure your `.gitignore` excludes both Maven (`target/`, `.mvn/`) and Node (`node_modules/`, `dist/`) build artifacts.
+Create your local `.env` configuration from the provided template:
+```bash
+cp .env.example .env
+```
 
 ---
 
 ### 2. Backend Setup & IDE Configuration
-The backend is built with Spring Boot 3.4.6. Specific IDE settings are mandatory to support Java 17 features like **Sealed Classes**:
+The backend is built with Spring Boot 3.4.6 and Java 17.
 
 #### A. IDE Settings (IntelliJ IDEA)
 1. **Project SDK:** Set to **Amazon Corretto 17** in `Project Structure (Ctrl+Alt+Shift+S)`.
-2. **Language Level:** Set to **"17 - Sealed types, always-strict floating point semantics"**. Without this, the piece hierarchy logic will not compile.
-3. **Maven Home:** Set to **"Bundled (Maven 3)"** in `Settings -> Build Tools -> Maven` to ensure compatibility with the project's build lifecycle.
+2. **Language Level:** Set to **"17 - Sealed types, always-strict floating point semantics"**.
+3. **Maven Home:** Set to **"Bundled (Maven 3)"** in `Settings -> Build Tools -> Maven`.
+4. **EnvFile Plugin:** Install the IntelliJ `EnvFile` plugin and load the root `.env` file into your Spring Boot run configuration to supply database and Keycloak credentials seamlessly.
 
-#### B. Database Preparation
-1. Open **pgAdmin 4** and create a new database named `chess_db`.
-2. Use **DBeaver** to connect to your local PostgreSQL instance and verify the connection.
-3. **Environment Configuration:**
-    * Locate the `.env.example` file in the **root directory**.
-    * Create a copy named `.env` in the same **root directory**.
-    * Fill in your local credentials (`CHESS_DB_URL`, `CHESS_DB_USERNAME`, `CHESS_DB_PASSWORD`).
-    * *Note: The application is configured to read these variables from the root during runtime.*
+#### B. Running Dependent Services via Docker
+Before starting the backend in your IDE, start the dependent infrastructure services:
 
-#### C. Spring Profiles & Logic
-The application manages environments through profiles:
-* **`dev` (Default):** Connects to your local **PostgreSQL** using the root `.env` credentials.
-* **`test`:** Automatically activated during `./mvnw test`. It uses an **H2 In-memory database** for isolated and side-effect-free testing.
+```bash
+docker compose --profile core up -d db redis keycloak
+```
 
-#### D. Build Command
+#### C. Build & Test Command
 ```bash
 cd chess-backend
 ./mvnw clean install
 ```
 
-### 3. Frontend Setup
-The frontend is a modern React 19 application built with **Vite** and **TypeScript**.
+---
 
-#### A. Initial Setup (Manual or Cloned)
-To install the necessary dependencies and initialize the environment:
+### 3. Frontend Setup
+The frontend is built with React 19, Vite, and TypeScript.
+
 ```bash
 cd chess-frontend
 npm install
 ```
 
-#### B. Manual Initialization (If from Scratch)
-If you are recreating the frontend folder independently:
-1. Run the Vite initialization command: `npm create vite@latest chess-frontend -- --template react-ts`
-2. Follow the Tailwind CSS integration guide to set up `tailwind.config.js` and `postcss.config.js`.
-
 ---
 
-## 🚦 Running the Application
+## 🚦 Running the Application Locally
 
 ### Execution Order
-To ensure the full-stack ecosystem functions correctly, always start the Backend first. This allows the WebSocket server and API endpoints to be available before the UI attempts to establish a connection.
+Always ensure infrastructure services are healthy before starting the services.
 
-1. **Start Backend:**
+1. **Start Core Infrastructure:**
+```bash
+   docker compose --profile core up -d db redis keycloak
+```
+
+2. **Start Backend:**
 ```bash
    cd chess-backend
    ./mvnw spring-boot:run
 ```
-
 * **API Base URL:** `http://localhost:8080`
-* **Swagger UI:** `http://localhost:8080/swagger-ui.html` (Use this for API exploration and manual testing)
+* **Swagger UI:** `http://localhost:8080/swagger-ui.html`
+* **Actuator Health:** `http://localhost:8080/actuator/health`
 
-2. **Start Frontend:**
+3. **Start Frontend:**
 ```bash
    cd chess-frontend
    npm run dev
 ```
-* **Web URL:** `http://localhost:5173`
-    * **Real-time Engine:** Game state synchronization is managed via STOMP over WebSockets.
+* **Web Client:** `http://localhost:5173`
 
 ---
 
 ## 🐳 Docker Orchestration
 
-We utilize `docker-compose.yml` for infrastructure orchestration. To optimize system resources and internet bandwidth during daily development, we use **Docker Profiles**.
+We utilize `docker-compose.yml` with segmented profiles to manage local dependencies and parity with production.
 
-### 🚀 Running the System
-
-Depending on your current needs, you can choose one of the following commands:
+### 🚀 Running with Docker Compose
 
 #### 1. Core Development Mode (Recommended)
-Starts only the essential services (Backend, Frontend, PostgreSQL, Redis). This is the fastest way to start coding while saving system resources.
+Starts all essential services including the App container, PostgreSQL, Redis, and Keycloak:
 ```bash
 docker compose --profile core up -d
 ```
 
-#### 2. Full Ecosystem Mode
-Starts all services, including the entire LGTM monitoring stack (Loki, Prometheus, Promtail, Tempo) and Sonarqube for deep analysis and QA.
+#### 2. Full Ecosystem Mode (Local Storage + Monitoring)
+Starts the core stack alongside local MinIO object storage and the entire LGTM monitoring stack (Loki, Grafana, Tempo, Prometheus, Promtail):
 ```bash
-docker compose --profile core --profile monitoring up -d
+docker compose --profile core --profile storage-local --profile monitoring up -d
 ```
 
 ### 🛠 Docker Management
@@ -160,8 +152,8 @@ docker compose ps
 
 * **View Service Logs:**
 ```bash
-# Follow logs for a specific service (e.g., backend)
-docker compose logs -f chess-backend
+# Follow logs for the backend service
+docker compose logs -f backend
 ```
 
 * **Stop and Clean Up:**
@@ -169,43 +161,29 @@ docker compose logs -f chess-backend
 docker compose down
 ```
 
-> **Note:** When running via Docker, your services will be accessible on the ports defined in `docker-compose.yml`. Use the `core` profile for daily tasks to minimize CPU/RAM usage and avoid unnecessary internet traffic.
-
 ---
 
 ## 🤖 CI/CD Pipeline & Automated Testing
 
-This project utilizes **GitHub Actions** to maintain high code quality and ensure a regression-free development environment.
+This project utilizes **GitHub Actions** defined in [**ci.yml**](../.github/workflows/ci.yml) to maintain high code quality and prevent regressions:
 
-### 🛡️ Continuous Integration (CI)
-Every time a commit is pushed or a Pull Request is opened, the project’s digital guardian—defined in [**ci.yml**](../.github/workflows/ci.yml)—automatically triggers:
-
-1.  **Backend Integrity Check:**
+1. **Backend Integrity Check:**
     * Sets up **Amazon Corretto 17**.
-    * Executes `mvn clean install` to ensure the Spring Boot application compiles and all unit tests pass.
-    * Uses Maven caching to optimize build times.
+    * Executes `mvn clean install` to ensure code compiles and all unit/integration tests pass.
+    * Utilizes Maven dependency caching to optimize execution times.
 
-2.  **Frontend Integrity Check:**
+2. **Frontend Integrity Check:**
     * Sets up **Node.js v20**.
-    * Executes `npm ci` for a clean, lock-file-consistent installation.
-    * Runs `npm run build` to verify the React production bundle.
-
-### 🚦 Why This Matters?
-* **Early Failure:** Catching syntax or logic errors before they reach the `main` branch.
-* **Clean Build Guarantee:** Ensures the project is not "machine-dependent" and runs perfectly on a standard Linux environment.
-* **Automated Testing:** Validates that new features (e.g., a new Piece move) do not break existing chess rules.
+    * Runs `npm ci` for lockfile consistency.
+    * Executes `npm run build` to verify the React production bundle.
 
 ---
 
 ## 🧪 Quality & Standards
 
-* **Testing Strategy:** Run `./mvnw test` for the Backend. We utilize an **H2 In-memory database** for automated testing to ensure a "side-effect free" environment that does not interfere with your local PostgreSQL data.
-* **Java Standards:** We strictly utilize **Sealed Classes** for the piece hierarchy and **Records** for immutable Data Transfer Objects (DTOs), ensuring modern, type-safe, and clean code.
-* **Workflow:** Refer to the [**Git Guide**](GIT_GUIDE.md) for detailed information on branching strategy and commit conventions before pushing any changes.
-
-### 💡 Troubleshooting
-* **Port 8080 already in use?** If the backend fails to start, ensure no other instance is running: `lsof -i :8080 | grep LISTEN | awk '{print $2}' | xargs kill -9`
-* **Node version error?** If you have multiple Node versions, ensure you are using v20+ with `node -v`.
+* **Testing Strategy:** Run `./mvnw test` for the backend. We use an **H2 In-memory database** for automated testing to ensure a side-effect-free test lifecycle without modifying local databases.
+* **Java Standards:** Sealed classes are strictly enforced for the chess piece hierarchy and records for immutable DTOs and state snapshots.
+* **Workflow:** Refer to the [**Git Guide**](GIT_GUIDE.md) for branching standards and conventional commit formats.
 
 ---
 *Maintained with a focus on Engineering Discipline and Scalable Design.*

@@ -54,6 +54,8 @@ services:
             CHESS_DB_PASSWORD: ${CHESS_DB_PASSWORD}
             CHESS_REDIS_HOST: redis
             CHESS_REDIS_PORT: 6379
+            RABBITMQ_HOST: rabbitmq
+            RABBITMQ_PORT: 5672
             CHESS_JWT_SECRET: ${CHESS_JWT_SECRET}
             CHESS_JWT_EXPIRATION: ${CHESS_JWT_EXPIRATION}
             ADMIN_USERNAME: ${ADMIN_USERNAME}
@@ -78,6 +80,8 @@ services:
             redis:
                 condition: service_healthy
             keycloak:
+                condition: service_healthy
+            rabbitmq:
                 condition: service_healthy
         healthcheck:
             test: [ "CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1" ]
@@ -242,6 +246,27 @@ services:
             retries: 15
             start_period: 30s
 
+    rabbitmq:
+        image: rabbitmq:3-management-alpine
+        profiles: [ "core" ]
+        container_name: chess-rabbitmq
+        restart: always
+        ports:
+            - "5672:5672"
+            - "15672:15672"
+        environment:
+            RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-guest}
+            RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+        volumes:
+            - rabbitmq_data:/var/lib/rabbitmq
+        networks:
+            - chess-network
+        healthcheck:
+            test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
 networks:
     chess-network:
         driver: bridge
@@ -251,3 +276,4 @@ volumes:
     prometheus_data:
     grafana_data:
     minio_data:
+    rabbitmq_data:

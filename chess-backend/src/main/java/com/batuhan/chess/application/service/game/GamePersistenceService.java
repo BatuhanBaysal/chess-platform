@@ -1,6 +1,7 @@
 package com.batuhan.chess.application.service.game;
 
 import com.batuhan.chess.api.config.audit.AuditableAction;
+import com.batuhan.chess.api.dto.game.GameAnalysisMessage;
 import com.batuhan.chess.api.controller.GameWebSocketController;
 import com.batuhan.chess.domain.model.chess.Game;
 import com.batuhan.chess.domain.model.chess.GameStatus;
@@ -36,6 +37,7 @@ public class GamePersistenceService {
     private final GameWebSocketController webSocketController;
     private final GameService self;
     private final GamePersistenceService persistenceSelf;
+    private final GameEventProducer gameEventProducer;
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
 
@@ -45,6 +47,7 @@ public class GamePersistenceService {
                                   GameSessionManager sessionManager,
                                   GameTimerService timerService,
                                   GameWebSocketController webSocketController,
+                                  GameEventProducer gameEventProducer,
                                   @Lazy GameService self,
                                   @Lazy GamePersistenceService persistenceSelf) {
         this.gameRepository = gameRepository;
@@ -53,6 +56,7 @@ public class GamePersistenceService {
         this.sessionManager = sessionManager;
         this.timerService = timerService;
         this.webSocketController = webSocketController;
+        this.gameEventProducer = gameEventProducer;
         this.self = self;
         this.persistenceSelf = persistenceSelf;
     }
@@ -82,12 +86,30 @@ public class GamePersistenceService {
             applyEloChanges(white, black, result, history);
             gameRepository.saveAndFlush(history);
 
+            sendGameAnalysisEvent(gameId, game);
+
             webSocketController.broadcastGameUpdate(gameId, game);
             webSocketController.sendGameOver(gameId, result);
             scheduler.schedule(() -> persistenceSelf.cleanupSession(gameId), 30, TimeUnit.SECONDS);
         } catch (Exception e) {
             log.error("Critical error saving finished game {}: {}", gameId, e.getMessage(), e);
             throw e;
+        }
+    }
+
+    private void sendGameAnalysisEvent(String gameId, Game game) {
+        try {
+            GameAnalysisMessage analysisMessage = new GameAnalysisMessage(
+                gameId,
+                null,
+                game.getMoveHistory(),
+                game.getWhitePlayerId(),
+                game.getBlackPlayerId()
+            );
+            gameEventProducer.sendGameForAnalysis(analysisMessage);
+            log.info("GAME_ACTION: Game analysis successfully queued via RabbitMQ for game ID: {}", gameId);
+        } catch (Exception e) {
+            log.error("Failed to send game analysis event to RabbitMQ for game ID: {}", gameId, e);
         }
     }
 

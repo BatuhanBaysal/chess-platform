@@ -1,5 +1,6 @@
 package com.batuhan.chess.application.service.game;
 
+import com.batuhan.chess.api.dto.game.GameAnalysisMessage;
 import com.batuhan.chess.api.dto.game.GameResponse;
 import com.batuhan.chess.api.dto.game.HintResponse;
 import com.batuhan.chess.api.dto.lobby.GameRoomResponse;
@@ -25,6 +26,7 @@ public class GameService {
     private final GamePersistenceService persistenceService;
     private final LobbyService lobbyService;
     private final GameBroadcastManager broadcastManager;
+    private final GameEventProducer gameEventProducer;
 
     private static final int DEFAULT_TIME_LIMIT = 10;
 
@@ -129,7 +131,21 @@ public class GameService {
                 timerService.determineResult(game, game.getStatus()),
                 game.getStatus()
             );
-            log.info("GAME_ACTION: Game successfully finished and saved to database: {}", gameId);
+
+            try {
+                GameAnalysisMessage analysisMessage = new GameAnalysisMessage(
+                    gameId,
+                    null,
+                    game.getMoveHistory(),
+                    game.getWhitePlayerId(),
+                    game.getBlackPlayerId()
+                );
+                gameEventProducer.sendGameForAnalysis(analysisMessage);
+            } catch (Exception e) {
+                log.error("Failed to send game analysis event to RabbitMQ for game ID: {}", gameId, e);
+            }
+
+            log.info("GAME_ACTION: Game successfully finished, saved to database, and analysis queued: {}", gameId);
         }
         return true;
     }

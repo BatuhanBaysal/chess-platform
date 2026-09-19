@@ -40,6 +40,9 @@ public class GameSessionManager {
     }
 
     public Game getGame(String gameId) {
+        if (gameId == null) {
+            return null;
+        }
         return activeGames.get(gameId);
     }
 

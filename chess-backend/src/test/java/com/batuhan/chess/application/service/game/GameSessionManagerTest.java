@@ -60,6 +60,13 @@ class GameSessionManagerTest {
             assertThat(sessionManager.getPlayerHeartbeats()).doesNotContainKey(gameId);
             assertThat(sessionManager.getLastBroadcastTimes()).doesNotContainKey(gameId);
         }
+
+        @Test
+        @DisplayName("Should return null when getting game with null ID")
+        void shouldReturnNullForNullGameId() {
+            // Act & Assert
+            assertThat(sessionManager.getGame(null)).isNull();
+        }
     }
 
     @Nested
@@ -86,7 +93,7 @@ class GameSessionManagerTest {
         @DisplayName("Should consider AI game started immediately when single player is ready")
         void shouldEvaluateAiGameStarted() {
             // Arrange
-            sessionManager.createNewGameWithPlayers(gameId, whiteId, -1L, 10); // AI Game
+            sessionManager.createNewGameWithPlayers(gameId, whiteId, -1L, 10);
             Game game = sessionManager.getGame(gameId);
             game.setBlackPlayerId(-1L);
 
@@ -111,6 +118,13 @@ class GameSessionManagerTest {
             sessionManager.getGame(gameId).setStatus(GameStatus.CHECKMATE);
             assertThat(sessionManager.getActiveGameIdByUserId(whiteId)).isNull();
         }
+
+        @Test
+        @DisplayName("Should return null when active game ID is not found for given user ID")
+        void shouldReturnNullWhenActiveGameIdNotFound() {
+            // Act & Assert
+            assertThat(sessionManager.getActiveGameIdByUserId(999L)).isNull();
+        }
     }
 
     @Nested
@@ -128,6 +142,14 @@ class GameSessionManagerTest {
             assertThat(heartbeats).containsKey(gameId);
             assertThat(heartbeats.get(gameId)).containsKey(whiteId);
             assertThat(heartbeats.get(gameId).get(whiteId)).isLessThanOrEqualTo(System.currentTimeMillis());
+        }
+
+        @Test
+        @DisplayName("Should handle null parameters gracefully in recordHeartbeat")
+        void shouldHandleNullParametersInHeartbeat() {
+            // Act & Assert
+            sessionManager.recordHeartbeat(null, null);
+            assertThat(sessionManager.getPlayerHeartbeats()).isEmpty();
         }
     }
 }

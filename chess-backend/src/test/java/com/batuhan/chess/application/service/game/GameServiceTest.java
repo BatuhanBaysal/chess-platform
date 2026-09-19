@@ -1,5 +1,6 @@
 package com.batuhan.chess.application.service.game;
 
+import com.batuhan.chess.api.dto.game.GameAnalysisMessage;
 import com.batuhan.chess.api.dto.game.GameResponse;
 import com.batuhan.chess.api.dto.game.HintResponse;
 import com.batuhan.chess.domain.model.chess.Game;
@@ -47,6 +48,9 @@ class GameServiceTest {
 
     @Mock
     private StockfishService stockfishService;
+
+    @Mock
+    private GameEventProducer gameEventProducer;
 
     @InjectMocks
     private GameService gameService;
@@ -260,6 +264,32 @@ class GameServiceTest {
             // Assert
             assertThat(finished).isTrue();
             verify(persistenceService, never()).processGameFinish(anyString(), any(), any());
+        }
+
+        @Test
+        @DisplayName("Should send game analysis event to producer when active game finishes")
+        void shouldSendAnalysisEventWhenActiveGameFinishes() {
+            // Arrange
+            String gameId = "room123";
+            Game game = mock(Game.class);
+            GameStatus status = mock(GameStatus.class);
+            GameResult result = GameResult.WHITE_WIN;
+
+            when(sessionManager.getGame(gameId)).thenReturn(game);
+            when(game.getStatus()).thenReturn(status);
+            when(status.isFinished()).thenReturn(false);
+            when(timerService.determineResult(game, status)).thenReturn(result);
+            when(game.getMoveHistory()).thenReturn(List.of("e4", "e5"));
+            when(game.getWhitePlayerId()).thenReturn(1L);
+            when(game.getBlackPlayerId()).thenReturn(2L);
+
+            // Act
+            boolean finished = gameService.finishGameIfActive(gameId);
+
+            // Assert
+            assertThat(finished).isTrue();
+            verify(persistenceService, times(1)).processGameFinish(gameId, result, status);
+            verify(gameEventProducer, times(1)).sendGameForAnalysis(any(GameAnalysisMessage.class));
         }
     }
 }

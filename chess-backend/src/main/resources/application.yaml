@@ -37,6 +37,12 @@ spring:
             host: ${CHESS_REDIS_HOST:localhost}
             port: ${CHESS_REDIS_PORT:6379}
 
+    rabbitmq:
+        host: ${RABBITMQ_HOST:localhost}
+        port: ${RABBITMQ_PORT:5672}
+        username: ${RABBITMQ_USERNAME:guest}
+        password: ${RABBITMQ_PASSWORD:guest}
+
 logging:
     level:
         root: INFO

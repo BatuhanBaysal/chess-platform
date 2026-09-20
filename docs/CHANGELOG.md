@@ -35,6 +35,22 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [2.4.0] - 2026-09-19
+
+### 📦 Phase 23: Asynchronous Eventing & Observability ⚡ (v2.4.0)
+> **Note:** Decoupling heavy Stockfish analysis tasks via RabbitMQ and integrating OpenTelemetry with the LGTM stack.
+
+- **2026-09-19:**
+    - **Introduce Asynchronous Post-Game Analysis Using RabbitMQ (PR #167 | Issue #164):**
+        - Configured RabbitMQ topic exchange (`chess.game.exchange`), durable queues (`chess.game.analysis.queue`), and bindings via `RabbitMQConfig` alongside standard JSON message converters.
+        - Implemented `GameAnalysisMessage` DTO record containing game metadata, PGN, move history, and player identifiers.
+        - Created `GameEventProducer` to dispatch game analysis events asynchronously upon match completion without blocking core threads.
+        - Developed `GameEventConsumer` annotated with `@RabbitListener` to handle background Stockfish engine evaluations safely and robustly.
+        - Refactored `GamePersistenceService` and `GameService` to offload resource-intensive evaluation tasks, keeping real-time WebSocket gameplay responsive under high load.
+        - Added comprehensive unit tests (`RabbitMQConfigTest`, `GameAnalysisMessageTest`, `GameEventProducerTest`, `GameEventConsumerTest`, updated `GamePersistenceServiceTest`, `GameServiceTest`, and `GameSessionManagerTest`) following AAA patterns and `@Nested` hierarchies.
+
+---
+
 ## [2.3.0] - 2026-09-16
 
 ### 📦 Phase 22: Enterprise Data & Identity Management 🗄️ (v2.3.0)

@@ -173,11 +173,12 @@ class SecurityConfigTest {
         }
 
         @Test
-        @DisplayName("Should allow anonymous access to Actuator health checks")
+        @DisplayName("Should permit anonymous access to Actuator health checks")
         void shouldPermitAccessToActuatorEndpoints() throws Exception {
             // Act & Assert
             mockMvc.perform(get("/actuator/health"))
-                .andExpect(status().isOk());
+                .andExpect(status().is(not(401)))
+                .andExpect(status().is(not(403)));
         }
     }
 

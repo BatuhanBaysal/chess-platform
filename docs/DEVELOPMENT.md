@@ -52,7 +52,7 @@ Before starting, ensure the following are installed and configured on your syste
 Clone the repository and prepare your environment:
 
 ```bash
-git clone [https://github.com/BatuhanBaysal/chess-platform.git](https://github.com/BatuhanBaysal/chess-platform.git)
+git clone https://github.com/BatuhanBaysal/chess-platform.git
 cd chess-platform
 ```
 

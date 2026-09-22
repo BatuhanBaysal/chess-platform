@@ -29,16 +29,22 @@ All notable changes to this project will be documented in this file. This projec
 - ✅ **Phase 20: Enterprise Refactoring & Production Readiness (v2.1.0)** ⚡ - Domain-driven vertical slicing, performance optimization, and rigorous security audits for production deployment.
 - ✅ **Phase 21: Production Deployment & Cloud Demo (v2.2.0)** ☁️ - Provisioning multi-container environments, setting up Vercel static hosting, and deploying the full backend, database, SonarQube, and LGTM observability stack via Docker Compose on Oracle Cloud.
 - ✅ **Phase 22: Enterprise Data & Identity Management (v2.3.0)** 🔑 - Integrating MinIO object storage for artifacts and Keycloak for centralized OAuth2/OIDC RBAC security.
-- ⏳ **Phase 23: Asynchronous Eventing & Observability (v2.4.0)** ⚡ - Decoupling heavy Stockfish analysis tasks via RabbitMQ and integrating OpenTelemetry with the LGTM stack.
-- 🔜 **Phase 24: Quality Assurance & Advanced Scaling (v2.5.0)** 🧪 - Implementing automated Playwright E2E testing, Redis Cluster session synchronization, and local Kubernetes manifests.
+- ✅ **Phase 23: Asynchronous Eventing & Observability (v2.4.0)** ⚡ - Decoupling heavy Stockfish analysis tasks via RabbitMQ and integrating OpenTelemetry with the LGTM stack.
+- ⏳ **Phase 24: Quality Assurance & Advanced Scaling (v2.5.0)** 🧪 - Implementing automated Playwright E2E testing, Redis Cluster session synchronization, and local Kubernetes manifests.
 - 🔜 **Phase 25: Final Polish, Strict Typing & UX Refinement (v2.6.0)** 💎 - Enforcing strict TypeScript DTO alignment, resolving runtime micro-bugs, and maximizing interface consistency.
 
 ---
 
-## [2.4.0] - 2026-09-19
+## [2.4.0] - 2026-09-21
 
 ### 📦 Phase 23: Asynchronous Eventing & Observability ⚡ (v2.4.0)
 > **Note:** Decoupling heavy Stockfish analysis tasks via RabbitMQ and integrating OpenTelemetry with the LGTM stack.
+
+- **2026-09-21:**
+    - **Attach OpenTelemetry Java Agent for LGTM Stack Integration (PR #168 | Issue #165):**
+        - Configured `Dockerfile` to automatically download and attach the OpenTelemetry Java Agent (`opentelemetry-javaagent.jar`) during runtime initialization.
+        - Updated `application.yaml` and `application-local.yaml` configurations to enable distributed tracing and set OTLP tracing endpoints (`MANAGEMENT_OTLP_TRACING_ENDPOINT`) pointing to the local Tempo collector.
+        - Integrated backend logging patterns with trace/span context identifiers to seamlessly correlate application logs with distributed traces via Loki and Tempo in the local Grafana monitoring dashboard.
 
 - **2026-09-19:**
     - **Introduce Asynchronous Post-Game Analysis Using RabbitMQ (PR #167 | Issue #164):**

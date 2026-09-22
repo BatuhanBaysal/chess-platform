@@ -1,11 +1,11 @@
 # ♟️ Chess Platform
 
-> *A Full-Stack Chess Ecosystem Featuring Server-Authoritative Logic, AI Integration, and Hybrid Cloud Production Deployment.*
+> *A Full-Stack Chess Ecosystem Featuring Server-Authoritative Logic, AI Integration, Asynchronous Eventing, and Hybrid Cloud Production Deployment.*
 
-![Status](https://img.shields.io/badge/Status-Active-brightgreen) ![Version](https://img.shields.io/badge/Version-v2.3.0-blue) ![License](https://img.shields.io/badge/License-MIT-yellow)
+![Status](https://img.shields.io/badge/Status-Active-brightgreen) ![Version](https://img.shields.io/badge/Version-v2.4.0-blue) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ## 🛠️ Tech Stack
-* **Backend:** Java 17 • Spring Boot 3.4 • Spring Security • OAuth2 / Keycloak • WebSocket (STOMP) • Spring Data JPA • Liquibase • AWS SDK S3 • Resilience4j • Redisson
+* **Backend:** Java 17 • Spring Boot 3.4 • Spring Security • OAuth2 / Keycloak • WebSocket (STOMP) • Spring Data JPA • Liquibase • AWS SDK S3 • Resilience4j • Redisson • RabbitMQ
 * **Frontend:** React 19 • TypeScript • Vite • Tailwind CSS • React Router • SockJS / STOMP • Recharts • DnD Kit
 * **Infrastructure & Data:** PostgreSQL 15 • Redis 7 • MinIO • Docker Compose • Oracle Cloud (OCI) • Vercel
 * **Observability:** Prometheus • Grafana • Loki • Tempo • Promtail • OpenTelemetry
@@ -20,7 +20,7 @@
 
 * **Identity & RBAC:** Centralized authentication via **Keycloak (OAuth2/OIDC Resource Server)** with fine-grained Role-Based Access Control and admin dashboards.
 * **Pure In-House Rule Engine:** FIDE-compliant chess logic (Castling, En Passant, Promotion) developed natively in Java with zero third-party rule dependencies.
-* **Event-Driven Multiplayer:** Low-latency bidirectional WebSocket pipelines for instant move replication and session reconnection.
+* **Event-Driven Multiplayer & Asynchronous Analytics:** Low-latency bidirectional WebSocket pipelines combined with **RabbitMQ** message brokers to decouple heavy Stockfish post-game analysis from core gameplay threads.
 * **Stockfish AI Sidecar:** Integrated UCI-compliant engine for AI match play and live centipawn/mate evaluation telemetry.
 * **Hybrid Storage Architecture:** Decoupled avatar and artifact storage supporting local MinIO and cloud-native OCI Object Storage via standard S3 SDK abstractions.
 
@@ -28,12 +28,12 @@
 
 ## 🏗️ Engineering Highlights
 
-* **🧩 Clean / Hexagonal Architecture:** Strict separation between core domain rules, application use cases, and infrastructure adapters (Spring Boot, Keycloak, S3, PostgreSQL).
+* **🧩 Clean / Hexagonal Architecture:** Strict separation between core domain rules, application use cases, and infrastructure adapters (Spring Boot, Keycloak, S3, PostgreSQL, RabbitMQ).
 * **🧠 UCI Engine Sidecar & Throttling:** Thread-safe Stockfish subprocess management with throttled state broadcasting (`150ms`) to protect WebSocket throughput under heavy telemetry.
 * **⚡ Resilient Concurrency & Recovery:** Server-authoritative state machine enforcing optimistic locking and deterministic session recovery for dropped connections.
-* **🔄 Full-Stack Observability:** Distributed tracing, metric collection, and structured logging unified across the **LGTM stack** (Loki, Grafana, Tempo, Prometheus).
+* **🔄 Full-Stack Observability & Tracing:** Distributed tracing via **OpenTelemetry Java Agent**, metric collection, and structured logging unified across the **LGTM stack** (Loki, Grafana, Tempo, Prometheus).
 * **🖥️ Modern React 19 Frontend:** State-driven UI built with React 19, TypeScript, and Tailwind CSS for responsive board rendering and match interactions.
-* **🏆 Quality Gates & Testing:** CI/CD pipeline enforcing automated AAA unit/integration test suites (**74.0% coverage** across 384 tests).
+* **🏆 Quality Gates & Testing:** CI/CD pipeline enforcing automated AAA unit/integration test suites (**74.0% coverage** across comprehensive test scenarios).
 * **🌐 Production Cloud Deployment:**
     * **Frontend:** Deployed globally on Vercel for high-speed edge delivery.
     * **Backend & Infrastructure:** Containerized via Docker Compose on Oracle Cloud Infrastructure (ARM/Ampere VPS) with DuckDNS dynamic routing.

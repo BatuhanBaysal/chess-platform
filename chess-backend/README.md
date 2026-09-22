@@ -1,11 +1,8 @@
 # ♟️ Chess Platform - Backend
 
-![Java 17](https://img.shields.io/badge/Java-17-orange?style=flat-square&logo=openjdk&logoColor=white)
-![Spring Boot 3.4.6](https://img.shields.io/badge/Spring_Boot-3.4.6-green?style=flat-square&logo=springboot&logoColor=white)
-![JUnit 5](https://img.shields.io/badge/JUnit_5-C2185B?style=flat-square&logo=junit5&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![Java 17](https://img.shields.io/badge/Java-17-orange?style=flat-square&logo=openjdk&logoColor=white) ![Spring Boot 3.4.6](https://img.shields.io/badge/Spring_Boot-3.4.6-green?style=flat-square&logo=springboot&logoColor=white) ![JUnit 5](https://img.shields.io/badge/JUnit_5-C2185B?style=flat-square&logo=junit5&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
 
-The core engine of the Chess Platform, built with **Domain-Driven Design (DDD)**, **Hexagonal (Ports & Adapters) Architecture**, and enterprise-grade concurrency controls. It provides a high-concurrency, resilient environment for real-time chess gameplay.
+The core engine of the Chess Platform, built with Domain-Driven Design (DDD), Hexagonal (Ports & Adapters) Architecture, and production-grade concurrency controls. It provides a high-concurrency, resilient environment for real-time chess gameplay.
 
 ---
 
@@ -16,7 +13,7 @@ I developed this backend to create a "Single Source of Truth" (SSOT) that ensure
 * **Chess Engine Core:** Designed a pure Java, framework-agnostic FIDE-compliant engine featuring sealed classes, deep-copy board simulations, and robust rule validations (castling, en passant, promotion).
 * **Concurrency & Transaction Boundaries:** Enforced strict transaction boundaries, ACID compliance, and **Redisson distributed locks** to prevent race conditions during simultaneous lobby actions and move requests.
 * **Real-Time Architecture:** Built a hybrid REST and WebSocket (STOMP/SockJS) architecture with throttled broadcasting and central `@MessageExceptionHandler` error management.
-* **Resilience & Security:** Integrated Resilience4j (Rate Limiter), Spring Security 6 stateless JWT authentication with Role Hierarchy, and AOP-based centralized audit logging.
+* **Resilience & Security:** Integrated Resilience4j (Rate Limiter), Keycloak OAuth2/OIDC Resource Server with Spring Security 6 Role Hierarchy, and AOP-based centralized audit logging.
 
 ---
 
@@ -49,7 +46,7 @@ The project leverages industry-standard libraries to provide a robust, resilient
 | **Configuration** | spring-dotenv | Environment variable injection and configuration isolation. |
 | **Chess Engine** | Stockfish UCI (ProcessBuilder) | Asynchronous AI opponent integration and position evaluation. |
 | **Database & Migration** | PostgreSQL, Liquibase | Schema versioning, migrations, and relational persistence. |
-| **Security** | Spring Security 6, JJWT | Stateless JWT authentication, role hierarchies, and BCrypt encryption. |
+| **Security & IAM** | Spring Security 6, Keycloak (OAuth2/OIDC) | Centralized IAM, token validation via JWK set URI, and role hierarchies. |
 | **Resilience & Fault Tolerance** | Resilience4j | Fault tolerance, circuit breakers, rate limiters, and micrometer integration. |
 | **Distributed Systems** | Redisson (Redis) | Distributed locking and thread safety. |
 | **Observability** | Micrometer, Prometheus, OpenTelemetry | System metrics, tracing, and health monitoring. |
@@ -64,6 +61,7 @@ The project leverages industry-standard libraries to provide a robust, resilient
 * Maven 3.9+
 * PostgreSQL 15+
 * Redis 7+
+* Keycloak 24+
 * Docker & Docker Compose
 
 ### Configuration
@@ -75,7 +73,8 @@ Create a `.env` file in the root directory using the template below. The applica
 CHESS_DB_URL=jdbc:postgresql://localhost:5432/chess_db
 CHESS_DB_USERNAME=postgres
 CHESS_DB_PASSWORD=your_password
-CHESS_JWT_SECRET=your_jwt_secret_key
+KEYCLOAK_ISSUER_URI=http://localhost:8081/realms/chess-realm
+KEYCLOAK_GUEST_CLIENT_SECRET=your_guest_client_secret
 REDIS_HOST=localhost
 REDIS_PORT=6379
 ```
@@ -93,8 +92,8 @@ You can run the application directly using the local profile:
 ### Running with Docker Compose
 We utilize a multi-stage Docker build (maven:3.9-eclipse-temurin-17 to eclipse-temurin:17-jre-alpine) to minimize image size and maximize runtime security.
 ```bash
-# Build and start services (Backend, PostgreSQL, Redis, and Observability stack) in detached mode
-docker-compose up -d --build backend
+# Build and start services (Core stack, Keycloak IAM, Observability stack, and Local Storage) in detached mode
+docker compose --profile core --profile iam --profile monitoring --profile storage-local up --build -d
 ```
 
 ---
@@ -145,7 +144,7 @@ src/main/
 │   │   └── exception/                  # Global API error handlers (@RestControllerAdvice)
 │   ├── application.service/            # Application Layer: Use case orchestration
 │   │   ├── admin/                      # Administrative use cases & audits
-│   │   ├── auth/                       # Identity, JWT, and guest session handling
+│   │   ├── auth/                       # Identity synchronization and Keycloak delegation
 │   │   ├── game/                       # Game session coordination, Stockfish, & Redisson locks
 │   │   └── user/                       # User profile and account management services
 │   ├── domain/                         # Domain Layer: Pure business logic
@@ -186,12 +185,13 @@ src/test/
 ## ⚠️ Troubleshooting
 * **Database Connection:** Verify that PostgreSQL is running and your `CHESS_DB_URL` in `.env` is reachable.
 * **Redis Failures:** Ensure the Redis server is active, as it is required for distributed locking.
-* **JWT Authentication:** If you receive 403 errors, verify that `CHESS_JWT_SECRET` is correctly set and the token is valid.
+* **Keycloak / OAuth2 Authentication:** If you receive 403 errors, verify that Keycloak is running, the KEYCLOAK_ISSUER_URI is correctly configured, and tokens contain valid realm_access.roles.
 
 ---
 
 ## 📝 Credits
 * **Spring Boot:** Core framework for building production-ready applications.
+* **Keycloak:** Open Source Identity and Access Management.
 * **Resilience4j:** Fault tolerance and circuit breaking.
 * **Redisson:** Redis-based distributed locking and data structures.
 * **Liquibase:** Database schema management and versioning.

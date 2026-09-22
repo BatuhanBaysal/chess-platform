@@ -78,10 +78,11 @@ The project leverages industry-standard libraries to provide a type-safe, perfor
 | Category | Technology | Purpose |
 | :--- | :--- | :--- |
 | **Core** | React 19, TypeScript | Type-safe UI logic and component architecture. |
-| **Styling** | Tailwind CSS, Framer Motion | Fluid layouts and reactive UI animations. |
-| **Communication** | Stomp.js, SockJS | Real-time WebSocket synchronization with backend. |
-| **State** | TanStack Query, Zustand | Server-state management and atomic local state. |
-| **Architecture** | Custom Hooks, Zod | Domain logic isolation and schema validation. |
+| **Styling** | Tailwind CSS | Fluid layouts and responsive styling. |
+| **Communication** | Stomp.js, SockJS, Axios | Real-time WebSocket synchronization and REST API client. |
+| **Routing & UI** | React Router, Lucide React, Recharts | Client-side navigation, iconography, and performance analytics charts. |
+| **Interactions** | @dnd-kit | Fluid drag-and-drop piece movement interactions. |
+| **Architecture** | Custom Hooks | Domain logic isolation and reactive state management. |
 | **Tooling** | Vite, ESLint, Prettier | Optimized bundling and strict code quality. |
 
 ---

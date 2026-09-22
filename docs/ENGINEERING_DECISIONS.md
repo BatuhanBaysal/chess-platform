@@ -36,11 +36,11 @@ This document outlines the core architectural decisions, concurrency controls, s
 
 ---
 
-## 🔒 3. Enterprise Security, IAM & Resiliency
+## 🔒 3. Security, IAM & Resiliency
 
 ### IAM Migration: From Hand-Rolled JWT to Keycloak OAuth2 / OIDC
 * **The Evolution:** Authentication initially began as a custom, stateless JWT implementation using JJWT. However, maintaining custom token lifecycles, refresh flows, credential hashing, and role hierarchies added significant maintenance overhead.
-* **The Solution:** Fully transitioned the security architecture to an enterprise-grade **Keycloak (OAuth2/OIDC Resource Server)**.
+* **The Solution:** Fully transitioned the security architecture to a production-grade **Keycloak (OAuth2/OIDC Resource Server)**.
     * The Spring Boot backend acts purely as an OAuth2 Resource Server validating asymmetric JWT signatures via Keycloak JWK Set URIs (`certs`).
     * Decoupled user registration, password policies, and admin privilege governance (`ADMIN` vs. `USER`) directly into Keycloak realms.
     * Handled ephemeral guest accounts natively with a 7-day expiration lifecycle.

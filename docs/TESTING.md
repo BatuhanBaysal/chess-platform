@@ -6,9 +6,9 @@ This document outlines the testing architecture, isolation strategies, and verif
 
 ## 🎯 Testing Philosophy & Architecture
 
-Our testing pyramid ensures high reliability across all architectural layers by combining lightweight unit tests, isolated slice tests, and database integration checks.
+Our testing pyramid ensures high reliability across all architectural layers by combining lightweight unit tests, isolated slice tests, and containerized database integration checks.
 
-* **Test Profile Isolation:** All tests run under the `test` profile (`application-test.yaml`), leveraging an **H2 In-memory database** (`jdbc:h2:mem:chess_test_db`) configured in PostgreSQL compatibility mode to guarantee side-effect-free, lightning-fast execution without impacting local PostgreSQL instances.
+* **Test Profile & Database Isolation:** All tests run under the `test` profile (`application-test.yml`), leveraging a **containerized PostgreSQL instance** running locally via Docker to guarantee true database behavior, dialect compatibility, and Liquibase schema validation.
 * **Clean Code & Readability:** Utilizing **JUnit 5** (`@Nested`, `@DisplayName`, `@Test`) and **AssertJ**, test suites are structured into intuitive nested hierarchies that clearly document system behavior.
 
 ---
@@ -24,34 +24,47 @@ Domain models and application services are tested in strict isolation to validat
     * Verifies FIDE chess rule enforcement (e.g., Castling, En Passant, Threefold Repetition, Checkmate, and Stalemate detection).
 
 ### 2. Data JPA & Persistence Tests
-Repository interfaces and database interactions are validated using Spring Boot slice tests.
+Repository interfaces and database interactions are validated using Spring Boot integration tests inheriting from a centralized base configuration.
 
-* **Database Layer (`GameRepositoryTest`):**
-    * Annotated with `@DataJpaTest` and `@ActiveProfiles("test")`.
-    * Leverages `TestEntityManager` to persist mock entities and verify custom query behaviors, such as fetching games via EntityGraphs or sorting history chronologically.
+* **Database Layer (`UserRepositoryTest`, `GameRepositoryTest`, `AuditLogRepositoryTest`):**
+    * Inherit from `AbstractIntegrationTest` which dynamically configures the datasource against the local Docker PostgreSQL container.
+    * Leverages clean state management (`@BeforeEach` deletions) to avoid state pollution across test runs.
 
 ### 3. Web & API Layer Tests
 REST controllers are tested using Spring's `MockMvc` framework to ensure proper HTTP status codes, payload serializations, and route mappings.
 
-* **REST Validation (`GameRestControllerTest`):**
-    * Uses `@WebMvcTest` with security filters bypassed (`@AutoConfigureMockMvc(addFilters = false)`) to focus purely on request handling and JSON mapping.
-    * Verifies endpoints for game initialization, legal move queries, match history retrieval, and AI session creation.
-
-### 4. WebSocket & Real-Time Engine Tests
-Real-time messaging components handling STOMP protocols are thoroughly verified for event-driven behavior.
-
-* **WebSocket Controller (`GameWebSocketControllerTest`):**
-    * Validates player readiness synchronization, move broadcasting via `SimpMessagingTemplate`, and robust error handling.
-    * Ensures edge cases (e.g., null game states, disconnected players) throw predictable error maps instead of crashing the message broker.
+* **REST Validation (`GameRestControllerTest`, `AuditLogControllerTest`):**
+    * Uses `@WebMvcTest` or `@SpringBootTest` with MockMvc to focus on request handling and JSON mapping.
+    * Verifies endpoints for game initialization, legal move queries, match history retrieval, and admin audit log filters.
 
 ---
 
 ## 🚀 Running Tests Locally
 
-To execute the complete backend test suite and verify system integrity, run the following command from the `chess-backend` directory:
+Before running tests locally from your IDE or terminal, ensure that the dedicated **PostgreSQL Docker container** is up and running:
 
 ```bash
+docker run --name chess-postgres -e POSTGRES_DB=chess_test_db -e POSTGRES_USER=test -e POSTGRES_PASSWORD=test -p 5432:5432 -d postgres:15-alpine
+```
+
+### ⚙️ JUnit Run Configuration Environment Variables
+
+To successfully resolve security admin properties and container flags during test execution, configure the following **Environment Variables** in your IDE's JUnit template/configuration:
+
+```text
+DOCKER_API_VERSION=1.41;TESTCONTAINERS_RYUK_DISABLED=true;ADMIN_USERNAME=admin;ADMIN_EMAIL=admin@chess.com;ADMIN_PASSWORD=Admin123!
+```
+
+To execute the complete backend test suite via Maven from the chess-backend directory:
+
+```text
 ./mvnw clean test
 ```
 
-Build Integration: These exact tests are automatically executed on every push and pull request via our GitHub Actions CI Pipeline (ci.yml), ensuring that no regression slips into the main branch.
+### 📊 Running Tests & SonarQube Analysis (PowerShell)
+
+To execute the complete test suite along with the SonarQube analysis in a Windows PowerShell environment, set the required environment variables and run the following command from the `chess-backend` directory:
+
+```powershell
+$env:DOCKER_API_VERSION="1.41"; $env:TESTCONTAINERS_RYUK_DISABLED="true"; $env:ADMIN_USERNAME="admin"; $env:ADMIN_EMAIL="admin@chess.com"; $env:ADMIN_PASSWORD="Admin123!"; .\mvnw clean verify sonar:sonar "-Dsonar.projectKey=chess-platform" "-Dsonar.host.url=http://localhost:9002" "-Dsonar.token=your_sonar_token_here"
+```

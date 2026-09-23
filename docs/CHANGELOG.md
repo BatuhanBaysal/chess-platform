@@ -30,8 +30,22 @@ All notable changes to this project will be documented in this file. This projec
 - ✅ **Phase 21: Production Deployment & Cloud Demo (v2.2.0)** ☁️ - Provisioning multi-container environments, setting up Vercel static hosting, and deploying the full backend, database, SonarQube, and LGTM observability stack via Docker Compose on Oracle Cloud.
 - ✅ **Phase 22: Enterprise Data & Identity Management (v2.3.0)** 🔑 - Integrating MinIO object storage for artifacts and Keycloak for centralized OAuth2/OIDC RBAC security.
 - ✅ **Phase 23: Asynchronous Eventing & Observability (v2.4.0)** ⚡ - Decoupling heavy Stockfish analysis tasks via RabbitMQ and integrating OpenTelemetry with the LGTM stack.
-- ⏳ **Phase 24: Quality Assurance & Advanced Scaling (v2.5.0)** 🧪 - Implementing automated Playwright E2E testing, Redis Cluster session synchronization, and local Kubernetes manifests.
-- 🔜 **Phase 25: Final Polish, Strict Typing & UX Refinement (v2.6.0)** 💎 - Enforcing strict TypeScript DTO alignment, resolving runtime micro-bugs, and maximizing interface consistency.
+- ⏳ **v2.5.0 - Quality Assurance & Integration Testing** 🧪 — Establishing the complete testing pyramid with Playwright E2E automation tests, Vitest & React Testing Library component tests, and Testcontainers PostgreSQL integration.
+- 🔜 **v2.6.0 - Final Polish, Strict Typing & UX Refinement** 💎 — Enforcing strict TypeScript DTO alignment, Login/Register UI redesign, AI telemetry state leak fix, profile page & in-game player card integration, and completion of remaining pages (About, Contact, Changelog, System Health) with role-based access control (RBAC) scenario testing.
+
+---
+
+## [2.5.0] - 2026-09-23
+
+### 🧪 Phase v2.5.0: Quality Assurance & Integration Testing 🔬
+> **Note:** Upgrading backend test suite from H2 in-memory configuration to a robust, containerized testing environment using PostgreSQL and Testcontainers.
+
+- **2026-09-23:**
+    - **Migrate Backend Test Suite to Testcontainers & PostgreSQL (PR #170 | Issue #169):**
+        - **Maven Dependencies:** Added Testcontainers PostgreSQL and JUnit 5 integration dependencies to `chess-backend/pom.xml`.
+        - **Test Infrastructure Setup:** Created the centralized `AbstractIntegrationTest` base class leveraging Spring Boot `@DynamicPropertySource` to orchestrate dynamic PostgreSQL container properties.
+        - **Integration Tests Refactoring:** Updated repository and service integration test classes (`UserRepositoryTest`, `GameRepositoryTest`, `AuditLogRepositoryTest`, and `AuditLogControllerTest`) to inherit from the new base class and resolve test state inconsistencies with proper `@BeforeEach` cleanup.
+        - **Validation & Execution:** Verified successful execution of Liquibase migration scripts and test suites against the containerized PostgreSQL environment.
 
 ---
 

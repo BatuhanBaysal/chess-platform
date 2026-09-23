@@ -2,26 +2,17 @@ package com.batuhan.chess;
 
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RedissonClient;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
-@SpringBootTest
-@ActiveProfiles("test")
 @TestPropertySource(properties = {
     "ADMIN_USERNAME=admin",
     "ADMIN_EMAIL=admin@chess.com",
     "ADMIN_PASSWORD=Admin123!"
 })
-@Import(ChessBackendApplicationTests.MockConfig.class)
-class ChessBackendApplicationTests {
+class ChessBackendApplicationTests extends AbstractIntegrationTest {
 
     @Autowired(required = false)
     private RedissonClient redissonClient;
@@ -29,14 +20,5 @@ class ChessBackendApplicationTests {
     @Test
     void contextLoads() {
         assertThat(redissonClient).isNotNull();
-    }
-
-    @TestConfiguration
-    static class MockConfig {
-
-        @Bean
-        public RedissonClient redissonClient() {
-            return mock(RedissonClient.class);
-        }
     }
 }

@@ -1,32 +1,45 @@
 package com.batuhan.chess.domain.repository;
 
+import com.batuhan.chess.AbstractIntegrationTest;
+import com.batuhan.chess.domain.model.chess.GameStatus;
 import com.batuhan.chess.domain.model.history.GameEntity;
 import com.batuhan.chess.domain.model.history.GameResult;
-import com.batuhan.chess.domain.model.chess.GameStatus;
 import com.batuhan.chess.domain.model.user.UserEntity;
 import com.batuhan.chess.domain.model.user.UserRole;
+import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataJpaTest
+@SpringBootTest
 @ActiveProfiles("test")
+@Transactional
 @DisplayName("GameRepository Data JPA Tests")
-class GameRepositoryTest {
+class GameRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired
     private GameRepository gameRepository;
 
     @Autowired
-    private TestEntityManager entityManager;
+    private UserRepository userRepository;
+
+    @Autowired
+    private EntityManager entityManager;
+
+    @BeforeEach
+    void setUp() {
+        gameRepository.deleteAll();
+        userRepository.deleteAll();
+    }
 
     @Test
     @DisplayName("Should find game by id with players loaded via EntityGraph")
@@ -42,7 +55,8 @@ class GameRepositoryTest {
             .finishMethod(GameStatus.CHECKMATE)
             .pgnData("1. e4 e5")
             .build();
-        GameEntity savedGame = entityManager.persistAndFlush(game);
+        GameEntity savedGame = entityManager.merge(game);
+        entityManager.flush();
         entityManager.clear();
 
         // Act
@@ -78,8 +92,9 @@ class GameRepositoryTest {
             .finishMethod(GameStatus.CHECKMATE)
             .build();
 
-        entityManager.persistAndFlush(game1);
-        entityManager.persistAndFlush(game2);
+        entityManager.merge(game1);
+        entityManager.merge(game2);
+        entityManager.flush();
         entityManager.clear();
 
         // Act
@@ -98,6 +113,8 @@ class GameRepositoryTest {
             .password("Password123!")
             .role(UserRole.ROLE_ADMIN)
             .build();
-        return entityManager.persistAndFlush(user);
+        entityManager.persist(user);
+        entityManager.flush();
+        return user;
     }
 }

@@ -12,6 +12,25 @@ permissions:
 jobs:
     backend-build:
         runs-on: ubuntu-latest
+        services:
+            postgres:
+                image: postgres:15-alpine
+                env:
+                    POSTGRES_DB: chess_test_db
+                    POSTGRES_USER: test
+                    POSTGRES_PASSWORD: test
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd pg_isready
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+        env:
+            TESTCONTAINERS_RYUK_DISABLED: "true"
+            ADMIN_USERNAME: "admin"
+            ADMIN_EMAIL: "admin@chess.com"
+            ADMIN_PASSWORD: "Admin123!"
         steps:
             - uses: actions/checkout@v4
               with:

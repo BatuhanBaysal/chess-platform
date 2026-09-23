@@ -105,9 +105,9 @@ Prerequisite: [Docker](https://www.docker.com/) & Docker Compose.
   docker compose --profile core up -d
 ```
 
-* **Full Stack (App, DB, Keycloak, Redis, MinIO + Monitoring):**
+* **Full Local Stack (App, DB, Keycloak, Redis, MinIO + SonarQube + Monitoring):**
 ```bash
-  docker compose --profile core --profile storage-local --profile monitoring up -d
+  docker compose --profile core --profile storage-local --profile quality --profile monitoring up -d
 ```
 
 * **Running Backend via IDE:** Start dependent services with Docker, set the Spring active profile to `local`, and load your root `.env` via the IntelliJ EnvFile plugin.

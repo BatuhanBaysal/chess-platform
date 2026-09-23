@@ -140,7 +140,7 @@ docker compose --profile core up -d
 #### 2. Full Ecosystem Mode (Local Storage + Monitoring)
 Starts the core stack alongside local MinIO object storage and the entire LGTM monitoring stack (Loki, Grafana, Tempo, Prometheus, Promtail):
 ```bash
-docker compose --profile core --profile storage-local --profile monitoring up -d
+docker compose --profile core --profile storage-local --profile quality --profile monitoring up -d
 ```
 
 ### 🛠 Docker Management

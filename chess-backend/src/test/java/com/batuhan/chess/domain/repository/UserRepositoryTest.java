@@ -1,32 +1,41 @@
 package com.batuhan.chess.domain.repository;
 
+import com.batuhan.chess.AbstractIntegrationTest;
 import com.batuhan.chess.domain.model.user.UserEntity;
 import com.batuhan.chess.domain.model.user.UserRole;
+import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataJpaTest
+@SpringBootTest
 @ActiveProfiles("test")
+@Transactional
 @DisplayName("UserRepository Data JPA Tests")
-class UserRepositoryTest {
+class UserRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
 
     @Autowired
-    private TestEntityManager entityManager;
+    private EntityManager entityManager;
+
+    @BeforeEach
+    void setUp() {
+        userRepository.deleteAll();
+    }
 
     @Test
     @DisplayName("Should find active user by username")
@@ -79,7 +88,7 @@ class UserRepositoryTest {
         // Arrange
         persistUser("user1", "user1@chess.com", true, 1000);
         persistUser("user2", "user2@chess.com", true, 2000);
-        persistUser("user3", "user3@chess.com", false, 3000); // Inactive
+        persistUser("user3", "user3@chess.com", false, 3000);
 
         Pageable pageable = PageRequest.of(0, 10);
 
@@ -120,6 +129,7 @@ class UserRepositoryTest {
             .active(active)
             .eloRating(elo)
             .build();
-        entityManager.persistAndFlush(user);
+        entityManager.persist(user);
+        entityManager.flush();
     }
 }

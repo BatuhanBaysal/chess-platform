@@ -51,10 +51,10 @@ Live counters track active WebSocket sessions, ongoing matches, move executions,
 ### 🧪 Automated Test Suite & JaCoCo Coverage
 The test strategy combines isolated domain unit tests, MockMvc API validation, and Spring Data JPA integration tests running on an isolated H2 in-memory database.
 
-| Metric | Status | Verification Reference |
-| :--- | :--- | :--- |
-| **Code Coverage** | 74.0% | JaCoCo Maven Plugin Analysis Report |
-| **Test Suite** | 384 Passed | ![Test Results](../docs/assets/screenshots/01-infrastructure/test-suite-pass.png) |
+| Metric | Status        | Verification Reference |
+| :--- |:--------------| :--- |
+| **Code Coverage** | 75.2%         | JaCoCo Maven Plugin Analysis Report |
+| **Test Suite** | 463 Passed    | ![Test Results](../docs/assets/screenshots/01-infrastructure/test-suite-pass.png) |
 | **Technical Debt** | 0 Code Smells | Verified via Static Analysis Rules & Modern Java Patterns |
 
 ---

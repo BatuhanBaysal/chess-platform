@@ -1,6 +1,6 @@
 package com.batuhan.chess.api.controller;
 
-import com.batuhan.chess.api.config.TestConfig;
+import com.batuhan.chess.AbstractIntegrationTest;
 import com.batuhan.chess.api.dto.admin.AuditLogResponse;
 import com.batuhan.chess.application.service.admin.AuditLogService;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,11 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -40,18 +38,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     "spring.security.oauth2.resourceserver.jwt.issuer-uri=http://localhost:8081/realms/chess-realm",
     "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=http://localhost:8081/realms/chess-realm/protocol/openid-connect/certs"
 })
-@Import(TestConfig.class)
 @DisplayName("Audit Log Controller Integration Tests")
-class AuditLogControllerTest {
+class AuditLogControllerTest extends AbstractIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
     private AuditLogService auditLogService;
-
-    @MockitoBean
-    private RedisConnectionFactory redisConnectionFactory;
 
     @BeforeEach
     void setUp() {

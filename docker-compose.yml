@@ -1,4 +1,5 @@
 services:
+    # --- DATABASE SERVICE ---
     db:
         image: postgres:15-alpine
         profiles: [ "core" ]
@@ -20,6 +21,7 @@ services:
             timeout: 5s
             retries: 5
 
+    # --- REDIS CACHE SERVICE ---
     redis:
         image: redis:7-alpine
         profiles: ["core"]
@@ -35,6 +37,7 @@ services:
             timeout: 5s
             retries: 5
 
+    # --- BACKEND APPLICATION SERVICE ---
     backend:
         build: ./chess-backend
         profiles: [ "core" ]
@@ -90,6 +93,7 @@ services:
             retries: 10
             start_period: 40s
 
+    # --- FRONTEND UI SERVICE ---
     frontend:
         build: ./chess-frontend
         profiles: [ "core" ]
@@ -209,6 +213,28 @@ services:
             timeout: 5s
             retries: 5
 
+    # --- CODE QUALITY & ANALYSIS (SONARQUBE - LOCAL ONLY) ---
+    sonarqube:
+        image: sonarqube:community
+        profiles: [ "quality" ]
+        container_name: chess-sonarqube
+        restart: unless-stopped
+        ports:
+            - "9002:9000"
+        networks:
+            - chess-network
+        environment:
+            - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+        volumes:
+            - sonarqube_data:/opt/sonarqube/data
+            - sonarqube_extensions:/opt/sonarqube/extensions
+            - sonarqube_logs:/opt/sonarqube/logs
+        deploy:
+            resources:
+                limits:
+                    memory: 2g
+
+    # --- IAM / AUTHENTICATION (KEYCLOAK) ---
     keycloak:
         image: quay.io/keycloak/keycloak:24.0.1
         profiles: [ "core", "iam" ]
@@ -246,6 +272,7 @@ services:
             retries: 15
             start_period: 30s
 
+    # --- MESSAGE BROKER (RABBITMQ) ---
     rabbitmq:
         image: rabbitmq:3-management-alpine
         profiles: [ "core" ]
@@ -277,3 +304,6 @@ volumes:
     grafana_data:
     minio_data:
     rabbitmq_data:
+    sonarqube_data:
+    sonarqube_extensions:
+    sonarqube_logs:

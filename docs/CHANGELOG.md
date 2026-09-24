@@ -35,10 +35,17 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
-## [2.5.0] - 2026-09-23
+## [2.5.0] - 2026-09-24
 
 ### 🧪 Phase v2.5.0: Quality Assurance & Integration Testing 🔬
 > **Note:** Upgrading backend test suite from H2 in-memory configuration to a robust, containerized testing environment using PostgreSQL and Testcontainers.
+
+- **2026-09-24:**
+    - **Introduce Vitest & React Testing Library for Frontend Component Testing (PR #172 | Issue #171):**
+        - **Dependencies & Setup:** Configured Vitest, React Testing Library, and jsdom environment within the `chess-frontend` workspace (`package.json`, `package-lock.json`, `tsconfig.app.json`).
+        - **Vitest Configuration:** Created `vitest.config.ts` to establish the testing environment and support isolated component execution.
+        - **Component & Hook Test Suites:** Implemented robust unit and integration tests incorporating the **Arrange-Act-Assert (AAA)** pattern across core features (`ChessBoard`, `AuthForm`, `AdminDashboard`, `ProfileDashboard`, `useChessGameLogic`, `useChessActions`, `useChessTimer`, `useLobby`, and `App`).
+        - **CI/CD Integration:** Updated GitHub Actions workflow (`.github/workflows/ci.yml`) to seamlessly run frontend test suites alongside backend builds.
 
 - **2026-09-23:**
     - **Migrate Backend Test Suite to Testcontainers & PostgreSQL (PR #170 | Issue #169):**

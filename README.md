@@ -2,12 +2,13 @@
 
 > *A Full-Stack Chess Ecosystem Featuring Server-Authoritative Logic, AI Integration, Asynchronous Eventing, and Hybrid Cloud Production Deployment.*
 
-![Status](https://img.shields.io/badge/Status-Active-brightgreen) ![Version](https://img.shields.io/badge/Version-v2.4.0-blue) ![License](https://img.shields.io/badge/License-MIT-yellow)
+![Status](https://img.shields.io/badge/Status-Active-brightgreen) ![Version](https://img.shields.io/badge/Version-v2.5.0-blue) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ## 🛠️ Tech Stack
-* **Backend:** Java 17 • Spring Boot 3.4 • Spring Security • OAuth2 / Keycloak • WebSocket (STOMP) • Spring Data JPA • Liquibase • AWS SDK S3 • Resilience4j • Redisson • RabbitMQ
-* **Frontend:** React 19 • TypeScript • Vite • Tailwind CSS • React Router • SockJS / STOMP • Recharts • DnD Kit
-* **Infrastructure & Data:** PostgreSQL 15 • Redis 7 • MinIO • Docker Compose • Oracle Cloud (OCI) • Vercel
+* **Backend:** Java 17 • Spring Boot 3.4 • Maven • Spring Security • OAuth2 / Keycloak • WebSocket (STOMP) • Spring Data JPA • Liquibase • AWS SDK S3 • Resilience4j • Redisson • RabbitMQ
+* **Frontend:** React 19 • TypeScript • Vite • Vitest • React Testing Library • Tailwind CSS • React Router • SockJS / STOMP • Recharts • DnD Kit
+* **Infrastructure & Data:** PostgreSQL 17 • Redis 7 • MinIO • Docker Compose • Oracle Cloud (OCI) • Vercel
+* **Developer Tools & Environment:** IntelliJ IDEA • VS Code • Postman • DBeaver • pgAdmin 4 • Docker Desktop • Git • GitHub Desktop • GitHub CLI • Node.js
 * **Observability:** Prometheus • Grafana • Loki • Tempo • Promtail • OpenTelemetry
 
 ---

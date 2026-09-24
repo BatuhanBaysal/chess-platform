@@ -54,7 +54,7 @@ The test strategy combines isolated domain unit tests, MockMvc API validation, a
 | Metric | Status        | Verification Reference |
 | :--- |:--------------| :--- |
 | **Code Coverage** | 75.2%         | JaCoCo Maven Plugin Analysis Report |
-| **Test Suite** | 463 Passed    | ![Test Results](../docs/assets/screenshots/01-infrastructure/test-suite-pass.png) |
+| **Test Suite** | 463 Passed    | ![Test Results](assets/screenshots/01-infrastructure/chess-backend-test.png) |
 | **Technical Debt** | 0 Code Smells | Verified via Static Analysis Rules & Modern Java Patterns |
 
 ---

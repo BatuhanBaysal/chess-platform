@@ -30,15 +30,22 @@ All notable changes to this project will be documented in this file. This projec
 - ✅ **Phase 21: Production Deployment & Cloud Demo (v2.2.0)** ☁️ - Provisioning multi-container environments, setting up Vercel static hosting, and deploying the full backend, database, SonarQube, and LGTM observability stack via Docker Compose on Oracle Cloud.
 - ✅ **Phase 22: Enterprise Data & Identity Management (v2.3.0)** 🔑 - Integrating MinIO object storage for artifacts and Keycloak for centralized OAuth2/OIDC RBAC security.
 - ✅ **Phase 23: Asynchronous Eventing & Observability (v2.4.0)** ⚡ - Decoupling heavy Stockfish analysis tasks via RabbitMQ and integrating OpenTelemetry with the LGTM stack.
-- ⏳ **v2.5.0 - Quality Assurance & Integration Testing** 🧪 — Establishing the complete testing pyramid with Playwright E2E automation tests, Vitest & React Testing Library component tests, and Testcontainers PostgreSQL integration.
-- 🔜 **v2.6.0 - Final Polish, Strict Typing & UX Refinement** 💎 — Enforcing strict TypeScript DTO alignment, Login/Register UI redesign, AI telemetry state leak fix, profile page & in-game player card integration, and completion of remaining pages (About, Contact, Changelog, System Health) with role-based access control (RBAC) scenario testing.
+- ✅ **v2.5.0 - Quality Assurance & Integration Testing** 🧪 — Establishing the complete testing pyramid with Playwright E2E automation tests, Vitest & React Testing Library component tests, and Testcontainers PostgreSQL integration.
+- ⏳ **v2.6.0 - Final Polish, Strict Typing & UX Refinement** 💎 — Enforcing strict TypeScript DTO alignment, Login/Register UI redesign, AI telemetry state leak fix, profile page & in-game player card integration, and completion of remaining pages (About, Contact, Changelog, System Health) with role-based access control (RBAC) scenario testing.
+- 🔜
 
 ---
 
-## [2.5.0] - 2026-09-24
+## [2.5.0] - 2026-09-26
 
 ### 🧪 Phase v2.5.0: Quality Assurance & Integration Testing 🔬
 > **Note:** Upgrading backend test suite from H2 in-memory configuration to a robust, containerized testing environment using PostgreSQL and Testcontainers.
+
+- **2026-09-26:**
+    - **Initialize Playwright E2E Test Suite for Critical User Journeys (PR #174 | Issue #173):**
+        - **Test Framework Setup:** Installed and configured Playwright with appropriate browser targets and project configuration (`chess-frontend/playwright.config.ts`).
+        - **E2E Core Specs:** Implemented comprehensive automated end-to-end test specs under `chess-frontend/e2e/` covering admin security, AI match initialization, authentication, gameplay mechanics, landing page, system health, and WebSocket reconnection flows.
+        - **Pipeline Validation:** Verified cross-browser stability and resilience under simulated network disruptions for critical user paths.
 
 - **2026-09-24:**
     - **Introduce Vitest & React Testing Library for Frontend Component Testing (PR #172 | Issue #171):**

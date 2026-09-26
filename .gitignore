@@ -3,8 +3,6 @@
 Thumbs.db
 
 # --- IDE Settings ---
-# Since you might open the entire folder in an IDE,
-# we ignore the root-level metadata.
 .idea/
 *.iws
 *.iml
@@ -12,20 +10,27 @@ Thumbs.db
 .vscode/
 
 # --- Environment & Secrets ---
-# Important: Protect your sensitive data and logs
-.env
-.env.local
-chess-frontend/.env.development
-.env.production
+**/.env*
+
+# Logs
 *.log
 logs/
 
 # --- Build & Temporary Files ---
-# To prevent any global temporary files from being tracked
 tmp/
 temp/
 dist/
+build/
 node_modules/
+
+# --- Backend (Java / Maven) ---
+target/
 engine-runtime/
 chess-backend/engine-runtime/
 chess-backend/engine-bin/
+
+# --- E2E / Test Outputs (Playwright) ---
+chess-frontend/test-results/
+chess-frontend/playwright-report/
+test-results/
+playwright-report/

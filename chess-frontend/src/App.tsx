@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import { useChess } from './features/chess/hooks/useChess.ts';
 import { useAuth } from './hooks/useAuth';
@@ -109,17 +109,13 @@ function App() {
     </div>
   );
 
-  if (!user) {
-    return (
-      <ErrorBoundary>
+  return (
+    <ErrorBoundary>
+      <Layout 
+        onBackToMenu={handleBackToMenu} 
+        isInGame={Boolean(game?.gameId)} 
+      >
         <Routes>
-          <Route path="/register" element={
-            <AuthCard 
-              onLogin={handleLogin} 
-              onRegister={handleRegister} 
-              onGuestLogin={loginAsGuest} 
-            />
-          } />
           <Route path="/login" element={
             <AuthCard 
               onLogin={handleLogin} 
@@ -127,42 +123,32 @@ function App() {
               onGuestLogin={loginAsGuest} 
             />
           } />
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="*" element={
+          <Route path="/register" element={
             <AuthCard 
               onLogin={handleLogin} 
               onRegister={handleRegister} 
               onGuestLogin={loginAsGuest} 
             />
           } />
+          <Route path="/*" element={
+            <AppRoutes 
+              user={user}
+              game={game}
+              isConnected={isConnected}
+              playerColor={playerColor}
+              gameConfig={gameConfig}
+              hintData={hintData}
+              isHintLoading={isHintLoading}
+              evaluation={evaluation}
+              handleStartMatch={handleStartMatch}
+              handleBackToMenu={handleBackToMenu}
+              handleRestart={handleRestart}
+              onMoveInternal={onMoveInternal}
+              fetchLegalMoves={fetchLegalMoves}
+              fetchHint={fetchHint}
+            />
+          } />
         </Routes>
-        <Analytics />
-      </ErrorBoundary>
-    );
-  }
-
-  return (
-    <ErrorBoundary>
-      <Layout 
-        onBackToMenu={handleBackToMenu} 
-        isInGame={Boolean(game?.gameId)} 
-      >
-        <AppRoutes 
-          user={user}
-          game={game}
-          isConnected={isConnected}
-          playerColor={playerColor}
-          gameConfig={gameConfig}
-          hintData={hintData}
-          isHintLoading={isHintLoading}
-          evaluation={evaluation}
-          handleStartMatch={handleStartMatch}
-          handleBackToMenu={handleBackToMenu}
-          handleRestart={handleRestart}
-          onMoveInternal={onMoveInternal}
-          fetchLegalMoves={fetchLegalMoves}
-          fetchHint={fetchHint}
-        />
       </Layout>
       <Analytics />
     </ErrorBoundary>

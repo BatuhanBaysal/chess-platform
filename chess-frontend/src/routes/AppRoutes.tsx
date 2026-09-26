@@ -55,7 +55,8 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
       </Route>
 
       <Route path="/menu" element={<LandingPage onStart={handleStartMatch} />} />
-      <Route path="/" element={<Navigate to="/menu" replace />} />
+      <Route path="/" element={user ? <Navigate to="/menu" replace /> : <Navigate to="/login" replace />} />
+      
       <Route path="/profile" element={<ProfileDashboard />} />
       <Route path="/leaderboard" element={<FullLeaderboardPage />} />
       <Route path="/history" element={<AllMatchHistory userId={user?.id} />} />

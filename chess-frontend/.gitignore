@@ -27,8 +27,13 @@ dist-ssr
 # TypeScript Build Info
 *.tsbuildinfo
 
-# Test Coverage
+# Environment Files & Secrets
+.env*
+
+# Test Coverage - Playwright Test Outputs
 coverage/
+test-results/
+playwright-report/
 
 # Production Builds
 build/

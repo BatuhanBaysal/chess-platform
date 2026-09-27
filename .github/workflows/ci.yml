@@ -76,3 +76,13 @@ jobs:
                 run: |
                     cd chess-frontend
                     npm test
+
+            -   name: Install Playwright Browsers
+                run: |
+                    cd chess-frontend
+                    npx playwright install --with-deps
+
+            -   name: Run Playwright E2E Tests
+                run: |
+                    cd chess-frontend
+                    npx playwright test

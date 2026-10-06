@@ -2,21 +2,29 @@ server:
     port: ${PORT:8080}
 
 spring:
+    security:
+        oauth2:
+            resourceserver:
+                jwt:
+                    issuer-uri: ${KEYCLOAK_ISSUER_URI:http://keycloak:8081/realms/chess-realm}
+                    jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:${KEYCLOAK_ISSUER_URI:http://keycloak:8081/realms/chess-realm}/protocol/openid-connect/certs}
+
     datasource:
-        url: ${DATABASE_URL}
-        username: ${DB_USERNAME}
-        password: ${DB_PASSWORD}
+        url: ${DATABASE_URL:${CHESS_DB_URL}}
+        username: ${DB_USERNAME:${CHESS_DB_USERNAME}}
+        password: ${DB_PASSWORD:${CHESS_DB_PASSWORD}}
+
     data:
         redis:
-            host: ${REDIS_HOST}
-            port: ${REDIS_PORT}
+            host: ${REDIS_HOST:${CHESS_REDIS_HOST:redis}}
+            port: ${REDIS_PORT:${CHESS_REDIS_PORT:6379}}
             password: ${REDIS_PASSWORD:-}
 
     rabbitmq:
-        host: ${RABBITMQ_HOST}
+        host: ${RABBITMQ_HOST:rabbitmq}
         port: ${RABBITMQ_PORT:5672}
-        username: ${RABBITMQ_USERNAME}
-        password: ${RABBITMQ_PASSWORD}
+        username: ${RABBITMQ_USERNAME:guest}
+        password: ${RABBITMQ_PASSWORD:guest}
 
 chess:
     storage:
@@ -27,3 +35,8 @@ chess:
             secret-key: ${AWS_S3_SECRET_KEY}
             bucket-name: ${AWS_S3_BUCKET_NAME}
             path-style-access-enabled: true
+
+keycloak:
+    guest-client-id: chess-guest-client
+    guest-client-secret: ${KEYCLOAK_GUEST_CLIENT_SECRET}
+    token-uri: ${KEYCLOAK_TOKEN_URI:${KEYCLOAK_ISSUER_URI:http://keycloak:8081/realms/chess-realm}/protocol/openid-connect/token}

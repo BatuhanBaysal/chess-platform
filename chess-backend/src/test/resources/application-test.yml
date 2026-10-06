@@ -4,6 +4,9 @@ spring:
 
     datasource:
         driver-class-name: org.postgresql.Driver
+        url: jdbc:postgresql://localhost:5432/chess_db
+        username: postgres
+        password: dbbatupsql
 
     jpa:
         hibernate:
@@ -65,6 +68,6 @@ management:
     tracing:
         enabled: false
 
-ADMIN_USERNAME: ${ADMIN_USERNAME:admin}
-ADMIN_EMAIL: ${ADMIN_EMAIL:admin@chess.com}
-ADMIN_PASSWORD: ${ADMIN_PASSWORD:Admin123!}
+ADMIN_USERNAME: admin
+ADMIN_EMAIL: admin@chess.com
+ADMIN_PASSWORD: Admin123!

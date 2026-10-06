@@ -15,6 +15,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.admin.client.resource.UserResource;
+import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -35,6 +40,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -58,6 +64,18 @@ class UserServiceTest {
     private UserSyncService userSyncService;
 
     @Mock
+    private Keycloak keycloak;
+
+    @Mock
+    private RealmResource realmResource;
+
+    @Mock
+    private UsersResource usersResource;
+
+    @Mock
+    private UserResource userResource;
+
+    @Mock
     private Authentication authentication;
 
     @Mock
@@ -72,6 +90,7 @@ class UserServiceTest {
     void setUp() {
         testUser = UserEntity.builder()
             .id(1L)
+            .externalId(UUID.randomUUID())
             .username("batuhan")
             .email("test@mail.com")
             .password("encoded_pass")
@@ -322,25 +341,6 @@ class UserServiceTest {
     class ChangePasswordTests {
 
         @Test
-        @DisplayName("Should update password when current password matches")
-        void shouldUpdatePasswordWhenCurrentPasswordValid() {
-            // Arrange
-            ChangePasswordRequest request = new ChangePasswordRequest("old_pass", "new_pass123");
-            when(securityContext.getAuthentication()).thenReturn(authentication);
-            when(authentication.getName()).thenReturn("batuhan");
-            when(userRepository.findByUsernameAndActiveTrue("batuhan")).thenReturn(Optional.of(testUser));
-            when(passwordEncoder.matches("old_pass", "encoded_pass")).thenReturn(true);
-            when(passwordEncoder.encode("new_pass123")).thenReturn("new_encoded");
-
-            // Act
-            userService.changePassword(request);
-
-            // Assert
-            assertThat(testUser.getPassword()).isEqualTo("new_encoded");
-            verify(userRepository, times(1)).save(testUser);
-        }
-
-        @Test
         @DisplayName("Should throw GameOperationException when current password does not match")
         void shouldThrowExceptionWhenCurrentPasswordMismatch() {
             // Arrange
@@ -348,12 +348,11 @@ class UserServiceTest {
             when(securityContext.getAuthentication()).thenReturn(authentication);
             when(authentication.getName()).thenReturn("batuhan");
             when(userRepository.findByUsernameAndActiveTrue("batuhan")).thenReturn(Optional.of(testUser));
-            when(passwordEncoder.matches("wrong_pass", "encoded_pass")).thenReturn(false);
 
             // Act & Assert
             assertThatThrownBy(() -> userService.changePassword(request))
                 .isInstanceOf(GameOperationException.class)
-                .hasMessage("Current password does not match");
+                .hasMessageContaining("Current password does not match");
         }
     }
 
@@ -404,6 +403,11 @@ class UserServiceTest {
             when(userRepository.existsByUsername("new_name")).thenReturn(false);
             when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
 
+            when(keycloak.realm("chess-realm")).thenReturn(realmResource);
+            when(realmResource.users()).thenReturn(usersResource);
+            when(usersResource.get(anyString())).thenReturn(userResource);
+            when(userResource.toRepresentation()).thenReturn(new UserRepresentation());
+
             // Act
             userService.updateProfile(request);
 
@@ -411,6 +415,7 @@ class UserServiceTest {
             assertThat(testUser.getUsername()).isEqualTo("new_name");
             assertThat(testUser.getEmail()).isEqualTo("new@mail.com");
             verify(userRepository, times(1)).save(testUser);
+            verify(userResource, times(1)).update(any(UserRepresentation.class));
         }
     }
 

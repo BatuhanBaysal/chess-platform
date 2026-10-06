@@ -31,6 +31,9 @@ jobs:
             ADMIN_USERNAME: "admin"
             ADMIN_EMAIL: "admin@chess.com"
             ADMIN_PASSWORD: "Admin123!"
+            CHESS_DB_URL: "jdbc:postgresql://localhost:5432/chess_test_db"
+            CHESS_DB_USERNAME: "test"
+            CHESS_DB_PASSWORD: "test"
         steps:
             - uses: actions/checkout@v4
               with:

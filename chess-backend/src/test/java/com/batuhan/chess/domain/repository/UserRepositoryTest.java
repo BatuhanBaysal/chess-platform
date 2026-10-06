@@ -9,6 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,9 +33,22 @@ class UserRepositoryTest extends AbstractIntegrationTest {
     @Autowired
     private EntityManager entityManager;
 
+    @Autowired(required = false)
+    private CacheManager cacheManager;
+
     @BeforeEach
     void setUp() {
-        userRepository.deleteAll();
+        if (cacheManager != null) {
+            cacheManager.getCacheNames().forEach(name -> {
+                var cache = cacheManager.getCache(name);
+                if (cache != null) {
+                    cache.clear();
+                }
+            });
+        }
+        entityManager.createNativeQuery("TRUNCATE TABLE audit_logs, games, users CASCADE").executeUpdate();
+        entityManager.flush();
+        entityManager.clear();
     }
 
     @Test
@@ -131,5 +145,6 @@ class UserRepositoryTest extends AbstractIntegrationTest {
             .build();
         entityManager.persist(user);
         entityManager.flush();
+        entityManager.clear();
     }
 }

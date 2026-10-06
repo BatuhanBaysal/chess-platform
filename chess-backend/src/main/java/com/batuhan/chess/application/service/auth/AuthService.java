@@ -16,9 +16,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,7 +40,6 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final AuthenticationManager authenticationManager;
 
     @Value("${keycloak.guest-client-id:chess-guest-client}")
     private String guestClientId;
@@ -60,7 +56,7 @@ public class AuthService {
     @Value("${keycloak.admin-password:admin}")
     private String keycloakAdminPassword;
 
-    @Value("${keycloak.server-url:http://localhost:8081}")
+    @Value("${KEYCLOAK_SERVER_URL:http://keycloak:8081}")
     private String keycloakServerUrl;
 
     @Transactional
@@ -73,8 +69,9 @@ public class AuthService {
             throw new EmailAlreadyExistsException("Email already exists");
         }
 
-        createKeycloakUser(request.username(), request.email(), request.password(), "USER");
+        String keycloakUserId = createKeycloakUser(request.username(), request.email(), request.password(), "USER");
         UserEntity user = UserEntity.builder()
+            .externalId(UUID.fromString(keycloakUserId))
             .username(request.username())
             .email(request.email())
             .password(passwordEncoder.encode(request.password()))
@@ -82,21 +79,14 @@ public class AuthService {
             .build();
 
         userRepository.save(user);
-        log.info("AUTH_ACTION: Successfully registered new user: {}", request.username());
+        log.info("AUTH_ACTION: Successfully registered new user to Keycloak and DB: {}", request.username());
     }
 
     @RateLimiter(name = "authService", fallbackMethod = "loginFallback")
     public AuthResponse login(LoginRequest request) {
         var user = userRepository.findByUsernameAndActiveTrue(request.usernameOrEmail())
             .or(() -> userRepository.findByEmailAndActiveTrue(request.usernameOrEmail()))
-            .orElseThrow(() -> new UsernameNotFoundException("User not found or account is deleted: " + request.usernameOrEmail()));
-
-        authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(
-                user.getUsername(),
-                request.password()
-            )
-        );
+            .orElseThrow(() -> new GameOperationException("User not found or account is deleted: " + request.usernameOrEmail()));
 
         String jwtToken = fetchUserTokenFromKeycloak(user.getUsername(), request.password());
         log.info("AUTH_ACTION: User successfully authenticated with Keycloak: {}", user.getUsername());
@@ -117,9 +107,10 @@ public class AuthService {
         String guestUsername = "guest_" + UUID.randomUUID().toString().substring(0, 8);
         String guestPassword = UUID.randomUUID().toString();
 
-        createKeycloakUser(guestUsername, guestUsername + "@chess.com", guestPassword, "GUEST");
+        String keycloakUserId = createKeycloakUser(guestUsername, guestUsername + "@chess.com", guestPassword, "GUEST");
 
         UserEntity guestUser = UserEntity.builder()
+            .externalId(UUID.fromString(keycloakUserId))
             .username(guestUsername)
             .email(guestUsername + "@chess.com")
             .password(passwordEncoder.encode(guestPassword))
@@ -143,7 +134,7 @@ public class AuthService {
             .build();
     }
 
-    private void createKeycloakUser(String username, String email, String password, String roleName) {
+    private String createKeycloakUser(String username, String email, String password, String roleName) {
         try {
             RestClient restClient = RestClient.create();
             String adminToken = fetchKeycloakAdminToken();
@@ -161,12 +152,13 @@ public class AuthService {
             if (location != null) {
                 String keycloakUserId = location.substring(location.lastIndexOf('/') + 1);
                 assignRoleToUser(keycloakUserId, roleName, adminToken);
+                return keycloakUserId;
             }
 
-            log.info("KEYCLOAK_SYNC: Created user account in Keycloak for username: {}", username);
+            throw new GameOperationException("Keycloak user location header is missing.");
         } catch (Exception e) {
             log.error("KEYCLOAK_ERROR: Failed to create Keycloak user {}: {}", username, e.getMessage());
-            throw new GameOperationException("Failed to register user in Keycloak identity provider.");
+            throw new RuntimeException("Keycloak user creation failed: " + e.getMessage(), e);
         }
     }
 

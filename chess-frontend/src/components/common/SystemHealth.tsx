@@ -19,9 +19,22 @@ export const SystemHealth: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/actuator/health`);
-      if (!response.ok) throw new Error('Failed to fetch system health');
-      const data = await response.json();
+      const response = await fetch('/actuator/health', {
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status} ${response.statusText}`);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Vite proxy returned HTML instead of Actuator JSON. Ensure backend is running and proxy is active.');
+      }
+
+      const data: HealthResponse = await response.json();
       setHealth(data);
     } catch (err: any) {
       setError(err.message || 'Connection refused to backend service.');
@@ -67,7 +80,7 @@ export const SystemHealth: React.FC = () => {
             <XCircle size={32} className="shrink-0" />
             <div>
               <h3 className="font-black uppercase tracking-wide text-sm">System Unreachable</h3>
-              <p className="text-xs opacity-80">{error} (Make sure backend and core containers are running via Docker)</p>
+              <p className="text-xs opacity-80">{error}</p>
             </div>
           </div>
         ) : (
@@ -143,14 +156,7 @@ export const SystemHealth: React.FC = () => {
                     <p className="text-sm font-bold text-white mb-2">
                       LGTM Stack Active
                     </p>
-                    <a
-                      href="http://localhost:3000"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-xs font-black text-indigo-400 hover:underline uppercase tracking-wider"
-                    >
-                      Open Grafana Dashboard &rarr;
-                    </a>
+                    <span className="text-xs text-slate-400">Grafana Dashboard (Port 3000)</span>
                   </div>
                 </div>
 
@@ -163,14 +169,7 @@ export const SystemHealth: React.FC = () => {
                     <p className="text-sm font-bold text-white mb-2">
                       SonarQube QA
                     </p>
-                    <a
-                      href="http://localhost:9000"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-xs font-black text-indigo-400 hover:underline uppercase tracking-wider"
-                    >
-                      Open SonarQube &rarr;
-                    </a>
+                    <span className="text-xs text-slate-400">SonarQube Server (Port 9002)</span>
                   </div>
                 </div>
 
@@ -183,22 +182,13 @@ export const SystemHealth: React.FC = () => {
                     <p className="text-sm font-bold text-white mb-2">
                       Prometheus Server
                     </p>
-                    <a
-                      href="http://localhost:9090"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-xs font-black text-indigo-400 hover:underline uppercase tracking-wider"
-                    >
-                      Open Prometheus &rarr;
-                    </a>
+                    <span className="text-xs text-slate-400">Metrics Engine (Port 9090)</span>
                   </div>
                 </div>
               </>
             )}
-
           </div>
         )}
-
       </div>
     </div>
   );

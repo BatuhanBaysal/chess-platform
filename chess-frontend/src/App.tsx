@@ -62,10 +62,10 @@ function App() {
 
   useEffect(() => {
     if (user) {
-      setGameConfig((prev: GameConfig) => ({ ...prev, playerName: user.username || 'Guest' }));
+      const resolvedUsername = user.username || (user as any).name || (user as any).sub || 'User';
+      setGameConfig((prev: GameConfig) => ({ ...prev, playerName: resolvedUsername }));
       if (user.id) localStorage.setItem('userId', String(user.id));
-    } else {
-      localStorage.removeItem('userId');
+      if (resolvedUsername) localStorage.setItem('username', resolvedUsername);
     }
   }, [user, setGameConfig]);
 
@@ -86,11 +86,38 @@ function App() {
   }, [location.pathname, location.search]);
 
   const handleLogin = async (u: string, p: string) => {
-    await login({ usernameOrEmail: u, password: p });
+    const response = await login({ usernameOrEmail: u, password: p });
+    
+    const rootData = (response as any)?.data || response;
+    const userData = rootData?.user || rootData?.data || rootData;
+
+    const username = userData?.username || userData?.name || u;
+    const role = userData?.role || userData?.roles || rootData?.role;
+
+    if (username) localStorage.setItem('username', username);
+    if (role) localStorage.setItem('userRole', typeof role === 'string' ? role : JSON.stringify(role));
+    if (userData?.id) localStorage.setItem('userId', String(userData.id));
+
+    window.location.href = '/menu';
   };
 
   const handleRegister = async (u: string, p: string, e: string) => {
     await register({ username: u, password: p, email: e });
+  };
+
+  const handleGuestLoginInternal = async () => {
+    const response = await loginAsGuest();
+    const rootData = (response as any)?.data || response;
+    const userData = rootData?.user || rootData?.data || rootData;
+
+    const username = userData?.username || userData?.name || 'Guest';
+    const role = userData?.role || userData?.roles || 'ROLE_GUEST';
+
+    if (username) localStorage.setItem('username', username);
+    if (role) localStorage.setItem('userRole', typeof role === 'string' ? role : JSON.stringify(role));
+    if (userData?.id) localStorage.setItem('userId', String(userData.id));
+
+    window.location.href = '/menu';
   };
 
   const onMoveInternal = (fF: number, fR: number, tF: number, tR: number, p?: string) => {
@@ -120,14 +147,14 @@ function App() {
             <AuthCard 
               onLogin={handleLogin} 
               onRegister={handleRegister} 
-              onGuestLogin={loginAsGuest} 
+              onGuestLogin={handleGuestLoginInternal} 
             />
           } />
           <Route path="/register" element={
             <AuthCard 
               onLogin={handleLogin} 
               onRegister={handleRegister} 
-              onGuestLogin={loginAsGuest} 
+              onGuestLogin={handleGuestLoginInternal} 
             />
           } />
           <Route path="/*" element={
@@ -146,6 +173,9 @@ function App() {
               onMoveInternal={onMoveInternal}
               fetchLegalMoves={fetchLegalMoves}
               fetchHint={fetchHint}
+              onLogin={(creds) => handleLogin(creds.usernameOrEmail, creds.password)}
+              onRegister={(data) => handleRegister(data.username, data.password, data.email)}
+              onGuestLogin={handleGuestLoginInternal}
             />
           } />
         </Routes>

@@ -1,18 +1,9 @@
 import { useState, useCallback, useRef } from 'react';
 import type { HintResponse } from '@/api/gameService';
 import { createAiGame } from '@/api/gameService';
+import api from '@/api/axios';
 import { StompHeaders } from '@stomp/stompjs';
 
-const getBaseUrl = () => {
-  if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('http')) {
-    return import.meta.env.VITE_API_URL.replace('/api', '');
-  }
-  const host = window.location.hostname;
-  return `${window.location.protocol}//${host}:8080`;
-};
-
-
-const API_URL = `${getBaseUrl()}/api`;
 const FINISHED_STATUSES = ['CHECKMATE', 'STALEMATE', 'RESIGNED', 'TIMEOUT', 'DRAW', 'CLOSING', 'ABANDONED', 'FINISHED', 'DISMISSED'];
 
 export const useChessActions = (
@@ -103,25 +94,31 @@ export const useChessActions = (
 
   const fetchLegalMoves = useCallback(async (file: number, rank: number) => {
     if (!gameIdRef.current || !game) return [];
-    const { headers } = getAuthDetails();
     try {
-      const response = await fetch(`${API_URL}/games/${gameIdRef.current}/legal-moves?file=${file}&rank=${rank}`, { headers: headers as HeadersInit });
-      return response.ok ? await response.json() : [];
+      const response = await api.get(`/api/games/${gameIdRef.current}/legal-moves`, {
+        params: { file, rank }
+      });
+      return response.data || [];
     } catch (err) {
       return [];
     }
-  }, [getAuthDetails, game, gameIdRef]);
+  }, [game, gameIdRef]);
 
   const startNewGame = useCallback(async (existingGameId?: string) => {
     try {
       setHintData(null);
       setEvaluation({ score: 0, type: 'CP' });
 
-      const { userId, headers } = getAuthDetails();
-      const url = existingGameId ? `${API_URL}/games/${existingGameId}?userId=${userId}` : `${API_URL}/games?userId=${userId}&whiteId=${userId}`;
-      const res = await fetch(url, { method: existingGameId ? 'GET' : 'POST', headers: { 'Content-Type': 'application/json', ...headers } as HeadersInit });
-      if (!res.ok) throw new Error("Connection failed");
-      const data = await res.json();
+      const { userId } = getAuthDetails();
+      let response;
+      
+      if (existingGameId) {
+        response = await api.get(`/api/games/${existingGameId}`, { params: { userId } });
+      } else {
+        response = await api.post('/api/games', null, { params: { userId, whiteId: userId } });
+      }
+
+      const data = response.data;
       setGame(data);
       syncPlayerColor(data);
       
@@ -163,28 +160,26 @@ export const useChessActions = (
     if (!gameIdRef.current) return;
     try {
       setIsHintLoading(true);
-      const { headers } = getAuthDetails();
-      const response = await fetch(`${API_URL}/games/${gameIdRef.current}/hint?depth=${depth}`, {
-        headers: headers as HeadersInit
+      const response = await api.get<HintResponse>(`/api/games/${gameIdRef.current}/hint`, {
+        params: { depth }
       });
-      if (response.ok) {
-        const data: HintResponse = await response.json();
-        setHintData(data);
-        
-        if (data.evaluationScore !== undefined) {
-          const score = data.evaluationScore;
-          const type = Math.abs(score) > 9000 ? 'MATE' : 'CP';
-          setEvaluation({ score, type });
-        }
-
-        return data;
+      
+      const data = response.data;
+      setHintData(data);
+      
+      if (data.evaluationScore !== undefined) {
+        const score = data.evaluationScore;
+        const type = Math.abs(score) > 9000 ? 'MATE' : 'CP';
+        setEvaluation({ score, type });
       }
+
+      return data;
     } catch (err) {
       console.error("Failed to fetch engine hint:", err);
     } finally {
       setIsHintLoading(false);
     }
-  }, [getAuthDetails, gameIdRef]);
+  }, [gameIdRef]);
 
   const resetChessState = useCallback(async () => {
     try {
@@ -192,10 +187,7 @@ export const useChessActions = (
       setEvaluation({ score: 0, type: 'CP' });
 
       if (gameIdRef.current && gameOverResult) { 
-        await fetch(`${API_URL}/games/${gameIdRef.current}/finish`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
+        await api.post(`/api/games/${gameIdRef.current}/finish`);
       }
     } catch (e) {
       console.error("Error:", e);

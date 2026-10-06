@@ -16,7 +16,7 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame }) => {
     const navigate = useNavigate();
     const isDark = colorMode === 'dark';
     
-    const isAuthPage = location.pathname === '/login' || location.pathname === '/register' || !user;
+    const isLoginOrRegister = location.pathname === '/login' || location.pathname === '/register';
     const isGamePage = isInGame || location.pathname.startsWith('/game');
     const isProfilePage = location.pathname === '/profile';
     const isAdminPage = location.pathname === '/admin';
@@ -24,12 +24,19 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame }) => {
     const isLeaderboardPage = location.pathname === '/leaderboard' || location.pathname.startsWith('/leaderboard');
     
     const showMenuButton = isGamePage || isProfilePage || isAdminPage || isHistoryPage || isLeaderboardPage || location.pathname === '/about' || location.pathname === '/contact' || location.pathname === '/changelog' || location.pathname === '/system-health';
+    const rawRole = user?.role;
+    const roleString = typeof rawRole === 'string' ? rawRole : (rawRole as any)?.name || String(rawRole || '').toUpperCase();
+    const normalizedRole = roleString.toUpperCase();
+
+    const hasActiveSession = Boolean(user) || Boolean(localStorage.getItem('userId'));
+
+    const currentUsername = user?.username || (user as any)?.name || (user as any)?.sub || localStorage.getItem('username') || (normalizedRole.includes('GUEST') ? 'Guest' : (hasActiveSession ? 'User' : ''));
     
-    const isGuest = user?.role === 'ROLE_GUEST';
-    const isAdmin = user?.role === 'ROLE_ADMIN';
+    const isGuest = normalizedRole.includes('GUEST') || currentUsername.toLowerCase().startsWith('guest');
+    const isAdmin = normalizedRole.includes('ADMIN') || normalizedRole === 'ROLE_ADMIN';
 
     const renderLeftSide = () => {
-        if (isAuthPage) return null;
+        if (isLoginOrRegister) return null;
 
         return (
             <div className="flex items-center gap-2.5">
@@ -46,10 +53,10 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame }) => {
                     </button>
                 )}
 
-                {user && (
+                {hasActiveSession && (
                     <div className="flex items-center gap-2 px-3.5 py-2 border border-blue-500/30 bg-blue-500/10 rounded-full text-xs font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 whitespace-nowrap">
                         <User size={15} />
-                        <span>{user?.username}</span>
+                        <span>{currentUsername}</span>
                     </div>
                 )}
             </div>
@@ -59,7 +66,7 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame }) => {
     const subNavItems = [
         {
             id: 'admin',
-            show: !isAuthPage && !isGamePage && !!user && isAdmin,
+            show: !isLoginOrRegister && !isGamePage && hasActiveSession && isAdmin,
             element: (
                 <button 
                     key="admin"
@@ -73,7 +80,7 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame }) => {
         },
         {
             id: 'profile',
-            show: !isAuthPage && !isGamePage && !!user && !isGuest,
+            show: !isLoginOrRegister && !isGamePage && hasActiveSession && !isGuest,
             element: (
                 <button 
                     key="profile"
@@ -87,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame }) => {
         },
         {
             id: 'about',
-            show: !isAuthPage && !isGamePage,
+            show: !isLoginOrRegister && !isGamePage,
             element: (
                 <button 
                     key="about"
@@ -101,7 +108,7 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame }) => {
         },
         {
             id: 'contact',
-            show: !isAuthPage && !isGamePage,
+            show: !isLoginOrRegister && !isGamePage,
             element: (
                 <button 
                     key="contact"
@@ -115,7 +122,7 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame }) => {
         },
         {
             id: 'changelog',
-            show: !isAuthPage && !isGamePage,
+            show: !isLoginOrRegister && !isGamePage,
             element: (
                 <button 
                     key="changelog"
@@ -129,7 +136,7 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame }) => {
         },
         {
             id: 'system-health',
-            show: !isAuthPage && !isGamePage,
+            show: !isLoginOrRegister && !isGamePage,
             element: (
                 <button 
                     key="system-health"
@@ -174,7 +181,7 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame }) => {
                         {isDark ? <Sun className="text-yellow-400" size={20} /> : <Moon className="text-slate-600" size={20} />}
                     </button>
 
-                    {!isAuthPage && !isGamePage && user && (
+                    {!isLoginOrRegister && !isGamePage && hasActiveSession && (
                         <button 
                             onClick={logout}
                             className="p-2.5 rounded-full hover:bg-rose-100 dark:hover:bg-rose-900/30 text-rose-600 dark:text-rose-400 transition-colors cursor-pointer"
@@ -186,7 +193,7 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame }) => {
                 </div>
             </div>
 
-            {!isAuthPage && !isGamePage && activeSubNavItems.length > 0 && (
+            {!isLoginOrRegister && !isGamePage && activeSubNavItems.length > 0 && (
                 <div className="w-full bg-white/80 dark:bg-[#020617]/80 border-t border-slate-200 dark:border-slate-800/50 px-8 py-3.5 flex justify-center items-center gap-6 overflow-x-auto">
                     {activeSubNavItems.map((item, index) => (
                         <React.Fragment key={item.id}>

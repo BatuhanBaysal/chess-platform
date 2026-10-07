@@ -4,9 +4,9 @@ spring:
 
     datasource:
         driver-class-name: org.postgresql.Driver
-        url: jdbc:postgresql://localhost:5432/chess_db
-        username: postgres
-        password: dbbatupsql
+        url: ${CHESS_DB_URL:jdbc:postgresql://localhost:5432/chess_db}
+        username: ${CHESS_DB_USERNAME:postgres}
+        password: ${CHESS_DB_PASSWORD:dbbatupsql}
 
     jpa:
         hibernate:

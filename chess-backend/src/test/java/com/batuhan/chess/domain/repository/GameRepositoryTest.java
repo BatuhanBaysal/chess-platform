@@ -37,8 +37,9 @@ class GameRepositoryTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        gameRepository.deleteAll();
-        userRepository.deleteAll();
+        entityManager.createNativeQuery("TRUNCATE TABLE audit_logs, games, users CASCADE").executeUpdate();
+        entityManager.flush();
+        entityManager.clear();
     }
 
     @Test

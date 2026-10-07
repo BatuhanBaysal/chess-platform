@@ -2,15 +2,16 @@ import { useState, useRef, useCallback } from 'react';
 import { Client, StompHeaders } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
-const getBaseUrl = () => {
-  if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('http')) {
-    return import.meta.env.VITE_API_URL.replace('/api', '');
+const getWsUrl = () => {
+  const apiUrl = import.meta.env.VITE_API_URL;
+  if (apiUrl) {
+    const cleanUrl = apiUrl.replace(/^ws:\/\//, 'http://').replace(/^wss:\/\//, 'https://');
+    return `${cleanUrl}/ws-chess`;
   }
-  const host = window.location.hostname;
-  return `${window.location.protocol}//${host}:8080`;
+  return `${window.location.origin}/ws-chess`;
 };
 
-const WS_URL = `${getBaseUrl()}/ws-chess`;
+const WS_URL = getWsUrl();
 
 export const useChessSocket = () => {
   const [isConnected, setIsConnected] = useState(false);

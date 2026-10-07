@@ -2,7 +2,7 @@ name: Chess Platform CI
 
 on:
     push:
-        branches: [ "main", "feature/**" ]
+        branches: [ "main", "feature/**", "fix/**" ]
     pull_request:
         branches: [ "main" ]
 
@@ -26,11 +26,28 @@ jobs:
                     --health-interval 10s
                     --health-timeout 5s
                     --health-retries 5
+            redis:
+                image: redis:7-alpine
+                ports:
+                    - 6379:6379
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
         env:
             TESTCONTAINERS_RYUK_DISABLED: "true"
             ADMIN_USERNAME: "admin"
             ADMIN_EMAIL: "admin@chess.com"
             ADMIN_PASSWORD: "Admin123!"
+            CHESS_DB_URL: "jdbc:postgresql://localhost:5432/chess_test_db"
+            CHESS_DB_USERNAME: "test"
+            CHESS_DB_PASSWORD: "test"
+            CHESS_JWT_SECRET: "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970"
+            CHESS_JWT_EXPIRATION: "604800000"
+            KEYCLOAK_SERVER_URL: "http://localhost:19999"
+            KEYCLOAK_ISSUER_URI: "http://localhost:19999/realms/chess-realm"
+            KEYCLOAK_GUEST_CLIENT_SECRET: "dummy-secret"
         steps:
             - uses: actions/checkout@v4
               with:

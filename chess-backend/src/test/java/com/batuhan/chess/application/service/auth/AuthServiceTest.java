@@ -16,12 +16,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,7 +34,7 @@ class AuthServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private AuthenticationManager authenticationManager;
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private AuthService authService;
@@ -51,6 +50,7 @@ class AuthServiceTest {
 
         testUser = UserEntity.builder()
             .id(1L)
+            .externalId(UUID.randomUUID())
             .username("batuhan")
             .email("batuhan@chess.com")
             .password("encodedPassword")
@@ -61,8 +61,8 @@ class AuthServiceTest {
 
         ReflectionTestUtils.setField(authService, "guestClientId", "chess-guest-client");
         ReflectionTestUtils.setField(authService, "guestClientSecret", "");
-        ReflectionTestUtils.setField(authService, "keycloakServerUrl", "http://localhost:8081");
-        ReflectionTestUtils.setField(authService, "keycloakTokenUri", "http://localhost:8081/realms/chess-realm/protocol/openid-connect/token");
+        ReflectionTestUtils.setField(authService, "keycloakServerUrl", "http://localhost:19999");
+        ReflectionTestUtils.setField(authService, "keycloakTokenUri", "http://localhost:19999/realms/chess-realm/protocol/openid-connect/token");
         ReflectionTestUtils.setField(authService, "keycloakAdminUsername", "admin");
         ReflectionTestUtils.setField(authService, "keycloakAdminPassword", "admin");
     }
@@ -101,7 +101,7 @@ class AuthServiceTest {
         }
 
         @Test
-        @DisplayName("Should abort registration and throw GameOperationException if Keycloak connection fails")
+        @DisplayName("Should abort registration and throw RuntimeException if Keycloak connection fails")
         void shouldThrowExceptionWhenKeycloakSyncFails() {
             // Arrange
             when(userRepository.existsByUsername(registerRequest.username())).thenReturn(false);
@@ -109,8 +109,8 @@ class AuthServiceTest {
 
             // Act & Assert
             assertThatThrownBy(() -> authService.register(registerRequest))
-                .isInstanceOf(GameOperationException.class)
-                .hasMessageContaining("Failed to register user in Keycloak");
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Keycloak user creation failed");
 
             verify(userRepository, never()).save(any());
         }
@@ -121,7 +121,7 @@ class AuthServiceTest {
     class LoginTests {
 
         @Test
-        @DisplayName("Should throw UsernameNotFoundException when user is not found or inactive")
+        @DisplayName("Should throw GameOperationException when user is not found or inactive")
         void shouldThrowExceptionWhenUserNotFound() {
             // Arrange
             when(userRepository.findByUsernameAndActiveTrue(loginRequest.usernameOrEmail())).thenReturn(Optional.empty());
@@ -129,42 +129,22 @@ class AuthServiceTest {
 
             // Act & Assert
             assertThatThrownBy(() -> authService.login(loginRequest))
-                .isInstanceOf(UsernameNotFoundException.class)
+                .isInstanceOf(GameOperationException.class)
                 .hasMessageContaining("User not found or account is deleted");
-
-            verify(authenticationManager, never()).authenticate(any());
         }
 
         @Test
-        @DisplayName("Should resolve user by email when username lookup misses")
+        @DisplayName("Should resolve user by email and attempt Keycloak authentication")
         void shouldResolveUserByEmailWhenUsernameMisses() {
             // Arrange
             LoginRequest emailRequest = new LoginRequest("batuhan@chess.com", "Password123");
             when(userRepository.findByUsernameAndActiveTrue("batuhan@chess.com")).thenReturn(Optional.empty());
             when(userRepository.findByEmailAndActiveTrue("batuhan@chess.com")).thenReturn(Optional.of(testUser));
-            when(authenticationManager.authenticate(any())).thenReturn(null);
 
             // Act & Assert
             assertThatThrownBy(() -> authService.login(emailRequest))
                 .isInstanceOf(GameOperationException.class)
                 .hasMessageContaining("Failed to authenticate session with identity provider");
-
-            verify(authenticationManager).authenticate(any());
-        }
-
-        @Test
-        @DisplayName("Should throw BadCredentialsException when authentication manager fails credentials verification")
-        void shouldThrowExceptionWhenCredentialsAreInvalid() {
-            // Arrange
-            when(userRepository.findByUsernameAndActiveTrue(loginRequest.usernameOrEmail())).thenReturn(Optional.of(testUser));
-            when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("Bad credentials"));
-
-            // Act & Assert
-            assertThatThrownBy(() -> authService.login(loginRequest))
-                .isInstanceOf(BadCredentialsException.class)
-                .hasMessage("Bad credentials");
-
-            verify(authenticationManager).authenticate(any());
         }
 
         @Test
@@ -172,7 +152,6 @@ class AuthServiceTest {
         void shouldThrowExceptionWhenKeycloakTokenEndpointFails() {
             // Arrange
             when(userRepository.findByUsernameAndActiveTrue(loginRequest.usernameOrEmail())).thenReturn(Optional.of(testUser));
-            when(authenticationManager.authenticate(any())).thenReturn(null);
 
             // Act & Assert
             assertThatThrownBy(() -> authService.login(loginRequest))
@@ -181,12 +160,12 @@ class AuthServiceTest {
         }
 
         @Test
-        @DisplayName("Should throw GameOperationException if Keycloak user creation fails during guest login")
+        @DisplayName("Should throw RuntimeException if Keycloak user creation fails during guest login")
         void shouldThrowExceptionWhenGuestKeycloakCreationFails() {
             // Act & Assert
             assertThatThrownBy(() -> authService.loginAsGuest())
-                .isInstanceOf(GameOperationException.class)
-                .hasMessageContaining("Failed to register user in Keycloak");
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Keycloak user creation failed");
 
             verify(userRepository, never()).save(any());
         }

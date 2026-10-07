@@ -7,6 +7,7 @@ import AllMatchHistory from '../features/menu/views/AllMatchHistory';
 import AdminDashboard from '../features/admin/AdminDashboard';
 import { ProtectedRoute } from '../components/common/ProtectedRoute';
 import { ActiveGameView } from '../features/chess/components/ActiveGameView';
+import AuthForm from '../features/auth/AuthForm';
 
 import About from '../components/common/About';
 import Contact from '../components/common/Contact';
@@ -30,6 +31,9 @@ interface AppRoutesProps {
   onMoveInternal: (fF: number, fR: number, tF: number, tR: number, p?: string) => void;
   fetchLegalMoves: (file: number, rank: number) => Promise<any>;
   fetchHint: (depth?: number) => void;
+  onLogin: (credentials: any) => void;
+  onRegister: (data: any) => void;
+  onGuestLogin: () => void;
 }
 
 export const AppRoutes: React.FC<AppRoutesProps> = ({
@@ -47,6 +51,9 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
   onMoveInternal,
   fetchLegalMoves,
   fetchHint,
+  onLogin,
+  onRegister,
+  onGuestLogin,
 }) => {
   return (
     <Routes>
@@ -54,10 +61,24 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
         <Route path="/admin" element={<AdminDashboard />} />
       </Route>
 
+      <Route element={<ProtectedRoute requiredRole="ROLE_USER" />}>
+        <Route path="/profile" element={<ProfileDashboard />} />
+      </Route>
+
+      <Route 
+        path="/login" 
+        element={
+          <AuthForm 
+            onLogin={onLogin} 
+            onRegister={onRegister} 
+            onGuestLogin={onGuestLogin} 
+          />
+        } 
+      />
+
       <Route path="/menu" element={<LandingPage onStart={handleStartMatch} />} />
       <Route path="/" element={user ? <Navigate to="/menu" replace /> : <Navigate to="/login" replace />} />
       
-      <Route path="/profile" element={<ProfileDashboard />} />
       <Route path="/leaderboard" element={<FullLeaderboardPage />} />
       <Route path="/history" element={<AllMatchHistory userId={user?.id} />} />
       <Route path="/about" element={<About />} />

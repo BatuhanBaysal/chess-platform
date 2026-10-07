@@ -71,6 +71,7 @@ services:
             AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME:-chess-storage}
             SPRING_LIQUIBASE_ENABLED: "true"
             MANAGEMENT_OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
+            OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
             MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
             LOGGING_FILE_NAME: /app/logs/chess-backend.log
             KEYCLOAK_SERVER_URL: http://keycloak:8081
@@ -103,8 +104,6 @@ services:
             - "${FRONTEND_PORT:-8082}:80"
         networks:
             - chess-network
-        environment:
-            - VITE_API_URL=http://localhost:8080
         depends_on:
             backend:
                 condition: service_healthy
@@ -254,6 +253,8 @@ services:
             KC_HTTP_PORT: 8081
             KC_HEALTH_ENABLED: "true"
             JAVA_OPTS_KC_HEAP: "-Xms128m -Xmx384m"
+        volumes:
+            - ./deploy/keycloak:/opt/keycloak/data/import
         deploy:
             resources:
                 limits:

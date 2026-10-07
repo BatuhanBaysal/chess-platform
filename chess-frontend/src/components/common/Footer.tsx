@@ -9,13 +9,12 @@ const Footer: React.FC = () => {
   const isOnline = !!user;
 
   const [ping, setPing] = useState<number>(14);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
   useEffect(() => {
     const checkPing = async () => {
       const start = performance.now();
       try {
-        await fetch(`${API_URL}/api/auth/health`, { method: 'HEAD' });
+        await fetch('/api/auth/health', { method: 'HEAD' });
         const end = performance.now();
         setPing(Math.round(end - start));
       } catch (error) {
@@ -26,14 +25,14 @@ const Footer: React.FC = () => {
     checkPing();
     const interval = setInterval(checkPing, 5000);
     return () => clearInterval(interval);
-  }, [API_URL]);
+  }, []);
 
   return (
     <footer className="w-full py-6 px-10 bg-slate-100 dark:bg-[#020617] border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-6 transition-colors duration-500">
       <div className="flex flex-col md:flex-row items-center gap-6">
         <div className="flex items-center gap-4 flex-wrap">
           <p className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 opacity-60">
-            CHESS PLATFORM V2.4.0
+            CHESS PLATFORM V2.5.0
           </p>
           
           {isAuthPage ? (
@@ -74,7 +73,7 @@ const Footer: React.FC = () => {
 
       <div className="flex items-center flex-wrap justify-center gap-6">
         <a 
-          href={`${API_URL}/swagger-ui/index.html`} 
+          href="/swagger-ui/index.html" 
           target="_blank" 
           rel="noopener noreferrer" 
           className="flex items-center gap-2 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors group"

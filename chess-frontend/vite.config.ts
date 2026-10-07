@@ -13,7 +13,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      '/ws': {
+      '/actuator': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/ws-chess': {
         target: 'http://localhost:8080',
         ws: true,
         changeOrigin: true,

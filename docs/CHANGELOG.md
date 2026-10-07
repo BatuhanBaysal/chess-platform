@@ -36,13 +36,19 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
-## [2.5.0] - 2026-09-26
+## [2.5.0] - 2026-10-06
 
 ### 🧪 Phase v2.5.0: Quality Assurance & Integration Testing 🔬
 > **Note:** Upgrading backend test suite from H2 in-memory configuration to a robust, containerized testing environment using PostgreSQL and Testcontainers.
 
+- **2026-10-06:**
+    - **Resolve Keycloak Identity Synchronization & Authentication Pipeline Failures (PR #182 | Issue #179):**
+        - **Identity Provider Synchronization:** Resolved `400 Bad Request` and authentication mismatches by synchronizing user profile updates (username and email) across both PostgreSQL and Keycloak IAM via dedicated admin REST client mappings (`UserService.java`, `KeycloakConfig.java`, `AuthService.java`).
+        - **CI/CD & Integration Test Stability:** Fixed `Circular placeholder reference` and ApplicationContext bootstrap crashes in test suites (`AuditLogRepositoryTest`, `GameRepositoryTest`, `UserRepositoryTest`, `application-test.yml`) and isolated Keycloak HTTP calls in unit tests (`AuthServiceTest.java`) to ensure deterministic pipeline execution on GitHub Actions (`ci.yml`).
+        - **Proxy & Real-time Routing Alignment:** Aligned reverse proxy endpoints in `nginx.conf` and `vite.config.ts` for `/actuator/` health metrics and `/ws-chess/` STOMP WebSocket traffic, unblocking live gameplay synchronization and system monitoring (`SystemHealth.tsx`).
+
 - **2026-09-26:**
-    - **Initialize Playwright E2E Test Suite for Critical User Journeys (PR #174 | Issue #173):**
+    - **Initialize Playwright E2E Test Suite for Critical User Journeys (PR #178 | Issue #173):**
         - **Test Framework Setup:** Installed and configured Playwright with appropriate browser targets and project configuration (`chess-frontend/playwright.config.ts`).
         - **E2E Core Specs:** Implemented comprehensive automated end-to-end test specs under `chess-frontend/e2e/` covering admin security, AI match initialization, authentication, gameplay mechanics, landing page, system health, and WebSocket reconnection flows.
         - **Pipeline Validation:** Verified cross-browser stability and resilience under simulated network disruptions for critical user paths.

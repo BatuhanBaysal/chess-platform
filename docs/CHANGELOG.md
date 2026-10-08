@@ -36,10 +36,16 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
-## [2.5.0] - 2026-10-06
+## [2.5.0] - 2026-10-08
 
 ### 🧪 Phase v2.5.0: Quality Assurance & Integration Testing 🔬
 > **Note:** Upgrading backend test suite from H2 in-memory configuration to a robust, containerized testing environment using PostgreSQL and Testcontainers.
+
+- **2026-10-08:**
+    - **Consolidate Dependabot Dependency Upgrades & Remediate Frontend Vulnerabilities (PR #183):**
+        - **Backend Build & Tooling Synchronization:** Upgraded Apache Maven Wrapper to `3.10.0` (superseding PR #181) and bumped AWS SDK BOM to `2.55.7` (superseding PR #180) to maintain up-to-date cloud storage client bindings.
+        - **Testcontainers Version Alignment & Conflict Resolution:** Resolved version mismatch conflicts between Testcontainers core (`2.0.5` proposed in PR #174) and modules (`1.21.4` proposed in PR #175 & #177) by standardizing `testcontainers`, `postgresql`, and `junit-jupiter` dependencies on stable `1.21.4`, verifying complete backward compatibility with all 461 backend tests passing (`BUILD SUCCESS`).
+        - **Frontend Security Vulnerability Remediation:** Remediated 15 open Dependabot security alerts across frontend dependencies (`chess-frontend/package-lock.json`), patching High and Moderate severity vulnerabilities including `axios` (Prototype Pollution, ReDoS, DoS, SSRF bypass) as well as transitive dev dependencies (`source-map-js`, `brace-expansion`), successfully achieving zero remaining vulnerabilities (`found 0 vulnerabilities`) and clean client production builds (`tsc -b && vite build`).
 
 - **2026-10-06:**
     - **Resolve Keycloak Identity Synchronization & Authentication Pipeline Failures (PR #182 | Issue #179):**

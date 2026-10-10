@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
@@ -109,10 +110,9 @@ public class UserService {
             .toList();
     }
 
-    public List<UserResponseDTO> getPagedLeaderboard(int page, int size) {
+    public Page<UserResponseDTO> getPagedLeaderboard(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return userRepository.findAllByActiveTrueOrderByEloRatingDesc(pageable)
-            .stream()
             .map(user -> UserResponseDTO.builder()
                 .username(user.getUsername())
                 .eloRating(user.getEloRating())
@@ -120,8 +120,7 @@ public class UserService {
                 .totalLosses(user.getTotalLosses())
                 .totalDraws(user.getTotalDraws())
                 .totalGames(user.getTotalGames())
-                .build())
-            .toList();
+                .build());
     }
 
     @Transactional

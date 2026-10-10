@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -58,14 +59,14 @@ public class UserController {
     )
     @ApiResponse(responseCode = "200", description = "Paginated leaderboard retrieved successfully")
     @GetMapping("/leaderboard/all")
-    public ResponseEntity<List<UserResponseDTO>> getAllLeaderboard(
+    public ResponseEntity<Page<UserResponseDTO>> getAllLeaderboard(
         @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "20") int size
+        @RequestParam(defaultValue = "10") int size
     ) {
-
         log.info("USER_ACTION: Fetching paginated global leaderboard (Page: {}, Size: {})", page, size);
-        List<UserResponseDTO> allLeaderboard = userService.getPagedLeaderboard(page, size);
-        log.info("USER_ACTION: Successfully retrieved paginated leaderboard users");
+        Page<UserResponseDTO> allLeaderboard = userService.getPagedLeaderboard(page, size);
+        log.info("USER_ACTION: Successfully retrieved paginated leaderboard users (Total: {}, Pages: {})",
+            allLeaderboard.getTotalElements(), allLeaderboard.getTotalPages());
         return ResponseEntity.ok(allLeaderboard);
     }
 

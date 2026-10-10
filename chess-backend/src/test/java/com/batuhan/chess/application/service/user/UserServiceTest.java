@@ -23,6 +23,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
@@ -228,11 +229,14 @@ class UserServiceTest {
                 .thenReturn(new PageImpl<>(List.of(testUser)));
 
             // Act
-            List<UserResponseDTO> pagedList = userService.getPagedLeaderboard(0, 10);
+            Page<UserResponseDTO> pagedResult = userService.getPagedLeaderboard(0, 10);
 
             // Assert
-            assertThat(pagedList).hasSize(1);
-            assertThat(pagedList.get(0).username()).isEqualTo("batuhan");
+            assertThat(pagedResult).isNotNull();
+            assertThat(pagedResult.getContent()).hasSize(1);
+            assertThat(pagedResult.getContent().get(0).username()).isEqualTo("batuhan");
+            assertThat(pagedResult.getTotalElements()).isEqualTo(1);
+            assertThat(pagedResult.getTotalPages()).isEqualTo(1);
         }
     }
 

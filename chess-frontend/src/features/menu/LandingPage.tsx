@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import Dashboard from './Dashboard';
@@ -46,7 +46,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('preferred_theme');
-    if (savedTheme && savedTheme !== selectedTheme) {
+    if (savedTheme) {
       setSelectedTheme(savedTheme as any);
     }
   }, [setSelectedTheme]);
@@ -61,7 +61,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
     const checkActiveGame = async () => {
       if (user?.id) {
         const activeGame = await getActiveGame(Number(user.id));
-        if (activeGame && activeGame.status !== 'CLOSING') {
+        if (activeGame && (activeGame.status as string) !== 'CLOSING') {
           const dismissedGames = JSON.parse(localStorage.getItem('dismissed_games') || '[]');
           if (!dismissedGames.includes(activeGame.gameId)) {
             setReconnectGame(activeGame);
@@ -72,14 +72,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
     checkActiveGame();
   }, [user]);
 
-  const handleStartGame = (roomId: string, time?: number, customTheme?: any) => {
+  const handleStartGame = useCallback((roomId: string, time?: number, customTheme?: any) => {
     setWaitingRoomId(null);
     setReconnectGame(null);
     const chosenTheme = customTheme || selectedTheme;
     localStorage.setItem('preferred_theme', chosenTheme);
     onStart(chosenTheme, (time as TimeControl) || selectedTime, roomId);
     navigate('/game');
-  };
+  }, [navigate, onStart, selectedTheme, selectedTime, setWaitingRoomId]);
 
   const handleStartAiMatch = async () => {
     try {
@@ -185,7 +185,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
       {reconnectGame && (
         <ReconnectAlert 
           reconnectGame={reconnectGame}
-          onReconnect={() => handleStartGame(reconnectGame.gameId, reconnectGame.timeLimit)}
+          onReconnect={() => handleStartGame(reconnectGame.gameId, reconnectGame.timeLimit ?? undefined)}
           onDismiss={() => {
             const dismissedGames = JSON.parse(localStorage.getItem('dismissed_games') || '[]');
             if (!dismissedGames.includes(reconnectGame.gameId)) {

@@ -1,62 +1,73 @@
 import api from './axios';
 
-export interface UserResponse {
-    username: string;
-    email: string;
-    eloRating: number;
-    totalWins: number;
-    totalLosses: number;
-    totalDraws: number;
-    totalGames: number;
-    role: 'ROLE_USER' | 'ROLE_GUEST' | 'ROLE_ADMIN';
-}
+import type {
+  UserResponseDTO,
+  UpdateProfileRequest,
+  ChangePasswordRequest,
+  DeleteAccountRequest,
+  AvatarUploadResponse
+} from '../types';
 
-export interface LeaderboardUser {
-    username: string;
-    eloRating: number;
-    totalWins: number;      
-    totalLosses: number;    
-    totalDraws: number; 
-    totalGames: number;
-}
-
-export interface UpdateProfileRequest {
-    username: string;
-    email: string;
-}
-
-export interface ChangePasswordRequest {
-    currentPassword: string;
-    newPassword: string;
-}
-
-export interface DeleteAccountRequest {
-    password: string;
-}
-
-export const getMyProfile = async (): Promise<UserResponse> => {
-    const response = await api.get('/api/users/me');
-    return response.data;
+export type {
+  UserResponseDTO,
+  UpdateProfileRequest,
+  ChangePasswordRequest,
+  DeleteAccountRequest,
+  AvatarUploadResponse
 };
 
-export const getLeaderboard = async (): Promise<LeaderboardUser[]> => {
-    const response = await api.get('/api/users/leaderboard');
-    return response.data;
+export type UserResponse = UserResponseDTO;
+export type LeaderboardUser = UserResponseDTO;
+
+export interface PageResponse<T> {
+  content: T[];
+  totalPages: number;
+  totalElements: number;
+  number: number;
+  size: number;
+  first: boolean;
+  last: boolean;
+}
+
+export const getMyProfile = async (): Promise<UserResponseDTO> => {
+  const response = await api.get<UserResponseDTO>('/api/users/me');
+  return response.data;
 };
 
-export const getFullLeaderboard = async (): Promise<LeaderboardUser[]> => {
-    const response = await api.get('/api/users/leaderboard/all');
-    return response.data;
+export const getLeaderboard = async (): Promise<UserResponseDTO[]> => {
+  const response = await api.get<UserResponseDTO[]>('/api/users/leaderboard');
+  return response.data;
+};
+
+export const getFullLeaderboard = async (
+  page: number = 0,
+  size: number = 10
+): Promise<PageResponse<LeaderboardUser>> => {
+  const response = await api.get<PageResponse<LeaderboardUser>>('/api/users/leaderboard/all', {
+    params: { page, size }
+  });
+  return response.data;
 };
 
 export const updateMyProfile = async (data: UpdateProfileRequest): Promise<void> => {
-    await api.put('/api/users/me', data);
+  await api.put('/api/users/me', data);
 };
 
 export const changeMyPassword = async (data: ChangePasswordRequest): Promise<void> => {
-    await api.put('/api/users/me/password', data);
+  await api.put('/api/users/me/password', data);
 };
 
 export const deleteMyAccount = async (data: DeleteAccountRequest): Promise<void> => {
-    await api.delete('/api/users/me', { data });
+  await api.delete('/api/users/me', { data });
+};
+
+export const uploadAvatar = async (file: File): Promise<AvatarUploadResponse> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post<AvatarUploadResponse>('/api/users/me/avatar', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+  return response.data;
 };

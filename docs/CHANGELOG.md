@@ -30,9 +30,24 @@ All notable changes to this project will be documented in this file. This projec
 - ✅ **Phase 21: Production Deployment & Cloud Demo (v2.2.0)** ☁️ - Provisioning multi-container environments, setting up Vercel static hosting, and deploying the full backend, database, SonarQube, and LGTM observability stack via Docker Compose on Oracle Cloud.
 - ✅ **Phase 22: Enterprise Data & Identity Management (v2.3.0)** 🔑 - Integrating MinIO object storage for artifacts and Keycloak for centralized OAuth2/OIDC RBAC security.
 - ✅ **Phase 23: Asynchronous Eventing & Observability (v2.4.0)** ⚡ - Decoupling heavy Stockfish analysis tasks via RabbitMQ and integrating OpenTelemetry with the LGTM stack.
-- ✅ **v2.5.0 - Quality Assurance & Integration Testing** 🧪 — Establishing the complete testing pyramid with Playwright E2E automation tests, Vitest & React Testing Library component tests, and Testcontainers PostgreSQL integration.
-- ⏳ **v2.6.0 - Final Polish, Strict Typing & UX Refinement** 💎 — Enforcing strict TypeScript DTO alignment, Login/Register UI redesign, AI telemetry state leak fix, profile page & in-game player card integration, and completion of remaining pages (About, Contact, Changelog, System Health) with role-based access control (RBAC) scenario testing.
+- ✅ **Phase 24: v2.5.0 - Quality Assurance & Integration Testing** 🧪 — Establishing the complete testing pyramid with Playwright E2E automation tests, Vitest & React Testing Library component tests, and Testcontainers PostgreSQL integration.
+- ⏳ **Phase 25: v2.6.0 - Final Polish, Strict Typing, Admin Control & Player Identity** 💎 — Enforcing strict TypeScript DTO alignment, fixing AI match state leaks, implementing role-based navigation, polishing player identity (avatar/profile), and delivering admin CRUD capabilities.
 - 🔜
+
+---
+
+## [2.6.0] - 2026-10-10
+
+### 💎 Phase v2.6.0: Final Polish, Strict Typing, Admin Control & Player Identity 🚀
+> **Note:** Finalizing production readiness by enforcing compile-time type contracts, isolating AI engine state lifecycles, refining authentication and role-based access, polishing player identity systems, and delivering administrative control capabilities.
+
+- **2026-10-10:**
+    - **Align Frontend Types Strictly with Backend DTOs & Resolve Client Contract Discrepancies (PR #188 | Issue #187):**
+        - **Type-Safe Domain Contract Mirroring:** Replaced loose API response types and eliminated `any` leaks across frontend service layers by introducing centralized strict TypeScript definitions (`src/types/`) mirroring backend Spring Data DTOs, refactoring `userService.ts`, `gameService.ts`, `adminService.ts`, and core Axios client handlers under `noImplicitAny` compilation.
+        - **Dynamic Server-Side Pagination Migration:** Migrated global rankings from client-side slicing to server-side dynamic pagination, updating `UserController` and `UserService` to expose `Page<UserResponseDTO>` and refactoring `userService.ts` and `FullLeaderboardPage.tsx` to handle dynamic `page` and `size` query parameters.
+        - **Match Outcome Resolution & Render Loop Fixes:** Fixed client-side outcome evaluation logic in `MatchHistory.tsx` and `AllMatchHistory.tsx` by eliminating string-number identity type mismatches on `userId` to correctly map checkmate victories; resolved recursive theme synchronization render loops (`Minified React error #185`) in `LandingPage.tsx` and stabilized state lifecycle updates in `Footer.tsx`.
+        - **Test Suite Optimization & Fast E2E Execution:** Refactored frontend test infrastructure for high-speed execution by establishing centralized shared fixtures (`chess-frontend/e2e/setup.ts`), streamlining Playwright specs (`auth`, `landing`, `gameplay`, `admin-security`, `ai-game`, `system-health`, `websocket`) with lightweight mock setups, and optimizing Vitest configuration alongside backend unit test assertions (`UserControllerTest.java`, `UserServiceTest.java`).
+        - **Build & Dependency Synchronization:** Synchronized Maven wrapper configurations (`maven-wrapper.properties`, `pom.xml`) and updated frontend build dependencies (`package.json`, `package-lock.json`, `vite.config.ts`, `vitest.config.ts`) to ensure clean gate verification via `npx tsc -b` and `./mvnw test`.
 
 ---
 

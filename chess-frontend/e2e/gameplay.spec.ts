@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './setup';
 
 test.describe('Chessboard Mechanics & Drag-and-Drop Interaction', () => {
   test('should mount chessboard structure and detect piece interactions', async ({ page }) => {

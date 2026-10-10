@@ -19,7 +19,7 @@ This document outlines the core architectural decisions, concurrency controls, s
 ### Server-Authoritative Timer & Synchronization
 * **The Challenge:** Client-side timing is insecure, prone to drift, and susceptible to network latency or browser throttling.
 * **The Solution:** Centralized timer orchestration in the **Backend (`GameService`)**, broadcasting heartbeats via WebSockets.
-* **The Result:** **Absolute temporal consistency** across all clients, eliminating clock drift entirely.
+* **The Result:** Clients render server heartbeats instead of keeping their own clocks, so the server clock is the single source of truth for time.
 
 ---
 
@@ -28,11 +28,11 @@ This document outlines the core architectural decisions, concurrency controls, s
 ### Redisson Distributed Locks
 * **The Challenge:** Preventing race conditions in multi-node or multi-threaded backend environments during high-frequency, concurrent move events.
 * **The Solution:** Enforced **Atomic State Broadcasting** by integrating a **Redisson-based distributed lock mechanism** optimized with connection pool configurations.
-* **The Result:** Eliminated race conditions during multi-threaded real-time chess move processing, guaranteeing a strict **Single Source of Truth** for the game state.
+* **The Result:** Concurrent move requests for the same game are serialized by a per-game lock (`lock:game:{gameId}`), keeping the server-side game state the single source of truth.
 
 ### Database Optimization & Schema Migrations
 * **Implementation:** Utilized Spring Data JPA with `@EntityGraph` and `@Cacheable` annotations to resolve N+1 query bottlenecks and cache frequent user queries.
-* **Deterministic Evolution (Liquibase):** Replaced risky JPA auto-generation (`ddl-auto=update`) with declarative Liquibase migrations, guaranteeing schema parity across H2 tests, local PostgreSQL, and Oracle Cloud environments.
+* **Deterministic Evolution (Liquibase):** Replaced risky JPA auto-generation (`ddl-auto=update`) with declarative Liquibase migrations, guaranteeing schema parity across local PostgreSQL, test environments, and Oracle Cloud.
 
 ---
 
@@ -40,7 +40,7 @@ This document outlines the core architectural decisions, concurrency controls, s
 
 ### IAM Migration: From Hand-Rolled JWT to Keycloak OAuth2 / OIDC
 * **The Evolution:** Authentication initially began as a custom, stateless JWT implementation using JJWT. However, maintaining custom token lifecycles, refresh flows, credential hashing, and role hierarchies added significant maintenance overhead.
-* **The Solution:** Fully transitioned the security architecture to a production-grade **Keycloak (OAuth2/OIDC Resource Server)**.
+* **The Solution:** Fully transitioned the security architecture to a **Keycloak (OAuth2/OIDC Resource Server)**.
     * The Spring Boot backend acts purely as an OAuth2 Resource Server validating asymmetric JWT signatures via Keycloak JWK Set URIs (`certs`).
     * Decoupled user registration, password policies, and admin privilege governance (`ADMIN` vs. `USER`) directly into Keycloak realms.
     * Handled ephemeral guest accounts natively with a 7-day expiration lifecycle.
@@ -64,6 +64,11 @@ This document outlines the core architectural decisions, concurrency controls, s
 ### Stockfish Integration via Sidecar Pattern
 * **Implementation:** Integrated the industry-standard **Stockfish chess engine** using Java's `ProcessBuilder` and `CompletableFuture`.
 * **Telemetry & Throttling:** Built asynchronous analysis pipelines, lobby management handlers, and automated watchdog timeout mechanisms. Evaluation telemetry broadcasting is throttled at `150ms` to protect WebSocket broker throughput under intensive engine calculations.
+
+### Asynchronous Post-Game Processing via RabbitMQ
+* **The Challenge:** Post-game Stockfish evaluation and statistics aggregation are CPU-heavy and must not block the thread that processes moves and broadcasts state.
+* **The Solution:** Game completion publishes a message to **RabbitMQ**; a separate consumer runs the analysis and updates statistics outside the game loop.
+* **Why RabbitMQ, not Kafka:** This is task-style work with one consumer type, modest volume, and no need to replay history, so a broker with simple routing and acknowledgements fits. Kafka's strengths (high-throughput streams, replay, multiple independent consumer groups) are not needed here and would add operational weight to a single-VPS deployment.
 
 ---
 

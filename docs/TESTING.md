@@ -1,12 +1,12 @@
 # 🧪 Testing Strategy & Quality Assurance Guide
-This document outlines the testing architecture, isolation strategies, and verification methodologies established for the **Chess Platform** full-stack ecosystem (Backend & Frontend).
+This document outlines the testing architecture, isolation strategies, and verification methodologies established for the **Chess Platform** full-stack ecosystem (Backend, Frontend, and End-to-End).
 
 ---
 
 ## 🎯 Testing Philosophy & Architecture
-Our testing pyramid ensures high reliability across all architectural layers by combining lightweight unit tests, isolated slice tests, containerized database integration checks, and reactive frontend component test suites.
+The testing pyramid combines lightweight unit tests, isolated slice tests, integration tests against a real database, reactive frontend component tests, and a Playwright end-to-end suite.
 
-* **Test Profile & Database Isolation:** All tests run under the `test` profile (`application-test.yml`), leveraging a **containerized PostgreSQL instance** running locally via Docker to guarantee true database behavior, dialect compatibility, and Liquibase schema validation.
+* **Test Profile & Database Isolation:** Backend tests run under the `test` profile (`application-test.yml`) against a real **PostgreSQL container** (`chess_test_db`) instead of an in-memory substitute, so tests exercise true database behavior, dialect compatibility, and Liquibase schema validation. Locally the container is started with Docker; in CI it runs as a GitHub Actions service container.
 * **Clean Code & Readability:** Utilizing **JUnit 5** (`@Nested`, `@DisplayName`, `@Test`) and **AssertJ**, test suites are structured into intuitive nested hierarchies that clearly document system behavior.
 
 ---
@@ -22,10 +22,10 @@ Domain models and application services are tested in strict isolation to validat
     * Verifies FIDE chess rule enforcement (e.g., Castling, En Passant, Threefold Repetition, Checkmate, and Stalemate detection).
 
 ### 2. Data JPA & Persistence Tests
-Repository interfaces and database interactions are validated using Spring Boot integration tests inheriting from a centralized base configuration.
+Repository interfaces and database interactions are validated with Spring Boot integration tests that inherit from a centralized base configuration.
 
 * **Database Layer (`UserRepositoryTest`, `GameRepositoryTest`, `AuditLogRepositoryTest`):**
-    * Inherit from `AbstractIntegrationTest` which dynamically configures the datasource against the local Docker PostgreSQL container.
+    * Inherit from `AbstractIntegrationTest`, which dynamically configures the datasource against the PostgreSQL test container.
     * Leverages clean state management (`@BeforeEach` deletions) to avoid state pollution across test runs.
 
 ### 3. Web & API Layer Tests
@@ -36,50 +36,78 @@ REST controllers are tested using Spring's `MockMvc` framework to ensure proper 
     * Verifies endpoints for game initialization, legal move queries, match history retrieval, and admin audit log filters.
 
 ### 4. Frontend Component & Hook Tests
-Frontend user interface components, interactive forms, custom hooks, and page dashboards are validated using **Vitest** and **React Testing Library (RTL)** running in a simulated `jsdom` environment.
+Frontend components, interactive forms, custom hooks, and page dashboards are validated using **Vitest** and **React Testing Library (RTL)** in a simulated `jsdom` environment.
 
-* **Testing Standard & Code Discipline:** All component and hook test suites strictly follow the **Arrange-Act-Assert (AAA)** pattern with explicit code separation via comments to mirror backend testing clarity.
+* **Testing Standard & Code Discipline:** All component and hook test suites follow the **Arrange-Act-Assert (AAA)** pattern with explicit separation via comments to mirror backend testing clarity.
 * **Component & Hook Validation (`ChessBoard`, `AuthForm`, `AdminDashboard`, `ProfileDashboard`, `useChessGameLogic`, `useChessActions`, `useChessTimer`, `useLobby`):**
-    * Verifies initial rendering, user interactions (e.g., clicks, form validations, password visibility toggling), and asynchronous data loading states.
+    * Verifies initial rendering, user interactions (clicks, form validation, password visibility toggling), and asynchronous data loading states.
     * Mocks network boundaries and API services (`axios`, `adminService`, `userService`, `gameService`) to isolate UI behavior.
+
+### 5. End-to-End Tests (Playwright)
+Playwright specs in `chess-frontend/e2e/` drive the real UI in a browser to verify critical user journeys end to end, such as authentication, starting an AI match, piece movement, and connection recovery. Configuration (base URL, web server settings) lives in `playwright.config.ts`. CI runs the suite on Chromium for every push and pull request.
+
+---
+
+## 📊 Coverage
+Backend coverage is measured with **JaCoCo** during `mvn verify` and analyzed in SonarQube. Frontend coverage is not measured yet.
 
 ---
 
 ## 🚀 Running Tests Locally
-Before running tests locally from your IDE or terminal, ensure that the dedicated **PostgreSQL Docker container** is up and running:
+Before running backend tests, start the dedicated PostgreSQL test container (same settings as the CI service container):
 
 ```bash
-docker run --name chess-postgres -e POSTGRES_DB=chess_test_db -e POSTGRES_USER=test -e POSTGRES_PASSWORD=test -p 5432:5432 -d postgres:15-alpine
+docker run --name chess-postgres-test -e POSTGRES_DB=chess_test_db -e POSTGRES_USER=test -e POSTGRES_PASSWORD=test -p 5432:5432 -d postgres:15-alpine
 ```
 
+> Port 5432 is also used by the `db` service in `docker-compose.yml`. Stop that service first, or map the test container to another port (for example `-p 5433:5432`) and adjust `CHESS_DB_URL` below.
+
 ### 🖥️ Running Frontend Tests
-To execute the frontend unit and component test suites via Vitest, navigate to the `chess-frontend` directory and run:
+Unit and component tests (Vitest):
 
 ```bash
 cd chess-frontend
 npm test
 ```
 
-For continuous watch mode during frontend development:
+Watch mode during development:
+
 ```bash
 cd chess-frontend
 npm run test:watch
 ```
 
-### ⚙️ JUnit Run Configuration Environment Variables
-To successfully resolve security admin properties and container flags during test execution, configure the following **Environment Variables** in your IDE's JUnit template/configuration:
-```text
-DOCKER_API_VERSION=1.41;TESTCONTAINERS_RYUK_DISABLED=true;ADMIN_USERNAME=admin;ADMIN_EMAIL=admin@chess.com;ADMIN_PASSWORD=Admin123!
+End-to-end tests (Playwright):
+
+```bash
+cd chess-frontend
+npm run test:e2e
 ```
 
-To execute the complete backend test suite via Maven from the chess-backend directory:
-```text
+### ⚙️ Backend Tests
+Run the complete backend suite from the `chess-backend` directory (with the variables below set in your shell or IDE):
+
+```bash
 ./mvnw clean test
 ```
 
+**IDE run configuration (IntelliJ JUnit template).** Add these environment variables:
+
+```text
+CHESS_DB_URL=jdbc:postgresql://localhost:5432/chess_test_db;CHESS_DB_USERNAME=test;CHESS_DB_PASSWORD=test;ADMIN_USERNAME=admin;ADMIN_EMAIL=admin@chess.com;ADMIN_PASSWORD=Admin123!
+```
+
+The `CHESS_DB_*` values point the tests at the test container, keeping them away from your development database. The `ADMIN_*` values supply the admin bootstrap properties the Spring context needs during `@SpringBootTest`. All of these are test-only values; never reuse them in a deployed environment.
+
+**Docker Desktop troubleshooting (Windows).** If Testcontainers cannot connect to Docker or fails during container cleanup, also set:
+
+```text
+DOCKER_API_VERSION=1.41;TESTCONTAINERS_RYUK_DISABLED=true
+```
+
 ### 📊 Running Tests & SonarQube Analysis (PowerShell)
-To execute the complete test suite along with the SonarQube analysis in a Windows PowerShell environment, set the required environment variables and run the following command from the `chess-backend` directory:
+To run the test suite together with the SonarQube analysis on Windows PowerShell, start the `quality` profile first (`docker compose --profile quality up -d`), then run from the `chess-backend` directory:
 
 ```powershell
-$env:DOCKER_API_VERSION="1.41"; $env:TESTCONTAINERS_RYUK_DISABLED="true"; $env:ADMIN_USERNAME="admin"; $env:ADMIN_EMAIL="admin@chess.com"; $env:ADMIN_PASSWORD="Admin123!"; .\mvnw clean verify sonar:sonar "-Dsonar.projectKey=chess-platform" "-Dsonar.host.url=http://localhost:9002" "-Dsonar.token=your_sonar_token_here"
+$env:CHESS_DB_URL="jdbc:postgresql://localhost:5432/chess_test_db"; $env:CHESS_DB_USERNAME="test"; $env:CHESS_DB_PASSWORD="test"; $env:DOCKER_API_VERSION="1.41"; $env:TESTCONTAINERS_RYUK_DISABLED="true"; $env:ADMIN_USERNAME="admin"; $env:ADMIN_EMAIL="admin@chess.com"; $env:ADMIN_PASSWORD="Admin123!"; .\mvnw clean verify sonar:sonar "-Dsonar.projectKey=chess-platform" "-Dsonar.host.url=http://localhost:9002" "-Dsonar.token=your_sonar_token_here"
 ```

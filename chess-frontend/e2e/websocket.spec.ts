@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './setup';
 
 test.describe('WebSocket Real-time Connectivity & Reconnection', () => {
   test('should maintain stable state during simulated network offline/online toggle', async ({ page }) => {

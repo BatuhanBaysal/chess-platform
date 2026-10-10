@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './setup';
 
 test.describe('Admin Route Access & Role Protection', () => {
   test('should guard admin dashboard against unauthenticated access', async ({ page }) => {

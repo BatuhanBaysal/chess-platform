@@ -12,10 +12,20 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 1000,
   },
+  ssr: {
+    noExternal: ['react-router', 'react-router-dom'],
+  },
   test: {
     environment: 'jsdom',
     globals: true,
     setupFiles: './src/test/setup.ts',
     exclude: ['e2e/**', 'node_modules/**'],
+    pool: 'forks',
+    isolate: false,
+    server: {
+      deps: {
+        inline: ['react-router', 'react-router-dom'],
+      },
+    },
   },
 });

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './setup';
 
 test.describe('AI Match Initialization & Board Rendering', () => {
   test('should load menu and initiate a single-player match against AI', async ({ page }) => {

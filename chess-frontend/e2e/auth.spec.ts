@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './setup';
 
 test.describe('Authentication & Navigation Flow', () => {
   test('should redirect root path to login page when unauthenticated', async ({ page }) => {

@@ -24,6 +24,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -78,6 +80,37 @@ class UserControllerTest {
             mockMvc.perform(get("/api/users/me"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("batuhan"));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/users/leaderboard/all Tests")
+    class GetPagedLeaderboardTests {
+
+        @Test
+        @WithMockUser
+        @DisplayName("Should return 200 OK with paginated leaderboard response")
+        void getAllLeaderboard_ValidRequest_ReturnsPageResponse() throws Exception {
+            // Arrange
+            UserResponseDTO user = UserResponseDTO.builder()
+                .username("batuhan")
+                .eloRating(1200)
+                .build();
+            org.springframework.data.domain.Page<UserResponseDTO> page =
+                new org.springframework.data.domain.PageImpl<>(List.of(user));
+
+            when(userService.getPagedLeaderboard(0, 10)).thenReturn(page);
+
+            // Act & Assert
+            mockMvc.perform(get("/api/users/leaderboard/all")
+                    .param("page", "0")
+                    .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].username").value("batuhan"))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1));
+
+            verify(userService, times(1)).getPagedLeaderboard(0, 10);
         }
     }
 

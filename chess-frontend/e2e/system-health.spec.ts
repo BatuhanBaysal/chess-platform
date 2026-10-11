@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './setup';
 
 test.describe('System Information & Static Pages', () => {
   test('should display informational pages without errors', async ({ page }) => {

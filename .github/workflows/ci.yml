@@ -83,23 +83,41 @@ jobs:
                     cache: 'npm'
                     cache-dependency-path: chess-frontend/package-lock.json
 
-            -   name: Install & Build Frontend
+            -   name: Install Dependencies
                 run: |
                     cd chess-frontend
                     npm ci
+
+            -   name: Cache Playwright Browsers
+                uses: actions/cache@v4
+                id: playwright-cache
+                with:
+                    path: ~/.cache/ms-playwright
+                    key: ${{ runner.os }}-playwright-${{ hashFiles('chess-frontend/package-lock.json') }}
+
+            -   name: Install Playwright Chromium
+                if: steps.playwright-cache.outputs.cache-hit != 'true'
+                run: |
+                    cd chess-frontend
+                    npx playwright install --with-deps chromium
+
+            -   name: Install OS Dependencies (when cached)
+                if: steps.playwright-cache.outputs.cache-hit == 'true'
+                run: |
+                    cd chess-frontend
+                    npx playwright install-deps chromium
+
+            -   name: Build Frontend
+                run: |
+                    cd chess-frontend
                     npm run build
 
-            -   name: Run Frontend Tests
+            -   name: Run Frontend Unit Tests
                 run: |
                     cd chess-frontend
                     npm test
 
-            -   name: Install Playwright Browsers
-                run: |
-                    cd chess-frontend
-                    npx playwright install --with-deps
-
             -   name: Run Playwright E2E Tests
                 run: |
                     cd chess-frontend
-                    npx playwright test
+                    npx playwright test --project=chromium

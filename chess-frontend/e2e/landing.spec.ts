@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './setup';
 
 test.describe('LandingPage Core User Journeys', () => {
   test.beforeEach(async ({ page }) => {

@@ -61,6 +61,7 @@ export const ActiveGameView: React.FC<ActiveGameViewProps> = ({
     <main className="grow flex flex-col items-center justify-center w-full px-4 py-8">
       <div className="w-full flex justify-center items-center">
         <ChessBoard 
+          key={game?.gameId || 'active-game'}
           boardRepresentation={game?.boardRepresentation || ""} 
           isStarted={game?.isStarted || false}
           gameStatus={game?.status || "ACTIVE"}

@@ -166,8 +166,11 @@ public class GameEngineService {
         Long nextPlayerId = (game.getCurrentTurn() == Color.WHITE) ? game.getWhitePlayerId() : game.getBlackPlayerId();
 
         if (AI_PLAYER_ID.equals(nextPlayerId)) {
-            stockfishService.getBestMoveAsync(game.getMoveHistory(), difficulty)
-                .thenAccept(bestMoveUci -> applyAndBroadcastAiMove(gameId, game, bestMoveUci));
+            scheduler.schedule(() ->
+                    stockfishService.getBestMoveAsync(game.getMoveHistory(), difficulty)
+                        .thenAccept(bestMoveUci -> applyAndBroadcastAiMove(gameId, game, bestMoveUci)),
+                2000, TimeUnit.MILLISECONDS
+            );
         }
     }
 

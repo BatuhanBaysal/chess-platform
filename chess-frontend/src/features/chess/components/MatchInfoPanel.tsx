@@ -130,7 +130,7 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
         </div>
 
         <div className="p-0.5">
-          <EvaluationBar score={score} evaluationType={evaluationType} />
+          <EvaluationBar score={score} evaluationType={evaluationType} orientation={orientation} />
         </div>
 
         {displayedHint ? (

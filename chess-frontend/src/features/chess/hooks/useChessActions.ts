@@ -40,7 +40,7 @@ export const useChessActions = (
 
           if (latestState.lastMoves && latestState.lastMoves.length > 0) {
             const lastMove = latestState.lastMoves[latestState.lastMoves.length - 1];
-            if (lastMove.evaluation !== undefined) {
+            if (lastMove.evaluation !== undefined && lastMove.evaluation !== 0) {
               const score = lastMove.evaluation;
               const type = Math.abs(score) > 9000 ? 'MATE' : 'CP';
               setEvaluation({ score, type });
@@ -185,6 +185,11 @@ export const useChessActions = (
     try {
       setHintData(null);
       setEvaluation({ score: 0, type: 'CP' });
+
+      if (gameIdRef.current) {
+        sessionStorage.removeItem(`chess_game_logs_${gameIdRef.current}`);
+      }
+      sessionStorage.removeItem('chess_game_logs_active');
 
       if (gameIdRef.current && gameOverResult) { 
         await api.post(`/api/games/${gameIdRef.current}/finish`);

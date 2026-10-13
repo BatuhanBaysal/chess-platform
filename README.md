@@ -74,7 +74,7 @@ This project is architected as a **high-cohesion monorepo** with operational pro
 | **📝 Git Flow** | Version control standards, branching strategies, and conventional commits | [docs/GIT_GUIDE.md](docs/GIT_GUIDE.md)           |
 | **📜 Changelog** | Version history, milestone tracking, and lifecycle events                 | [docs/CHANGELOG.md](docs/CHANGELOG.md)           |
 
-Live project tracking via the [Kanban Board](https://github.com/users/BatuhanBaysal/projects/2) and versioned [Releases](https://github.com/BatuhanBaysal/chess-platform/releases). Governance policies: [Security Policy](docs/SECURITY.md), [Code of Conduct](CODE_OF_CONDUCT.md), [Contributing Guidelines](docs/CONTRIBUTING.md), [License](LICENSE).
+Live project tracking via the [Kanban Board](https://github.com/users/BatuhanBaysal/projects/2) and versioned [Releases](https://github.com/BatuhanBaysal/chess-platform/releases). Governance policies: [Security Policy](docs/SECURITY.md), [Code of Conduct](docs/CODE_OF_CONDUCT.md), [Contributing Guidelines](docs/CONTRIBUTING.md), [License](LICENSE).
 
 ---
 

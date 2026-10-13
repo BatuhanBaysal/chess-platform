@@ -31,15 +31,23 @@ All notable changes to this project will be documented in this file. This projec
 - ✅ **Phase 22: Enterprise Data & Identity Management (v2.3.0)** 🔑 - Integrating MinIO object storage for artifacts and Keycloak for centralized OAuth2/OIDC RBAC security.
 - ✅ **Phase 23: Asynchronous Eventing & Observability (v2.4.0)** ⚡ - Decoupling heavy Stockfish analysis tasks via RabbitMQ and integrating OpenTelemetry with the LGTM stack.
 - ✅ **Phase 24: v2.5.0 - Quality Assurance & Integration Testing** 🧪 — Establishing the complete testing pyramid with Playwright E2E automation tests, Vitest & React Testing Library component tests, and Testcontainers PostgreSQL integration.
-- ⏳ **Phase 25: v2.6.0 - Final Polish, Strict Typing, Admin Control & Player Identity** 💎 — Enforcing strict TypeScript DTO alignment, fixing AI match state leaks, implementing role-based navigation, polishing player identity (avatar/profile), and delivering admin CRUD capabilities.
+- ⏳ **Phase 25: v2.6.0 - v2.6.0: Final Polish, Strict Typing, RBAC UI & Player Identity** 💎 — Enforcing strict TypeScript DTO alignment, fixing AI match state leaks, implementing role-based navigation, polishing player identity (avatar/profile), and delivering admin CRUD capabilities.
 - 🔜
 
 ---
 
-## [2.6.0] - 2026-10-10
+## [2.6.0] - 2026-10-12
 
 ### 💎 Phase v2.6.0: Final Polish, Strict Typing, Admin Control & Player Identity 🚀
 > **Note:** Finalizing production readiness by enforcing compile-time type contracts, isolating AI engine state lifecycles, refining authentication and role-based access, polishing player identity systems, and delivering administrative control capabilities.
+
+- **2026-10-12:**
+    - **Isolate AI Match Telemetry Lifecycles, Introduce Opening Delay & Fix Evaluation Bar Perspective (PR #190 | Issue #189):**
+        - **AI Opening Move Synchronization & Engine Delay:** Added a 2000ms scheduled execution delay (`scheduler.schedule(...)`) in `GameEngineService.java` (`triggerAiMoveIfNeededWithDifficulty`) for AI opening moves when the player selects Black, preventing instantaneous zero-millisecond moves, resolving client-side mount race conditions, and providing natural pacing.
+        - **Telemetry State Isolation & Scoped Persistence:** Refactored telemetry state in `useChessGameLogic.ts` and `useChessActions.ts` from static global storage to dynamic `gameId`-scoped keys (`chess_game_logs_${gameId}`), eliminating cross-match telemetry leaks and ensuring comprehensive state cleanup on unmount or match reset.
+        - **Permanent Game Start Telemetry Retention:** Guaranteed that the initial green `"Game started. White to move."` telemetry entry permanently remains pinned at the bottom of the telemetry feed across both White and Black orientations, preventing incoming AI opening moves from wiping the initial log.
+        - **Evaluation Bar Perspective & Display Alignment:** Aligned `EvaluationBar.tsx` directly with Stockfish UCI side-to-move calculations without arbitrary sign inversions; updated UI labels to explicit text (`You (White)` / `You (Black)`, `Evaluation: ...`); and prevented background timer/socket ticks in `useChessActions.ts` from prematurely overwriting active hints back to neutral `0`.
+        - **Regression Testing & Lifecycle Verification:** Added automated regression specs in `useChessGameLogic.test.ts` and `useChessActions.test.ts` covering multi-match state isolation, telemetry pinning under Black orientation, and session cleanup, alongside wrapping asynchronous test lifecycles with `act(...)` in `App.test.tsx`.
 
 - **2026-10-10:**
     - **Align Frontend Types Strictly with Backend DTOs & Resolve Client Contract Discrepancies (PR #188 | Issue #187):**

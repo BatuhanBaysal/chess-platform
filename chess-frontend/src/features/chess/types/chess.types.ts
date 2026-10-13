@@ -25,6 +25,7 @@ export interface ChessBoardProps {
   isMyTurn?: boolean;
   isConnected?: boolean;
   game?: {
+    gameId?: string;
     whitePlayerName?: string;
     blackPlayerName?: string;
     whitePlayerId?: number;

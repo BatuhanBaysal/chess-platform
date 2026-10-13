@@ -22,29 +22,35 @@ export const useChessGameLogic = (
   orientation: 'WHITE' | 'BLACK',
   onMove: (fromFile: number, fromRank: number, toFile: number, toRank: number, promotion?: string) => void,
   fetchLegalMoves?: (file: number, rank: number) => Promise<{ file: number, rank: number }[]>,
-  game?: { lastMoves?: { moveQuality?: string }[] }
+  game?: { gameId?: string; lastMoves?: { moveQuality?: string }[] }
 ) => {
   const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
   const [promotionPending, setPromotionPending] = useState<{ from: number, to: number } | null>(null);
   const [legalMoves, setLegalMoves] = useState<{ file: number, rank: number }[]>([]);
-  
-  const matchFingerprint = useMemo(() => {
-    return moveHistory && moveHistory.length > 0 ? moveHistory[0] : (boardRepresentation ? boardRepresentation.split('|')[0].slice(0, 16) : 'empty_start');
-  }, [moveHistory, boardRepresentation]);
 
-  const storageKey = `chess_game_logs_active`;
+  const currentGameId = game?.gameId;
+  const storageKey = currentGameId ? `chess_game_logs_${currentGameId}` : `chess_game_logs_active`;
+
+  const createInitialLog = (): LogEntry => ({
+    text: "Game started. White to move.",
+    turn: 'WHITE',
+    time: new Date().toLocaleTimeString('en-GB', { hour12: false })
+  });
 
   const [logs, setLogs] = useState<LogEntry[]>(() => {
     try {
-      const savedData = sessionStorage.getItem(storageKey);
-      if (savedData) {
-        const parsedData = JSON.parse(savedData);
-        if (parsedData.fingerprint === matchFingerprint) {
-          return parsedData.logs;
+      if (storageKey) {
+        const savedData = sessionStorage.getItem(storageKey);
+        if (savedData) {
+          const parsed = JSON.parse(savedData);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (parsed.gameId === currentGameId && Array.isArray(parsed.logs) && parsed.logs.length > 0) {
+            return parsed.logs;
+          }
         }
       }
     } catch {}
-    return [];
+    return isStarted ? [createInitialLog()] : [];
   });
 
   const [activePiece, setActivePiece] = useState<{ char: string, index: number } | null>(null);
@@ -52,32 +58,50 @@ export const useChessGameLogic = (
   const [moveQualities, setMoveQualities] = useState<Record<number, string>>({});
 
   const lastProcessedMessage = useRef<string | null>(null);
+  const prevGameIdRef = useRef<string | undefined>(currentGameId);
 
   useEffect(() => {
-    try {
-      const savedData = sessionStorage.getItem(storageKey);
-      if (savedData) {
-        const parsedData = JSON.parse(savedData);
-        if (parsedData.fingerprint !== matchFingerprint) {
-          setLogs([]);
-          sessionStorage.removeItem(storageKey);
+    if (prevGameIdRef.current !== currentGameId) {
+      prevGameIdRef.current = currentGameId;
+      setSelectedSquare(null);
+      setPromotionPending(null);
+      setLegalMoves([]);
+      setMoveQualities({});
+      lastProcessedMessage.current = null;
+
+      const initialLog = createInitialLog();
+
+      try {
+        if (currentGameId) {
+          const savedData = sessionStorage.getItem(`chess_game_logs_${currentGameId}`);
+          if (savedData) {
+            const parsed = JSON.parse(savedData);
+            const loadedLogs = Array.isArray(parsed) ? parsed : (parsed.logs || []);
+            if (loadedLogs.length > 0) {
+              setLogs(loadedLogs);
+              return;
+            }
+          }
         }
-      }
-    } catch {}
-  }, [matchFingerprint]);
+        sessionStorage.removeItem('chess_game_logs_active');
+      } catch {}
+
+      setLogs([initialLog]);
+    }
+  }, [currentGameId]);
 
   useEffect(() => {
     try {
-      if (logs.length > 0) {
+      if (logs.length > 0 && storageKey) {
         sessionStorage.setItem(storageKey, JSON.stringify({
-          fingerprint: matchFingerprint,
+          gameId: currentGameId,
           logs: logs
         }));
       }
     } catch (e) {
       console.error("Failed to save logs", e);
     }
-  }, [logs, matchFingerprint]);
+  }, [logs, storageKey, currentGameId]);
 
   const squares = useMemo(() => {
     if (!boardRepresentation) return Array(64).fill('.');
@@ -85,12 +109,19 @@ export const useChessGameLogic = (
   }, [boardRepresentation]);
 
   const upperStatus = (gameStatus || "").toUpperCase();
-  const isGameOver = isStarted && ['WON', 'LOST', 'DRAW', 'CHECKMATE', 'STALEMATE', 'RESIGNED', 'TIMEOUT', 'CLOSING', 'ABANDONED', 'FINISHED', 'DISMISSED'].some(s => upperStatus.includes(s));
+  const isGameOver = isStarted && [
+    'WON', 'LOST', 'DRAW', 'CHECKMATE', 'STALEMATE', 'RESIGNED',
+    'TIMEOUT', 'CLOSING', 'ABANDONED', 'FINISHED', 'DISMISSED'
+  ].some(s => upperStatus.includes(s));
+
   const showSyncing = (!isStarted && !isGameOver) || (upperStatus.includes('TIMEOUT') && !showGameOverModal);
   const isCheck = upperStatus.includes('CHECK') && !isGameOver;
   const isMyTurn = currentTurn?.toUpperCase() === orientation.toUpperCase();
 
-  const getActualIndex = useCallback((visualIndex: number) => orientation === 'WHITE' ? visualIndex : 63 - visualIndex, [orientation]);
+  const getActualIndex = useCallback(
+    (visualIndex: number) => orientation === 'WHITE' ? visualIndex : 63 - visualIndex,
+    [orientation]
+  );
   const getCoordsFromIndex = (index: number) => ({ file: index % 8, rank: 7 - Math.floor(index / 8) });
 
   useEffect(() => {
@@ -104,9 +135,9 @@ export const useChessGameLogic = (
     const pairs = [];
     const history = moveHistory || [];
     for (let i = 0; i < history.length; i += 2) {
-      pairs.push({ 
-        index: Math.floor(i / 2) + 1, 
-        white: history[i], 
+      pairs.push({
+        index: Math.floor(i / 2) + 1,
+        white: history[i],
         whiteIndex: i,
         whiteQuality: moveQualities[i],
         black: history[i + 1] || null,
@@ -119,11 +150,7 @@ export const useChessGameLogic = (
 
   useEffect(() => {
     if (isStarted && logs.length === 0) {
-      setLogs([{
-        text: "Game started. White to move.",
-        turn: 'WHITE',
-        time: new Date().toLocaleTimeString('en-GB', { hour12: false })
-      }]);
+      setLogs([createInitialLog()]);
     }
   }, [isStarted, logs.length]);
 
@@ -140,17 +167,14 @@ export const useChessGameLogic = (
     }
 
     const isWhite = orientation === 'WHITE';
-    
     if (upperStatus.includes('WON')) {
       const winnerIsWhite = upperStatus.includes('WHITE');
       return (isWhite === winnerIsWhite) ? "Victory!" : "Defeat!";
     }
-    
     if (upperStatus.includes('LOST')) {
       const loserIsWhite = upperStatus.includes('WHITE');
       return (isWhite === loserIsWhite) ? "Defeat!" : "Victory!";
     }
-
     if (upperStatus.includes('CHECKMATE')) {
       const loser = upperStatus.split('_')[1];
       if (loser) {
@@ -158,7 +182,6 @@ export const useChessGameLogic = (
       }
       return "Defeat!";
     }
-
     return "Game Over";
   };
 
@@ -169,20 +192,27 @@ export const useChessGameLogic = (
   useEffect(() => {
     if (lastMoveMessage && lastMoveMessage !== lastProcessedMessage.current) {
       const isError = lastMoveMessage.includes("Illegal") || lastMoveMessage.includes("not your turn");
-      
+
       setLogs(prev => {
         if (prev.length > 0 && prev[0].text === lastMoveMessage) {
           return prev;
         }
+
+        const hasStartLog = prev.some(l => l.text.includes("Game started"));
+        const baseLogs = hasStartLog ? prev : [...prev, createInitialLog()];
+
         return [{
           text: lastMoveMessage,
           turn: isError ? currentTurn.toUpperCase() : (currentTurn.toUpperCase() === 'WHITE' ? 'BLACK' : 'WHITE'),
-          time: new Date().toLocaleTimeString('en-GB', { hour12: false }) 
-        }, ...prev].slice(0, 50);
+          time: new Date().toLocaleTimeString('en-GB', { hour12: false })
+        }, ...baseLogs].slice(0, 50);
       });
 
       lastProcessedMessage.current = lastMoveMessage;
-      if (!isError) { setSelectedSquare(null); setLegalMoves([]); }
+      if (!isError) {
+        setSelectedSquare(null);
+        setLegalMoves([]);
+      }
     }
   }, [lastMoveMessage, currentTurn]);
 
@@ -217,7 +247,7 @@ export const useChessGameLogic = (
     const pieceAtTarget = squares[actualIndex];
     if (selectedSquare === null) {
       const isOwnPiece = (orientation === 'WHITE' && pieceAtTarget !== '.' && pieceAtTarget === pieceAtTarget.toUpperCase()) ||
-      (orientation === 'BLACK' && pieceAtTarget !== '.' && pieceAtTarget === pieceAtTarget.toLowerCase());
+        (orientation === 'BLACK' && pieceAtTarget !== '.' && pieceAtTarget === pieceAtTarget.toLowerCase());
       if (isOwnPiece) {
         setSelectedSquare(actualIndex);
         if (fetchLegalMoves) {
@@ -230,14 +260,17 @@ export const useChessGameLogic = (
       if (isLegal) executeMove(selectedSquare, actualIndex);
       else {
         const isOwnPiece = (orientation === 'WHITE' && pieceAtTarget !== '.' && pieceAtTarget === pieceAtTarget.toUpperCase()) ||
-        (orientation === 'BLACK' && pieceAtTarget !== '.' && pieceAtTarget === pieceAtTarget.toLowerCase());
+          (orientation === 'BLACK' && pieceAtTarget !== '.' && pieceAtTarget === pieceAtTarget.toLowerCase());
         if (isOwnPiece) {
           setSelectedSquare(actualIndex);
           if (fetchLegalMoves) {
             const moves = await fetchLegalMoves(file, rank);
             setLegalMoves(moves);
           }
-        } else { setSelectedSquare(null); setLegalMoves([]); }
+        } else {
+          setSelectedSquare(null);
+          setLegalMoves([]);
+        }
       }
     }
   };
@@ -247,7 +280,7 @@ export const useChessGameLogic = (
     const visualIndex = parseInt((event.active.id as string).split('-')[1]);
     const actualIndex = getActualIndex(visualIndex);
     setActivePiece({ char: event.active.data.current?.char, index: actualIndex });
-    handleSquareClick(actualIndex); 
+    handleSquareClick(actualIndex);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -262,7 +295,10 @@ export const useChessGameLogic = (
       const to = getCoordsFromIndex(toIndex);
       const isLegal = legalMoves.some(m => m.file === to.file && m.rank === to.rank);
       if (isLegal) executeMove(fromIndex, toIndex);
-      else { setSelectedSquare(null); setLegalMoves([]); }
+      else {
+        setSelectedSquare(null);
+        setLegalMoves([]);
+      }
     }
   };
 
@@ -281,3 +317,5 @@ export const useChessGameLogic = (
     formatTime
   };
 };
+
+export default useChessGameLogic;

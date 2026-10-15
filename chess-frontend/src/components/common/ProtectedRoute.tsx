@@ -19,12 +19,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requiredRole }) 
     }
 
     if (!token || !user) {
-        return <Navigate to="/" replace />;
+        return <Navigate to="/sign-in" replace />;
     }
 
     if (requiredRole && user.role !== requiredRole && user.role !== 'ROLE_ADMIN') {
-        return <Navigate to="/" replace />;
+        return <Navigate to="/sign-in" replace />;
     }
 
     return <Outlet />;
 };
+
+export default ProtectedRoute;

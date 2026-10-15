@@ -140,9 +140,25 @@ function App() {
     <ErrorBoundary>
       <Layout 
         onBackToMenu={handleBackToMenu} 
-        isInGame={Boolean(game?.gameId)} 
+        isInGame={Boolean(game?.gameId)}
+        activeGameId={game?.gameId}
       >
         <Routes>
+          <Route path="/sign-in" element={
+            <AuthCard 
+              onLogin={handleLogin} 
+              onRegister={handleRegister} 
+              onGuestLogin={handleGuestLoginInternal} 
+            />
+          } />
+          <Route path="/sign-up" element={
+            <AuthCard 
+              onLogin={handleLogin} 
+              onRegister={handleRegister} 
+              onGuestLogin={handleGuestLoginInternal} 
+            />
+          } />
+
           <Route path="/login" element={
             <AuthCard 
               onLogin={handleLogin} 
@@ -157,6 +173,7 @@ function App() {
               onGuestLogin={handleGuestLoginInternal} 
             />
           } />
+
           <Route path="/*" element={
             <AppRoutes 
               user={user}
@@ -173,9 +190,6 @@ function App() {
               onMoveInternal={onMoveInternal}
               fetchLegalMoves={fetchLegalMoves}
               fetchHint={fetchHint}
-              onLogin={(creds) => handleLogin(creds.usernameOrEmail, creds.password)}
-              onRegister={(data) => handleRegister(data.username, data.password, data.email)}
-              onGuestLogin={handleGuestLoginInternal}
             />
           } />
         </Routes>

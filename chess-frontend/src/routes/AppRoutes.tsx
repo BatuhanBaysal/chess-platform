@@ -7,7 +7,6 @@ import AllMatchHistory from '../features/menu/views/AllMatchHistory';
 import AdminDashboard from '../features/admin/AdminDashboard';
 import { ProtectedRoute } from '../components/common/ProtectedRoute';
 import { ActiveGameView } from '../features/chess/components/ActiveGameView';
-import AuthForm from '../features/auth/AuthForm';
 
 import About from '../components/common/About';
 import Contact from '../components/common/Contact';
@@ -31,9 +30,6 @@ interface AppRoutesProps {
   onMoveInternal: (fF: number, fR: number, tF: number, tR: number, p?: string) => void;
   fetchLegalMoves: (file: number, rank: number) => Promise<any>;
   fetchHint: (depth?: number) => void;
-  onLogin: (credentials: any) => void;
-  onRegister: (data: any) => void;
-  onGuestLogin: () => void;
 }
 
 export const AppRoutes: React.FC<AppRoutesProps> = ({
@@ -51,10 +47,13 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
   onMoveInternal,
   fetchLegalMoves,
   fetchHint,
-  onLogin,
-  onRegister,
-  onGuestLogin,
 }) => {
+  const isLocalEnv = Boolean(import.meta.env.DEV) || 
+    typeof window !== 'undefined' && (
+      window.location.hostname === 'localhost' || 
+      window.location.hostname === '127.0.0.1'
+    );
+
   return (
     <Routes>
       <Route element={<ProtectedRoute requiredRole="ROLE_ADMIN" />}>
@@ -65,26 +64,25 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
         <Route path="/profile" element={<ProfileDashboard />} />
       </Route>
 
+      <Route path="/menu" element={<LandingPage onStart={handleStartMatch} />} />
+
       <Route 
-        path="/login" 
-        element={
-          <AuthForm 
-            onLogin={onLogin} 
-            onRegister={onRegister} 
-            onGuestLogin={onGuestLogin} 
-          />
-        } 
+        path="/" 
+        element={user ? <Navigate to="/menu" replace /> : <Navigate to="/sign-in" replace />} 
       />
 
-      <Route path="/menu" element={<LandingPage onStart={handleStartMatch} />} />
-      <Route path="/" element={user ? <Navigate to="/menu" replace /> : <Navigate to="/login" replace />} />
+      <Route path="/login" element={<Navigate to="/sign-in" replace />} />
+      <Route path="/register" element={<Navigate to="/sign-up" replace />} />
       
       <Route path="/leaderboard" element={<FullLeaderboardPage />} />
       <Route path="/history" element={<AllMatchHistory userId={user?.id} />} />
       <Route path="/about" element={<About />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/changelog" element={<Changelog />} />
-      <Route path="/system-health" element={<SystemHealth />} />
+
+      {isLocalEnv && (
+        <Route path="/system-health" element={<SystemHealth />} />
+      )}
 
       <Route 
         path="/game" 
@@ -110,3 +108,5 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
     </Routes>
   );
 };
+
+export default AppRoutes;

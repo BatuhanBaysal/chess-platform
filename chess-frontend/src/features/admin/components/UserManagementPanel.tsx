@@ -1,4 +1,5 @@
-import { Users, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Users, Trash2, ChevronLeft, ChevronRight, Search, Loader2 } from 'lucide-react';
 import { type AdminUserResponseDTO } from '../../../api/adminService';
 
 interface UserManagementPanelProps {
@@ -20,64 +21,100 @@ export default function UserManagementPanel({
     onPageChange,
     onDeleteUser
 }: UserManagementPanelProps) {
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const filteredUsers = useMemo(() => {
+        const q = searchQuery.toLowerCase().trim();
+        if (!q) return users;
+        return users.filter(u => 
+            u.username.toLowerCase().includes(q) || 
+            (u.email && u.email.toLowerCase().includes(q)) || 
+            (u.role && u.role.toLowerCase().includes(q))
+        );
+    }, [users, searchQuery]);
+
     return (
-        <div className="bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xl">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-bold flex items-center gap-2 text-purple-600 dark:text-purple-400">
-                    <Users size={20} /> Registered Users ({totalElements})
-                </h2>
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    Page {currentPage + 1} of {totalPages}
-                </span>
+        <div className="bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 rounded-3xl p-4 sm:p-7 shadow-sm">
+            {/* Header & Filter */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
+                <div className="flex items-center gap-2">
+                    <Users size={18} className="text-indigo-600 dark:text-indigo-400" />
+                    <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-950 dark:text-white">
+                        Registered Operatives ({totalElements})
+                    </h2>
+                </div>
+
+                <div className="relative w-full sm:w-72">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Filter by name, email..."
+                        className="w-full min-h-11 pl-9 pr-4 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-800 text-slate-950 dark:text-white focus:outline-none focus:border-indigo-600"
+                    />
+                </div>
             </div>
 
             {loading ? (
-                <p className="text-sm text-slate-500">Loading...</p>
+                <div className="py-16 flex flex-col items-center justify-center gap-2 text-slate-500">
+                    <Loader2 className="animate-spin text-indigo-600" size={24} />
+                    <span className="text-xs font-black uppercase tracking-widest">Loading Users...</span>
+                </div>
             ) : (
                 <>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm border-collapse">
+                    <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800/80">
+                        <table className="w-full text-left text-xs border-collapse table-fixed sm:table-auto">
                             <thead>
-                                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
-                                    <th className="py-3 px-4">ID</th>
-                                    <th className="py-3 px-4">Username</th>
-                                    <th className="py-3 px-4">Email</th>
-                                    <th className="py-3 px-4">Role</th>
-                                    <th className="py-3 px-4 text-right">Action</th>
+                                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/90 uppercase font-black tracking-wider text-[10px]">
+                                    <th className="hidden sm:table-cell py-3 px-4 w-16">ID</th>
+                                    <th className="py-3 px-3 sm:px-4">Operative</th>
+                                    <th className="hidden md:table-cell py-3 px-4">Email</th>
+                                    <th className="py-3 px-2 sm:px-4 text-center sm:text-left w-24 sm:w-auto">Role</th>
+                                    <th className="py-3 px-3 sm:px-4 text-right w-16 sm:w-20">Action</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-200 dark:divide-slate-800/50">
-                                {users.length > 0 ? (
-                                    users.map((u) => (
-                                        <tr key={u.id} className="hover:bg-slate-100 dark:hover:bg-slate-800/20">
-                                            <td className="py-3 px-4 text-slate-500">#{u.id}</td>
-                                            <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white">{u.username}</td>
-                                            <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{u.email}</td>
-                                            <td className="py-3 px-4">
-                                                <span className={`px-2 py-1 rounded-lg text-xs font-bold ${
-                                                    u.role === 'ROLE_ADMIN' 
-                                                        ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
-                                                        : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                                                }`}>
-                                                    {u.role}
+                            <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-bold">
+                                {filteredUsers.length > 0 ? (
+                                    filteredUsers.map((u) => (
+                                        <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
+                                            <td className="hidden sm:table-cell py-3 px-4 text-slate-500 font-mono text-[11px]">#{u.id}</td>
+                                            <td className="py-3 px-3 sm:px-4">
+                                                <span className="text-slate-950 dark:text-white font-black truncate block text-xs sm:text-sm">
+                                                    {u.username}
+                                                </span>
+                                                <span className="block md:hidden text-[10px] text-slate-500 font-mono truncate max-w-28 sm:max-w-44">
+                                                    {u.email || 'No email'}
                                                 </span>
                                             </td>
-                                            <td className="py-3 px-4 text-right">
+                                            <td className="hidden md:table-cell py-3 px-4 text-slate-600 dark:text-slate-400 font-mono text-[11px] truncate max-w-48">
+                                                {u.email || 'N/A'}
+                                            </td>
+                                            <td className="py-3 px-2 sm:px-4 text-center sm:text-left">
+                                                <span className={`inline-block px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-black uppercase tracking-wider border ${
+                                                    u.role === 'ROLE_ADMIN' 
+                                                        ? 'bg-purple-100 dark:bg-purple-950/60 border-purple-300 dark:border-purple-800 text-purple-700 dark:text-purple-300'
+                                                        : 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400'
+                                                }`}>
+                                                    {u.role ? u.role.replace('ROLE_', '') : 'USER'}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-3 sm:px-4 text-right">
                                                 <button 
                                                     onClick={() => onDeleteUser(u.id)}
                                                     disabled={u.role === 'ROLE_ADMIN'}
-                                                    className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-red-500/20 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-35 rounded-xl transition-all cursor-pointer"
+                                                    className="w-8 h-8 inline-flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 disabled:opacity-30 rounded-lg transition-colors cursor-pointer"
                                                     title="Delete User"
                                                 >
-                                                    <Trash2 size={16} />
+                                                    <Trash2 size={14} />
                                                 </button>
                                             </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={5} className="text-center py-6 text-slate-500 text-xs uppercase tracking-wider">
-                                            No users found.
+                                        <td colSpan={5} className="text-center py-10 text-slate-500 text-xs uppercase tracking-wider">
+                                            No operatives match criteria.
                                         </td>
                                     </tr>
                                 )}
@@ -86,35 +123,23 @@ export default function UserManagementPanel({
                     </div>
 
                     {totalPages > 1 && (
-                        <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+                        <div className="flex justify-between items-center mt-5 pt-4 border-t border-slate-200 dark:border-slate-800/80">
                             <button
                                 onClick={() => onPageChange(Math.max(currentPage - 1, 0))}
                                 disabled={currentPage === 0}
-                                className="flex items-center gap-1 px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 disabled:opacity-30 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-slate-900 dark:text-white cursor-pointer"
+                                className="min-h-11 flex items-center gap-1 px-3 sm:px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-30 rounded-xl text-xs font-black uppercase tracking-wider transition-colors text-slate-900 dark:text-white cursor-pointer"
                             >
-                                <ChevronLeft size={16} /> Previous
+                                <ChevronLeft size={16} /> Prev
                             </button>
 
-                            <div className="flex items-center gap-1">
-                                {Array.from({ length: totalPages }, (_, i) => i).map((pageIndex) => (
-                                    <button
-                                        key={pageIndex}
-                                        onClick={() => onPageChange(pageIndex)}
-                                        className={`w-8 h-8 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                                            currentPage === pageIndex 
-                                                ? 'bg-blue-600 text-white'
-                                                : 'bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
-                                        }`}
-                                    >
-                                        {pageIndex + 1}
-                                    </button>
-                                ))}
-                            </div>
+                            <span className="text-[11px] sm:text-xs font-black uppercase text-slate-500">
+                                {currentPage + 1} / {totalPages}
+                            </span>
 
                             <button
                                 onClick={() => onPageChange(Math.min(currentPage + 1, totalPages - 1))}
                                 disabled={currentPage === totalPages - 1}
-                                className="flex items-center gap-1 px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 disabled:opacity-30 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-slate-900 dark:text-white cursor-pointer"
+                                className="min-h-11 flex items-center gap-1 px-3 sm:px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-30 rounded-xl text-xs font-black uppercase tracking-wider transition-colors text-slate-900 dark:text-white cursor-pointer"
                             >
                                 Next <ChevronRight size={16} />
                             </button>

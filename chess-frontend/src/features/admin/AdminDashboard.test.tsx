@@ -1,5 +1,6 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import AdminDashboard from './AdminDashboard';
 import * as adminService from '../../api/adminService';
 
@@ -14,7 +15,7 @@ vi.mock('../../api/adminService', () => ({
 
 describe('AdminDashboard Component', () => {
   beforeEach(() => {
-    // Arrange
+    vi.useRealTimers();
     vi.clearAllMocks();
     
     vi.mocked(adminService.getAllUsers).mockResolvedValue({
@@ -39,17 +40,62 @@ describe('AdminDashboard Component', () => {
     } as any);
   });
 
-  it('renders admin control center header and loads panel data successfully', async () => {
+  it('renders admin control center header and default user management list', async () => {
+    // Arrange
+    render(
+      <MemoryRouter>
+        <AdminDashboard />
+      </MemoryRouter>
+    );
+
     // Act
-    render(<AdminDashboard />);
+    const controlCenterHeader = screen.getByText(/admin control center/i);
 
     // Assert
-    expect(screen.getByText(/admin control center/i)).toBeDefined();
-
-    // Act & Assert
+    expect(controlCenterHeader).toBeDefined();
     await waitFor(() => {
       expect(screen.getByText('testuser')).toBeDefined();
+    });
+  });
+
+  it('displays active game sessions when switching to sessions tab', async () => {
+    // Arrange
+    render(
+      <MemoryRouter>
+        <AdminDashboard />
+      </MemoryRouter>
+    );
+    await waitFor(() => {
+      expect(screen.getByText('testuser')).toBeDefined();
+    });
+
+    // Act
+    const sessionsTabButton = screen.getByRole('button', { name: /sessions/i });
+    fireEvent.click(sessionsTabButton);
+
+    // Assert
+    await waitFor(() => {
       expect(screen.getByText('game-1')).toBeDefined();
+    });
+  });
+
+  it('displays audit log entries when switching to logs tab', async () => {
+    // Arrange
+    render(
+      <MemoryRouter>
+        <AdminDashboard />
+      </MemoryRouter>
+    );
+    await waitFor(() => {
+      expect(screen.getByText('testuser')).toBeDefined();
+    });
+
+    // Act
+    const logsTabButton = screen.getByRole('button', { name: /logs/i });
+    fireEvent.click(logsTabButton);
+
+    // Assert
+    await waitFor(() => {
       expect(screen.getByText('DELETE_USER')).toBeDefined();
     });
   });

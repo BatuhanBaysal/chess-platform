@@ -36,10 +36,33 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
-## [2.6.0] - 2026-10-12
+## [2.6.0] - 2026-10-15
 
 ### 💎 Phase v2.6.0: Final Polish, Strict Typing, Admin Control & Player Identity 🚀
 > **Note:** Finalizing production readiness by enforcing compile-time type contracts, isolating AI engine state lifecycles, refining authentication and role-based access, polishing player identity systems, and delivering administrative control capabilities.
+
+- **Auth Redesign, RBAC Navigation, Ambient Header/Footer & Diagnostic Tooling (PR #192 | Issue #191):**
+    - **2026-10-15:**
+        - **Profile Settings & Player Identity Architecture:** Overhauled `ProfileDashboard.tsx` into a balanced 2-column responsive grid (`lg:grid-cols-2 max-w-5xl`). Configured the left panel for player identity, ELO, and combat metrics (Wins, Losses, Draws with accent borders and contextual tooltips) with unsaved change detection (`isDirty`). Dedicated the right panel to credential security with a real-time password strength meter, visibility toggles, and a confirmed Danger Zone for permanent account deletion.
+        - **Admin Control Center & Master Governance:** Restructured `AdminDashboard.tsx` into a modular 4-tab governance hub (`Users`, `Sessions`, `Logs`, `Sandbox`) to eliminate vertical scrolling sprawl. Integrated quick-metric telemetry cards, real-time operative search filtering with role badges, active session force-termination (`ActiveGamesPanel`), paginated audit trails (`AuditLogsPanel`), and live event dispatching (`SandboxTriggerPanel`), strictly protected by `ROLE_ADMIN` route guards.
+        - **Game View HUD & Chessboard Modernization:** Refactored `ActiveGameView.tsx` and `ChessBoard.tsx` into an adaptive 3-column desktop layout that collapses to a single-column flow on mobile viewports with zero horizontal overflow. Replaced disruptive window scrolling with container-isolated `scrollTo` in `TelemetrySidebar` and `NotationSidebar`; upgraded `PromotionModal` and `GameOverModal` with full-screen backdrop-blur, keyboard support, and signature footer branding.
+        - **Vitest Unit Test Suite Hardening (48/48 Passing):** Resolved router context dependency failures by wrapping `ProfileDashboard` and `AdminDashboard` with `MemoryRouter`, mocked JSDOM `Element.prototype.scrollTo` for telemetry and notation sidebars, resolved header role link collisions via explicit `aria-label` tags, and verified tab switching state flows across all 12 test files.
+        - **Playwright E2E Multi-Browser Stabilization (78/78 Passing):** Enforced strict AAA (Arrange-Act-Assert) conventions across all spec files. Disambiguated 1200 ELO strict-mode locator collisions in `auth.spec.ts`, eliminated `page.addInitScript()` session leaks during admin credential teardown in `admin-security.spec.ts`, and aligned route redirect assertions (`/menu` vs `/sign-in`) in `gameplay.spec.ts` across Chromium, Firefox, and WebKit engines.
+
+    - **2026-10-14:**
+        - **Dashboard Grid & Match Setup Architecture:** Standardized 65/35 responsive grid on `/menu` and added disambiguated `aria-label` attributes to `GameSetupPanel` controls, eliminating Playwright strict mode button collision warnings.
+        - **Combat Archive & Match Outcome Normalization:** Overhauled victory condition evaluation in `MatchHistory.tsx` and `AllMatchHistory.tsx` to reliably parse standard PGN scores (`1-0`, `0-1`), backend `status` flags, `winnerColor`, and string/number `winnerId`, fixing incorrect `DEFEAT` badges on won matches.
+        - **Rating Telemetry & Modals Integration:** Embedded concise rating disclaimers in `Dashboard.tsx` and `AllMatchHistory.tsx` explaining ELO calculation relative to opponent ratings and unrated AI status; fortified `AiMatchModal` and `WaitingRoomModal` with full-screen backdrop-blur, scroll locks, and ESC key dismissal.
+        - **Layout Alignment & Scroll Restoration:** Refactored `<main>` container in `Layout.tsx` from `justify-center` to `justify-start` to prevent sparse views (`Combat Archive`, `System Health`) from vertically centering; enforced instant top scroll resets on client-side route transitions.
+        - **Test Suite Completeness & Teardown Hardening:** Added AAA unit tests for `AiMatchModal` and `WaitingRoomModal`; resolved asynchronous 401 RPC teardown errors in `App.test.tsx` and `useLobby.ts`, bringing test suites to 100% pass rates (48/48 Playwright E2E, 44/44 Vitest unit tests passing).
+
+    - **2026-10-13:**
+        - **Dual-Panel Auth & Onboarding UI:** Implemented a responsive 2-column `AuthContainer` with fixed desktop height (`665px`) to eliminate layout shifts; added `AuthShowcase` with guest mode comparison and `SignUpSuccessCard` featuring 1200 ELO allocation and sign-in prefill.
+        - **Progressive Validation & Strict Types:** Standardized `Sign In` / `Sign Up` terminology; introduced step-by-step Enter-key validation enforcing backend DTO rules, Caps Lock detection, password strength bar, and strict `ApiErrorResponse` typing.
+        - **Role-Aware Header & In-Game Controls:** Refactored `Header.tsx` into a 3-zone RBAC layout with avatar badges and a mobile drawer; added distraction-free `/game` mode with live match telemetry and a 3-second two-step `Confirm Resign?` safety flow.
+        - **Compact Status Bar Footer:** Replaced multi-line footer with a single-line status bar in `Footer.tsx` showing live ping and Swagger/GitHub links, automatically hidden during active matches.
+        - **Environment Diagnostics & Routing:** Gated `/system-health` strictly to local development (`DEV` / localhost); redirected legacy `/login` and `/register` URLs to `/sign-in` and `/sign-up`.
+        - **Test Suites (Vitest & Playwright):** Added AAA-pattern unit tests for `AuthForm` and `Header`; stabilized Playwright E2E suites with isolated mocks and strict locators across Chromium, Firefox, and WebKit (42/42 E2E, 27/27 unit tests passing).
 
 - **2026-10-12:**
     - **Isolate AI Match Telemetry Lifecycles, Introduce Opening Delay & Fix Evaluation Bar Perspective (PR #190 | Issue #189):**

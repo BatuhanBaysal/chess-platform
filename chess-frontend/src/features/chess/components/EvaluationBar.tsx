@@ -44,22 +44,25 @@ export const EvaluationBar: React.FC<EvaluationBarProps> = React.memo(({
   }, [displayScore, score, evaluationType]);
 
   return (
-    <div className="flex flex-col gap-1.5 w-full">
-      <div className="flex justify-between items-center text-[12px] font-mono font-black px-0.5">
-        <span className="text-blue-500 font-bold">
+    <div className="flex flex-col gap-1.5 w-full select-none">
+      {/* Telemetry Label Row */}
+      <div className="flex justify-between items-center text-[11px] font-mono px-0.5">
+        <span className="text-indigo-600 dark:text-indigo-400 font-black tracking-wide">
           You ({isWhite ? 'White' : 'Black'})
         </span>
-        <span className="text-slate-900 dark:text-slate-100 font-black">
+        <span className="text-slate-950 dark:text-white font-black tabular-nums">
           {formattedScore}
         </span>
       </div>
-      <div className="relative w-full h-4 bg-slate-200 dark:bg-slate-900 rounded-full overflow-hidden flex border border-slate-300 dark:border-slate-700/50 shadow-inner">
+
+      {/* Progress Track */}
+      <div className="relative w-full h-3 sm:h-3.5 bg-slate-100 dark:bg-slate-950 rounded-full overflow-hidden flex border border-slate-200 dark:border-slate-800 shadow-inner">
         <div 
           className={`h-full transition-all duration-300 ease-out ${getBarColor()}`} 
           style={{ width: `${playerAdvantagePercentage}%` }}
         />
         <div 
-          className="h-full bg-slate-300 dark:bg-slate-800 flex-1 transition-all duration-300 ease-out"
+          className="h-full bg-slate-200 dark:bg-slate-800/80 flex-1 transition-all duration-300 ease-out"
         />
       </div>
     </div>

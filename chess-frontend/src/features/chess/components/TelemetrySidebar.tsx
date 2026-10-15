@@ -7,7 +7,6 @@ interface TelemetrySidebarProps {
 
 export const TelemetrySidebar: React.FC<TelemetrySidebarProps> = ({ logs }) => {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
-    const scrollStartRef = useRef<HTMLDivElement>(null);
     const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
 
     const uniqueLogs = useMemo(() => {
@@ -29,37 +28,43 @@ export const TelemetrySidebar: React.FC<TelemetrySidebarProps> = ({ logs }) => {
     };
 
     useEffect(() => {
-        if (!isUserScrolledUp) {
-            scrollStartRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (!isUserScrolledUp && scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }, [uniqueLogs.length, isUserScrolledUp]);
 
     return (
-        <div className="w-full h-full bg-slate-100 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700/50 rounded-2xl flex flex-col overflow-hidden shadow-inner">
+        <div className="w-full h-full bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 rounded-2xl flex flex-col overflow-hidden shadow-xs">
+            {/* Telemetry Stream Container */}
             <div 
                 ref={scrollContainerRef}
                 onScroll={handleScroll}
                 className="flex-1 overflow-y-auto p-3 space-y-2 custom-scroll min-h-0 relative"
             >
-                <div ref={scrollStartRef} />
-                
                 {uniqueLogs.map((log) => {
                     const uniqueKey = `log-${log.time}-${log.text}`;
+                    const isGameStart = log.text.includes("Game started");
 
                     return (
                         <div 
                             key={uniqueKey} 
-                            className={`text-[11px] p-2.5 rounded-xl border-l-2 ${log.text.includes("Game started") ? "border-emerald-500 bg-emerald-500/5" : log.turn === 'WHITE' ? "border-blue-500 bg-blue-500/5" : "border-rose-500 bg-rose-500/5"}`}
+                            className={`text-[11px] p-2.5 rounded-xl border-l-2 ${
+                                isGameStart 
+                                    ? "border-emerald-500 bg-emerald-500/10 dark:bg-emerald-500/15" 
+                                    : log.turn === 'WHITE' 
+                                        ? "border-blue-500 bg-blue-500/10 dark:bg-blue-500/15" 
+                                        : "border-rose-500 bg-rose-500/10 dark:bg-rose-500/15"
+                            }`}
                         >
                             <div className="flex justify-between items-center mb-1">
                                 <span className="text-[10px] font-mono font-black text-slate-500 dark:text-slate-400">{log.time}</span>
-                                {!log.text.includes("Game started") && (
+                                {!isGameStart && (
                                     <span className={`text-[9px] font-black uppercase ${log.turn === 'WHITE' ? "text-blue-600 dark:text-blue-400" : "text-rose-600 dark:text-rose-400"}`}>
                                         {log.turn}
                                     </span>
                                 )}
                             </div>
-                            <span className={`font-bold leading-tight block text-slate-900 dark:text-slate-100 ${log.text.includes("Game started") ? "dark:text-emerald-400" : ""}`}>
+                            <span className={`font-bold leading-tight block text-slate-950 dark:text-slate-100 ${isGameStart ? "text-emerald-700 dark:text-emerald-400" : ""}`}>
                                 {log.text}
                             </span>
                         </div>

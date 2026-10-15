@@ -23,22 +23,23 @@ export const GameSetupPanel: React.FC<GameSetupPanelProps> = ({
   onOpenAiModal,
 }) => {
   return (
-    <div className="p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800/60 bg-white dark:bg-slate-900/40 backdrop-blur-3xl shadow-sm">
-      <div className="space-y-8">
-
+    <div className="p-6 sm:p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#070b19] shadow-sm h-full flex flex-col justify-between">
+      <div className="space-y-6 sm:space-y-7">
+        {/* Time Control */}
         <section>
-          <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest mb-3 text-slate-500 dark:text-slate-400 ml-1">
-            <Clock size={12} /> Time Control
+          <label className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest mb-3 text-slate-950 dark:text-slate-300 ml-1">
+            <Clock size={12} className="text-indigo-600 dark:text-indigo-400" /> TIME CONTROL
           </label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
             {([3, 10, 30] as TimeControl[]).map(t => (
               <button
                 key={t}
                 onClick={() => setSelectedTime(t)}
-                className={`py-3.5 rounded-2xl text-[10px] font-black transition-all duration-300 border ${
+                aria-label={`Lobby ${t} MIN`}
+                className={`min-h-11 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all border cursor-pointer ${
                   selectedTime === t
-                    ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/25 scale-[1.02]'
-                    : 'bg-slate-100 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 text-slate-600 dark:text-slate-300 hover:border-slate-400'
+                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    : 'bg-slate-50 dark:bg-slate-900/60 border-slate-300 dark:border-slate-800 text-slate-950 dark:text-slate-200 hover:border-indigo-500'
                 }`}
               >
                 {t} MIN
@@ -47,11 +48,12 @@ export const GameSetupPanel: React.FC<GameSetupPanelProps> = ({
           </div>
         </section>
 
+        {/* Board Aesthetic */}
         <section>
-          <label className="block text-[10px] font-black uppercase tracking-widest mb-3 text-slate-500 dark:text-slate-400 ml-1">
-            Board Aesthetic
+          <label className="block text-[11px] font-black uppercase tracking-widest mb-3 text-slate-950 dark:text-slate-300 ml-1">
+            BOARD AESTHETIC
           </label>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
             {(Object.keys(CHESS_THEMES) as ChessThemeKey[]).map(themeKey => {
               const themeConfig = CHESS_THEMES[themeKey];
 
@@ -59,19 +61,20 @@ export const GameSetupPanel: React.FC<GameSetupPanelProps> = ({
                 <button
                   key={themeKey}
                   onClick={() => setSelectedTheme(themeKey)}
-                  className={`relative p-3.5 rounded-2xl transition-all duration-300 border-2 flex flex-col items-center gap-3 ${
+                  aria-label={`Lobby Theme ${themeKey}`}
+                  className={`min-h-14.5 p-2.5 sm:p-3 rounded-xl transition-all border-2 flex flex-col items-center gap-1.5 cursor-pointer ${
                     selectedTheme === themeKey
-                      ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/10 shadow-md scale-[1.02]'
-                      : 'border-transparent bg-slate-100 dark:bg-slate-800/40 hover:border-slate-700/50'
+                      ? 'border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/40 shadow-xs'
+                      : 'border-slate-200 dark:border-transparent bg-slate-50 dark:bg-slate-900/60 hover:border-slate-400 dark:hover:border-slate-700'
                   }`}
                 >
-                  <div className="w-10 h-10 grid grid-cols-2 rounded-xl overflow-hidden shadow-inner border border-black/5 dark:border-white/5">
+                  <div className="w-8 h-8 grid grid-cols-2 rounded-lg overflow-hidden shadow-inner border border-black/15 dark:border-white/10">
                     <div className={themeConfig.light}></div>
                     <div className={themeConfig.dark}></div>
                     <div className={themeConfig.dark}></div>
                     <div className={themeConfig.light}></div>
                   </div>
-                  <span className="text-[9px] font-black uppercase tracking-tighter text-slate-900 dark:text-white">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-950 dark:text-white">
                     {themeKey}
                   </span>
                 </button>
@@ -80,42 +83,48 @@ export const GameSetupPanel: React.FC<GameSetupPanelProps> = ({
           </div>
         </section>
 
-        <div className="space-y-4 pt-2">
+        {/* Action Buttons */}
+        <div className="space-y-3.5 pt-1">
           <button
             onClick={onCreateRoom}
             disabled={isCreating}
-            className="w-full relative py-5 px-6 flex items-center justify-center rounded-3xl font-black uppercase tracking-[0.2em] text-xs transition-all duration-300 bg-slate-900 text-white dark:bg-white dark:text-slate-950 hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-slate-900/10 dark:shadow-white/5 disabled:opacity-50 group"
+            className="w-full min-h-12 py-3.5 px-4 sm:px-5 flex items-center justify-between rounded-xl font-black uppercase tracking-wider text-xs transition-all bg-slate-950 text-white dark:bg-white dark:text-slate-950 hover:opacity-90 active:scale-98 shadow-md disabled:opacity-50 cursor-pointer"
           >
-            <div className="flex items-center gap-2.5">
-              {isCreating ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} className="transition-transform group-hover:rotate-90 duration-300" />}
-              <span>Initialize Match</span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              {isCreating ? (
+                <Loader2 className="animate-spin text-indigo-400" size={16} />
+              ) : (
+                <Plus size={16} className="shrink-0" />
+              )}
+              <span className="truncate">INITIALIZE MATCH</span>
             </div>
-            <div className="absolute right-4 flex items-center gap-1.5 text-[9px] bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 px-3 py-1.5 rounded-full font-extrabold tracking-wider">
-              <Globe size={11} className="text-blue-400 dark:text-blue-600" />
-              <span>Online</span>
+            <div className="shrink-0 flex items-center gap-1.5 text-[10px] bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-950 px-2.5 py-1 rounded-full font-bold">
+              <Globe size={11} className="text-indigo-400 dark:text-indigo-600" />
+              <span>ONLINE</span>
             </div>
           </button>
 
-          <div className="relative flex items-center justify-center my-6">
+          <div className="relative flex items-center justify-center py-1">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200 dark:border-slate-800"></div>
+              <div className="w-full border-t border-slate-300 dark:border-slate-800"></div>
             </div>
-            <span className="relative px-4 text-[9px] font-black uppercase tracking-widest bg-white dark:bg-[#060a17] text-slate-400">
+            <span className="relative px-3 text-[10px] font-black uppercase tracking-widest bg-white dark:bg-[#070b19] text-slate-900 dark:text-slate-400">
               OR
             </span>
           </div>
 
           <button
             onClick={onOpenAiModal}
-            className="w-full relative py-5 px-6 flex items-center justify-center rounded-3xl font-black uppercase tracking-[0.2em] text-xs transition-all duration-300 bg-linear-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-500 hover:to-indigo-500 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-blue-600/25 group"
+            aria-label="Play vs Computer Play Computer"
+            className="w-full min-h-12 py-3.5 px-4 sm:px-5 flex items-center justify-between rounded-xl font-black uppercase tracking-wider text-xs transition-all bg-indigo-600 hover:bg-indigo-500 text-white active:scale-98 shadow-md shadow-indigo-600/30 cursor-pointer"
           >
-            <div className="flex items-center gap-2.5">
-              <Sword size={16} className="transition-transform group-hover:-translate-y-0.5 duration-300" />
-              <span>Play vs Computer</span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Sword size={16} className="shrink-0" />
+              <span className="truncate">PLAY VS COMPUTER</span>
             </div>
-            <div className="absolute right-4 flex items-center gap-1.5 text-[9px] bg-white/15 text-white px-3 py-1.5 rounded-full font-extrabold tracking-wider backdrop-blur-sm">
+            <div className="shrink-0 flex items-center gap-1.5 text-[10px] bg-indigo-800/80 text-white px-2.5 py-1 rounded-full font-bold">
               <Cpu size={11} />
-              <span>AI Engine</span>
+              <span>AI ENGINE</span>
             </div>
           </button>
         </div>
@@ -123,3 +132,5 @@ export const GameSetupPanel: React.FC<GameSetupPanelProps> = ({
     </div>
   );
 };
+
+export default GameSetupPanel;

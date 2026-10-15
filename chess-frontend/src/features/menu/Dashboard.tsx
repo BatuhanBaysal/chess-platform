@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { getMyProfile } from '../../api/userService';
-import { Trophy, Swords, BarChart3, Activity, TrendingUp } from 'lucide-react';
+import { Trophy, Swords, BarChart3, Activity, TrendingUp, Percent } from 'lucide-react';
 import ChessBoard from '../chess/components/ChessBoard.tsx';
 import { useChess } from '../chess/hooks/useChess.ts';
 import { MatchDistributionGraph } from '../../components/charts/MatchDistributionGraph';
@@ -18,7 +18,7 @@ interface DashboardProps {
   activeLobbyId?: string | null;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) => {
   const [stats, setStats] = useState<Stats | null>(null);
   const [theme] = useState<'classic' | 'modern' | 'emerald'>('classic');
 
@@ -52,38 +52,46 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) => {
       { 
         label: 'ELO', 
         value: stats.eloRating ?? 'N/A', 
-        icon: <TrendingUp size={12} />, 
+        icon: <TrendingUp size={13} />, 
         borderColor: 'border-yellow-500', 
-        textColor: 'text-yellow-500' 
+        textColor: 'text-amber-600 dark:text-yellow-400' 
       },
       { 
         label: 'Wins', 
         value: stats.totalWins, 
-        icon: <Trophy size={12} />, 
+        icon: <Trophy size={13} />, 
         borderColor: 'border-emerald-500', 
-        textColor: 'text-emerald-500' 
+        textColor: 'text-emerald-700 dark:text-emerald-400' 
       },
       { 
         label: 'Losses', 
         value: stats.totalLosses, 
-        icon: <Swords size={12} />, 
+        icon: <Swords size={13} />, 
         borderColor: 'border-rose-500', 
-        textColor: 'text-rose-500' 
+        textColor: 'text-rose-700 dark:text-rose-400' 
       },
       { 
         label: 'Draws', 
         value: stats.totalDraws, 
-        icon: <Activity size={12} />, 
+        icon: <Activity size={13} />, 
         borderColor: 'border-slate-500', 
-        textColor: 'text-slate-500' 
+        textColor: 'text-slate-800 dark:text-slate-400' 
       }
     ];
   }, [stats]);
 
+  const totalMatches = useMemo(() => {
+    if (!stats) return 0;
+    return stats.totalWins + stats.totalLosses + stats.totalDraws;
+  }, [stats]);
+
+  const winRate = useMemo(() => {
+    if (totalMatches === 0 || !stats) return 0;
+    return Math.round((stats.totalWins / totalMatches) * 100);
+  }, [stats, totalMatches]);
+
   const matchData = useMemo(() => {
-    if (!stats) return [];
-    const total = stats.totalWins + stats.totalLosses + stats.totalDraws;
-    if (total === 0) {
+    if (!stats || totalMatches === 0) {
       return [{ name: 'No Data', value: 1, fill: '#334155' }];
     }
 
@@ -92,15 +100,17 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) => {
       { name: 'Losses', value: stats.totalLosses, fill: '#f43f5e' },
       { name: 'Draws', value: stats.totalDraws, fill: '#64748b' }
     ];
-  }, [stats]);
+  }, [stats, totalMatches]);
 
   if (game && activeLobbyId) {
     return (
-      <div className="flex flex-col items-center gap-6 p-4">
-        <div className="w-full bg-white dark:bg-slate-900/50 p-6 rounded-3xl border border-slate-200 dark:border-white/5 shadow-sm">
+      <div className="flex flex-col items-center gap-6">
+        <div className="w-full bg-white dark:bg-[#070b19] p-5 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-sm">
           <div className="flex items-center gap-3">
-            <Activity className="text-blue-600" size={20} />
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Live Deployment</span>
+            <Activity className="text-indigo-600" size={20} />
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-800 dark:text-slate-400">
+              Live Deployment
+            </span>
           </div>
         </div>
         <ChessBoard 
@@ -122,41 +132,131 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) => {
   }
 
   return (
-    <div className="flex flex-col gap-8 p-6">
+    <div className="flex flex-col gap-5 sm:gap-6">
+      {/* 4 Stats Cards */}
       <section>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {statsCards.map((card, idx) => (
             <div 
               key={idx} 
-              className={`bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border-l-4 ${card.borderColor} border-t border-r border-b border-slate-200 dark:border-slate-800 shadow-sm`}
+              className={`bg-slate-50 dark:bg-slate-900/60 p-3.5 sm:p-4 rounded-2xl border-l-4 ${card.borderColor} border-t border-r border-b border-slate-200 dark:border-slate-800 shadow-xs`}
             >
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-1.5">
                 <span className={card.textColor}>{card.icon}</span>
-                <p className="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-900 dark:text-slate-300">
                   {card.label}
                 </p>
               </div>
-              <p className="text-lg font-black text-slate-900 dark:text-white">{card.value}</p>
+              <p className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white tabular-nums tracking-tight">
+                {card.value}
+              </p>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="bg-slate-50 dark:bg-slate-900/50 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="flex items-center gap-2 mb-6">
-          <BarChart3 className="text-blue-500" size={14} />
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Match Distribution</span>
+      {/* Rating Telemetry Notice */}
+      <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 shadow-xs">
+        <TrendingUp size={14} className="shrink-0 text-indigo-600 dark:text-indigo-400" />
+        <p className="leading-relaxed font-medium">
+          <span className="font-black text-slate-950 dark:text-white uppercase tracking-wider text-[10px] mr-1">
+            Rating System:
+          </span>
+          Online match ratings are calculated relative to opponent rating. AI matches do not affect ELO.
+        </p>
+      </div>
+
+      {/* Match Distribution Card */}
+      <section className="bg-slate-50 dark:bg-slate-900/60 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-xs">
+        {/* Header Row */}
+        <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800/80 mb-5">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="text-indigo-600 dark:text-indigo-400" size={16} />
+            <h3 className="text-xs font-black uppercase tracking-widest text-slate-950 dark:text-white">
+              MATCH DISTRIBUTION
+            </h3>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/15 border border-indigo-200 dark:border-indigo-500/30 text-indigo-950 dark:text-indigo-300 shadow-xs">
+            <Percent size={12} className="text-indigo-600 dark:text-indigo-400" />
+            <span className="text-[11px] font-black tracking-wider">{winRate}% WIN RATE</span>
+          </div>
         </div>
-        <div className="h-50 w-full flex items-center justify-center">
-          {stats && (stats.totalWins + stats.totalLosses + stats.totalDraws > 0) ? (
-            <MatchDistributionGraph data={matchData} />
-          ) : (
-            <div className="flex flex-col items-center gap-2 text-slate-400">
-              <Activity size={24} className="opacity-20" />
-              <span className="text-[10px] font-black uppercase tracking-widest">No Match Data Yet</span>
+
+        {totalMatches > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+            {/* Donut Chart Container */}
+            <div className="lg:col-span-5 min-h-55 flex items-center justify-center relative">
+              <MatchDistributionGraph data={matchData} />
             </div>
-          )}
-        </div>
+
+            {/* High-Contrast Progress Bars */}
+            <div className="lg:col-span-7 flex flex-col justify-center space-y-3.5 pl-0 lg:pl-4">
+              {/* Victories */}
+              <div>
+                <div className="flex justify-between text-xs font-black mb-1.5">
+                  <span className="flex items-center gap-2 text-emerald-800 dark:text-emerald-400 font-extrabold">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 dark:bg-emerald-500 shrink-0" />
+                    Victories
+                  </span>
+                  <span className="text-slate-950 dark:text-white font-mono font-black">
+                    {stats?.totalWins} <span className="text-slate-700 dark:text-slate-400 text-[10px]">({Math.round(((stats?.totalWins || 0) / totalMatches) * 100)}%)</span>
+                  </span>
+                </div>
+                <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-emerald-600 dark:bg-emerald-500 rounded-full transition-all duration-500"
+                    style={{ width: `${((stats?.totalWins || 0) / totalMatches) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Defeats */}
+              <div>
+                <div className="flex justify-between text-xs font-black mb-1.5">
+                  <span className="flex items-center gap-2 text-rose-800 dark:text-rose-400 font-extrabold">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-600 dark:bg-rose-500 shrink-0" />
+                    Defeats
+                  </span>
+                  <span className="text-slate-950 dark:text-white font-mono font-black">
+                    {stats?.totalLosses} <span className="text-slate-700 dark:text-slate-400 text-[10px]">({Math.round(((stats?.totalLosses || 0) / totalMatches) * 100)}%)</span>
+                  </span>
+                </div>
+                <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-rose-600 dark:bg-rose-500 rounded-full transition-all duration-500"
+                    style={{ width: `${((stats?.totalLosses || 0) / totalMatches) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Draws */}
+              <div>
+                <div className="flex justify-between text-xs font-black mb-1.5">
+                  <span className="flex items-center gap-2 text-slate-900 dark:text-slate-300 font-extrabold">
+                    <span className="w-2.5 h-2.5 rounded-full bg-slate-600 dark:bg-slate-500 shrink-0" />
+                    Draws
+                  </span>
+                  <span className="text-slate-950 dark:text-white font-mono font-black">
+                    {stats?.totalDraws} <span className="text-slate-700 dark:text-slate-400 text-[10px]">({Math.round(((stats?.totalDraws || 0) / totalMatches) * 100)}%)</span>
+                  </span>
+                </div>
+                <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-slate-600 dark:bg-slate-500 rounded-full transition-all duration-500"
+                    style={{ width: `${((stats?.totalDraws || 0) / totalMatches) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-600 dark:text-slate-400">
+            <Activity size={26} className="opacity-40" />
+            <span className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-slate-400">
+              No Match Data Yet
+            </span>
+          </div>
+        )}
       </section>
     </div>
   );

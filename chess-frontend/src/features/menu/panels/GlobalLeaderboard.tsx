@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getLeaderboard, type LeaderboardUser } from '../../../api/userService';
-import { Trophy } from 'lucide-react';
+import { Trophy, ChevronRight } from 'lucide-react';
 
-const GlobalLeaderboard: React.FC = () => {
+export const GlobalLeaderboard: React.FC = () => {
     const navigate = useNavigate();
     const [users, setUsers] = useState<LeaderboardUser[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -21,49 +21,76 @@ const GlobalLeaderboard: React.FC = () => {
     };
 
     const getTrophyColor = (index: number) => {
-        if (index === 0) return 'text-amber-500';
-        if (index === 1) return 'text-slate-400';
-        return 'text-orange-700 dark:text-amber-800';
+        if (index === 0) return 'text-amber-500 drop-shadow-sm';
+        if (index === 1) return 'text-slate-500 dark:text-slate-300 drop-shadow-sm';
+        return 'text-amber-700 dark:text-amber-600 drop-shadow-sm';
     };
 
-    if (isLoading) return <div className="p-10 text-center text-slate-500">Syncing rankings...</div>;
-    if (users.length === 0) return <div className="p-10 text-center text-slate-500">No active players found.</div>;
-
     return (
-        <div className="w-full px-6">
-            <div className="flex items-center justify-between mb-8">
-                <h2 className="text-base font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white flex items-center gap-3">
-                    <Trophy size={20} className="text-blue-600 dark:text-blue-400" />
-                    Top Players
+        <div className="w-full h-full flex flex-col justify-between">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-black uppercase tracking-wider text-slate-950 dark:text-white flex items-center gap-2.5">
+                    <Trophy size={20} className="text-indigo-600 dark:text-indigo-400" />
+                    <span>TOP PLAYERS</span>
                 </h2>
                 <button 
                     onClick={handleViewAllClick} 
-                    className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 transition-colors cursor-pointer"
+                    className="min-h-11 px-2 flex items-center text-xs font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 transition-colors cursor-pointer"
                 >
-                    View All &gt;
+                    <span>VIEW ALL</span>
+                    <ChevronRight size={14} className="ml-0.5" />
                 </button>
             </div>
             
-            <div className="space-y-4">
-                {users.slice(0, 3).map((user, index) => (
-                    <div key={user.username} className="grid grid-cols-3 items-center justify-items-center py-5 border-b border-slate-200 dark:border-slate-800/50">
-                        <div className="flex items-center justify-center gap-3">
-                            <Trophy size={24} className={getTrophyColor(index)} />
-                            <span className="text-xl font-bold text-slate-900 dark:text-white tracking-wide">
-                                {user.username}
-                            </span>
-                        </div>
-                        
-                        <span className="text-base font-mono text-slate-600 dark:text-slate-400 uppercase tracking-widest">
-                            {user.totalWins ?? 0}W / {user.totalLosses ?? 0}L / {user.totalDraws ?? 0}D
-                        </span>
-
-                        <span className="text-2xl font-black text-blue-700 dark:text-blue-400 tabular-nums">
-                            {user.eloRating} <span className="text-xs text-slate-500 dark:text-slate-600 font-bold">ELO</span>
-                        </span>
-                    </div>
-                ))}
-            </div>
+            {/* List */}
+            {isLoading ? (
+                <div className="py-16 text-center text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                    Syncing rankings...
+                </div>
+            ) : users.length === 0 ? (
+                <div className="py-16 text-center text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                    No active players found.
+                </div>
+            ) : (
+                <div className="flex-1 flex flex-col justify-between gap-3 sm:gap-4 py-1">
+                    {users.slice(0, 3).map((user, index) => {
+                        const userInitial = (user.username?.charAt(0) || 'U').toUpperCase();
+                        return (
+                            <div 
+                                key={user.username} 
+                                className="flex-1 min-h-18 sm:min-h-20 flex items-center justify-between p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800/80 hover:border-indigo-500/50 transition-all shadow-xs"
+                            >
+                                <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 pr-2">
+                                    <div className="flex items-center justify-center shrink-0">
+                                        <Trophy size={22} className={getTrophyColor(index)} />
+                                    </div>
+                                    <div className="w-11 h-11 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-black shrink-0 shadow-xs">
+                                        {userInitial}
+                                    </div>
+                                    <div className="min-w-0 flex flex-col">
+                                        <span className="font-black text-base sm:text-lg text-slate-950 dark:text-white truncate">
+                                            {user.username}
+                                        </span>
+                                        <span className="text-xs font-mono font-bold text-slate-800 dark:text-slate-400 mt-0.5 whitespace-nowrap">
+                                            {user.totalWins ?? 0}W / {user.totalLosses ?? 0}L / {user.totalDraws ?? 0}D
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div className="text-right shrink-0 pl-2">
+                                    <p className="text-xl sm:text-2xl font-black text-indigo-700 dark:text-indigo-400 tabular-nums">
+                                        {user.eloRating}
+                                    </p>
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-400">
+                                        ELO
+                                    </p>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 };

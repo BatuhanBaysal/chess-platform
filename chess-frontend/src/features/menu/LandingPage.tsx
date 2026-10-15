@@ -15,6 +15,7 @@ import { LobbyRoomsList } from './panels/LobbyRoomsList';
 import { AiMatchModal } from './modals/AiMatchModal';
 import { ReconnectAlert } from './components/ReconnectAlert';
 import { WaitingRoomModal } from './modals/WaitingRoomModal';
+import { History } from 'lucide-react';
 
 interface LandingPageProps {
   onStart: (theme: any, time: TimeControl, roomId?: string) => void;
@@ -62,7 +63,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
       if (user?.id) {
         const activeGame = await getActiveGame(Number(user.id));
         if (activeGame && (activeGame.status as string) !== 'CLOSING') {
-          const dismissedGames = JSON.parse(localStorage.getItem('dismissed_games') || '[]');
+          const dismissedGames: string[] = JSON.parse(localStorage.getItem('dismissed_games') || '[]');
+          const justResigned = localStorage.getItem('just_resigned') === 'true';
+
+          if (justResigned) {
+            localStorage.removeItem('just_resigned');
+            if (!dismissedGames.includes(activeGame.gameId)) {
+              dismissedGames.push(activeGame.gameId);
+              localStorage.setItem('dismissed_games', JSON.stringify(dismissedGames));
+            }
+            return;
+          }
+
           if (!dismissedGames.includes(activeGame.gameId)) {
             setReconnectGame(activeGame);
           }
@@ -181,13 +193,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   }, [waitingRoomId, handleStartGame, setWaitingRoomId]);
 
   return (
-    <div className="w-full max-w-[70%] mx-auto pt-12 pb-12 space-y-8 text-slate-900 dark:text-slate-100">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-8 text-slate-900 dark:text-slate-100 animate-in fade-in duration-300">
       {reconnectGame && (
         <ReconnectAlert 
           reconnectGame={reconnectGame}
           onReconnect={() => handleStartGame(reconnectGame.gameId, reconnectGame.timeLimit ?? undefined)}
           onDismiss={() => {
-            const dismissedGames = JSON.parse(localStorage.getItem('dismissed_games') || '[]');
+            const dismissedGames: string[] = JSON.parse(localStorage.getItem('dismissed_games') || '[]');
             if (!dismissedGames.includes(reconnectGame.gameId)) {
               dismissedGames.push(reconnectGame.gameId);
               localStorage.setItem('dismissed_games', JSON.stringify(dismissedGames));
@@ -197,6 +209,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         />
       )}
 
+      {/* Full-Screen Gated Modals */}
       <WaitingRoomModal 
         waitingRoomId={waitingRoomId}
         selectedTime={selectedTime}
@@ -204,82 +217,107 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         onCancel={handleCancelDeployment}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch auto-rows-fr">
-        <GameSetupPanel
-          selectedTime={selectedTime}
-          setSelectedTime={setSelectedTime}
-          selectedTheme={selectedTheme}
-          setSelectedTheme={setSelectedTheme}
-          isCreating={isCreating}
-          onCreateRoom={handleCreateRoom}
-          onOpenAiModal={() => setShowAiModal(true)}
-        />
+      <AiMatchModal 
+        isOpen={showAiModal}
+        onClose={() => setShowAiModal(false)}
+        selectedTime={selectedTime}
+        setSelectedTime={setSelectedTime}
+        selectedTheme={selectedTheme}        
+        setSelectedTheme={setSelectedTheme as any}  
+        aiPlayAsWhite={aiPlayAsWhite}
+        setAiPlayAsWhite={setAiPlayAsWhite}
+        aiDifficulty={aiDifficulty}
+        setAiDifficulty={setAiDifficulty}
+        onStartMatch={handleStartAiMatch}
+        isAiLoading={isAiLoading}
+      />
 
-        <AiMatchModal 
-          isOpen={showAiModal}
-          onClose={() => setShowAiModal(false)}
-          selectedTime={selectedTime}
-          setSelectedTime={setSelectedTime}
-          selectedTheme={selectedTheme}        
-          setSelectedTheme={setSelectedTheme as any}  
-          aiPlayAsWhite={aiPlayAsWhite}
-          setAiPlayAsWhite={setAiPlayAsWhite}
-          aiDifficulty={aiDifficulty}
-          setAiDifficulty={setAiDifficulty}
-          onStartMatch={handleStartAiMatch}
-          isAiLoading={isAiLoading}
-        />
-
-        <LobbyRoomsList 
-          rooms={rooms} 
-          onJoinRoom={handleJoinRoom} 
-        />
-      </div>
-      
-      <div 
-        onClick={() => navigate('/about')}
-        className="relative w-full h-40 md:h-48 rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-200 dark:border-slate-800/60 cursor-pointer group bg-slate-900"
-      >
-        <img
-          src="/assets/images/chess-platform.jpg"
-          alt="Chess Platform Arena"
-          className="w-full h-full object-cover object-center transform scale-105 group-hover:scale-100 transition-transform duration-1000 ease-out"
-        />
-        <div className="absolute inset-0 bg-linear-to-t from-slate-950/90 via-slate-950/40 to-transparent flex flex-col justify-end p-6 md:p-8">
-          <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-indigo-400 mb-1 bg-indigo-500/10 px-3 py-0.5 rounded-full w-fit border border-indigo-500/20">
-            Distributed Multiplayer
-          </span>
-          <h2 className="text-xl md:text-2xl font-black text-white tracking-wide">
-            Core Strategy & Ecosystem Architecture &rarr;
-          </h2>
+      {/* ROW 1: Game Setup & Active Channels */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-stretch">
+        <div className="lg:col-span-8 flex flex-col h-auto lg:h-full">
+          <GameSetupPanel
+            selectedTime={selectedTime}
+            setSelectedTime={setSelectedTime}
+            selectedTheme={selectedTheme}
+            setSelectedTheme={setSelectedTheme}
+            isCreating={isCreating}
+            onCreateRoom={handleCreateRoom}
+            onOpenAiModal={() => setShowAiModal(true)}
+          />
+        </div>
+        <div className="lg:col-span-4 flex flex-col h-auto lg:h-full">
+          <LobbyRoomsList 
+            rooms={rooms} 
+            onJoinRoom={handleJoinRoom} 
+          />
         </div>
       </div>
 
-      <div className="w-full bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 rounded-[3rem] p-8 shadow-sm">
-        <GlobalLeaderboard />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch auto-rows-fr">
-        <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 rounded-[3rem] p-8 shadow-sm">
-          <h2 className="text-lg font-black uppercase tracking-widest mb-6 text-slate-900 dark:text-white">Command Center</h2>
-          {user && <Dashboard userId={user.id} activeLobbyId={waitingRoomId} />}
-        </div>
-        <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 rounded-[3rem] p-8 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-black uppercase tracking-widest text-slate-900 dark:text-white">
-              Deployment History
+      {/* ROW 2: Command Center & Top Players */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-stretch">
+        <div className="lg:col-span-8 flex flex-col h-auto lg:h-full">
+          <div className="bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 rounded-[2.5rem] p-6 sm:p-8 shadow-sm h-full flex flex-col justify-between">
+            <h2 className="text-base sm:text-lg font-black uppercase tracking-wider mb-5 text-slate-950 dark:text-white">
+              COMMAND CENTER
             </h2>
-            <button 
-              onClick={() => navigate('/history')}
-              className="text-blue-500 hover:text-blue-400 text-xs font-black uppercase tracking-widest transition-all flex items-center gap-1"
-            >
-              View All &gt;
-            </button>
+            {user && <Dashboard userId={user.id} activeLobbyId={waitingRoomId} />}
           </div>
+        </div>
+        <div className="lg:col-span-4 flex flex-col h-auto lg:h-full">
+          <div className="bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 rounded-[2.5rem] p-6 sm:p-8 shadow-sm h-full flex flex-col justify-between">
+            <GlobalLeaderboard />
+          </div>
+        </div>
+      </div>
 
-          {user && (
-            <MatchHistory ref={matchHistoryRef} userId={user.id} limit={5} />
-          )}
+      {/* ROW 3: Deployment History & Ecosystem Architecture */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-stretch">
+        <div className="lg:col-span-8 flex flex-col h-auto lg:h-full">
+          <div className="bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 rounded-[2.5rem] p-6 sm:p-8 shadow-sm h-full flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <History className="text-indigo-600 dark:text-indigo-400" size={18} />
+                <h2 className="text-base sm:text-lg font-black uppercase tracking-wider text-slate-950 dark:text-white">
+                  DEPLOYMENT HISTORY
+                </h2>
+              </div>
+              <button 
+                onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'instant' });
+                  navigate('/history');
+                }}
+                className="min-h-11 px-3 flex items-center text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors cursor-pointer"
+              >
+                VIEW ALL &gt;
+              </button>
+            </div>
+
+            {user && (
+              <MatchHistory ref={matchHistoryRef} userId={user.id} limit={5} />
+            )}
+          </div>
+        </div>
+
+        <div className="lg:col-span-4 flex flex-col h-auto lg:h-full">
+          <div 
+            onClick={() => navigate('/about')}
+            className="relative w-full h-full min-h-65 rounded-[2.5rem] overflow-hidden shadow-sm border border-slate-200 dark:border-slate-800/80 cursor-pointer group bg-slate-950 flex flex-col justify-end"
+          >
+            <img
+              src="/assets/images/chess-platform.jpg"
+              alt="Chess Platform Arena"
+              className="absolute inset-0 w-full h-full object-cover object-center transform scale-105 group-hover:scale-100 transition-transform duration-700 ease-out opacity-80"
+            />
+            <div className="relative z-10 bg-linear-to-t from-slate-950/95 via-slate-950/60 to-transparent p-6 sm:p-8 flex flex-col justify-end">
+              <span className="text-[10px] font-black uppercase tracking-wider text-indigo-400 mb-2 bg-indigo-500/15 px-3 py-1 rounded-full w-fit border border-indigo-500/25">
+                Distributed Multiplayer
+              </span>
+              <h3 className="text-base sm:text-lg font-black text-white tracking-tight flex items-center gap-2">
+                <span>Ecosystem Architecture</span>
+                <span className="transition-transform group-hover:translate-x-1">&rarr;</span>
+              </h3>
+            </div>
+          </div>
         </div>
       </div>
     </div>

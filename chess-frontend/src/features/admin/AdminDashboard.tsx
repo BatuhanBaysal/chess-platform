@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
     getAllUsers, 
     deleteUserAccount, 
@@ -9,13 +10,26 @@ import {
     type AdminActiveGameResponseDTO,
     type AdminAuditLogResponseDTO
 } from '../../api/adminService';
-import { ShieldAlert, RefreshCcw } from 'lucide-react';
+import { 
+    ShieldAlert, 
+    RefreshCcw, 
+    ArrowLeft, 
+    Users, 
+    Swords, 
+    FileText, 
+    Wrench 
+} from 'lucide-react';
 import SandboxTriggerPanel from './components/SandboxTriggerPanel';
 import ActiveGamesPanel from './components/ActiveGamesPanel';
 import UserManagementPanel from './components/UserManagementPanel';
 import AuditLogsPanel from './components/AuditLogsPanel';
 
+type AdminTab = 'users' | 'sessions' | 'logs' | 'sandbox';
+
 export default function AdminDashboard() {
+    const navigate = useNavigate();
+    const [activeTab, setActiveTab] = useState<AdminTab>('users');
+
     const [users, setUsers] = useState<AdminUserResponseDTO[]>([]);
     const [activeGames, setActiveGames] = useState<AdminActiveGameResponseDTO[]>([]);
     const [auditLogs, setAuditLogs] = useState<AdminAuditLogResponseDTO[]>([]);
@@ -110,48 +124,156 @@ export default function AdminDashboard() {
     };
 
     return (
-        <div className="max-w-7xl mx-auto space-y-10 w-full px-4 pt-12 pb-12">
-            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-6">
+        <div className="w-full max-w-6xl mx-auto py-6 sm:py-10 px-4 sm:px-6 text-slate-900 dark:text-slate-100 animate-in fade-in duration-300">
+            {/* Return to Dashboard */}
+            <button 
+                onClick={() => navigate('/menu')} 
+                className="min-h-11 flex items-center gap-2 text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors uppercase font-black text-xs tracking-widest cursor-pointer mb-5"
+            >
+                <ArrowLeft size={16} /> Back to Menu
+            </button>
+
+            {/* Header Bar */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 p-5 sm:p-8 rounded-3xl shadow-sm mb-6 sm:mb-8">
                 <div>
-                    <h1 className="text-3xl font-black tracking-wider text-slate-900 dark:text-white flex items-center gap-3">
-                        <ShieldAlert className="text-blue-500" /> ADMIN CONTROL CENTER
+                    <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-mono text-xs uppercase font-bold tracking-widest mb-1">
+                        <ShieldAlert size={16} />
+                        <span>Master Governance</span>
+                    </div>
+                    <h1 className="text-2xl sm:text-3xl font-black uppercase text-slate-950 dark:text-white tracking-tight">
+                        Admin Control Center
                     </h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">System management, user auditing, and active game session panel.</p>
                 </div>
                 <button 
                     onClick={handleRefreshAll}
-                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold transition-all text-slate-900 dark:text-white cursor-pointer"
+                    className="min-h-11 w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-indigo-600/20 active:scale-95 shrink-0"
                 >
-                    <RefreshCcw size={14} /> Refresh
+                    <RefreshCcw size={14} className={loadingUsers || loadingGames || loadingLogs ? 'animate-spin' : ''} />
+                    <span>Refresh All</span>
                 </button>
             </div>
 
-            <SandboxTriggerPanel onGameTriggered={fetchActiveGamesData} />
+            {/* Top 3 Quick Metric Cards */}
+            <div className="grid grid-cols-3 gap-2.5 sm:gap-4 mb-6 sm:mb-8">
+                <div className="bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 p-3 sm:p-5 rounded-2xl shadow-xs flex items-center justify-between">
+                    <div>
+                        <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 block truncate">Total Users</span>
+                        <p className="text-lg sm:text-2xl font-black text-slate-950 dark:text-white tabular-nums mt-0.5">{totalElements}</p>
+                    </div>
+                    <div className="hidden sm:flex w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 items-center justify-center shrink-0 border border-indigo-200 dark:border-indigo-800/60">
+                        <Users size={18} />
+                    </div>
+                </div>
 
-            <ActiveGamesPanel 
-                activeGames={activeGames} 
-                loading={loadingGames} 
-                onForceFinish={handleForceFinish} 
-            />
+                <div className="bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 p-3 sm:p-5 rounded-2xl shadow-xs flex items-center justify-between">
+                    <div>
+                        <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 block truncate">Active Sessions</span>
+                        <p className="text-lg sm:text-2xl font-black text-slate-950 dark:text-white tabular-nums mt-0.5">{activeGames.length}</p>
+                    </div>
+                    <div className="hidden sm:flex w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 items-center justify-center shrink-0 border border-emerald-200 dark:border-emerald-800/60">
+                        <Swords size={18} />
+                    </div>
+                </div>
 
-            <UserManagementPanel 
-                users={users}
-                loading={loadingUsers}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalElements={totalElements}
-                onPageChange={setCurrentPage}
-                onDeleteUser={handleDeleteUser}
-            />
+                <div className="bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 p-3 sm:p-5 rounded-2xl shadow-xs flex items-center justify-between">
+                    <div>
+                        <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 block truncate">Audit Logs</span>
+                        <p className="text-lg sm:text-2xl font-black text-slate-950 dark:text-white tabular-nums mt-0.5">{auditTotalElements}</p>
+                    </div>
+                    <div className="hidden sm:flex w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 items-center justify-center shrink-0 border border-amber-200 dark:border-amber-800/60">
+                        <FileText size={18} />
+                    </div>
+                </div>
+            </div>
 
-            <AuditLogsPanel 
-                auditLogs={auditLogs}
-                loading={loadingLogs}
-                auditPage={auditPage}
-                auditTotalPages={auditTotalPages}
-                auditTotalElements={auditTotalElements}
-                onAuditPageChange={setAuditPage}
-            />
+            {/* 4-Tab Navigation Bar */}
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 mb-6 p-1.5 bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl w-full sm:w-fit">
+                <button
+                    onClick={() => setActiveTab('users')}
+                    className={`min-h-11 px-3 sm:px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center sm:justify-start gap-2 cursor-pointer ${
+                        activeTab === 'users'
+                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white'
+                    }`}
+                >
+                    <Users size={15} />
+                    <span>Users ({totalElements})</span>
+                </button>
+
+                <button
+                    onClick={() => setActiveTab('sessions')}
+                    className={`min-h-11 px-3 sm:px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center sm:justify-start gap-2 cursor-pointer ${
+                        activeTab === 'sessions'
+                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white'
+                    }`}
+                >
+                    <Swords size={15} />
+                    <span>Sessions ({activeGames.length})</span>
+                </button>
+
+                <button
+                    onClick={() => setActiveTab('logs')}
+                    className={`min-h-11 px-3 sm:px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center sm:justify-start gap-2 cursor-pointer ${
+                        activeTab === 'logs'
+                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white'
+                    }`}
+                >
+                    <FileText size={15} />
+                    <span>Logs ({auditTotalElements})</span>
+                </button>
+
+                <button
+                    onClick={() => setActiveTab('sandbox')}
+                    className={`min-h-11 px-3 sm:px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center sm:justify-start gap-2 cursor-pointer ${
+                        activeTab === 'sandbox'
+                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white'
+                    }`}
+                >
+                    <Wrench size={15} />
+                    <span>Sandbox</span>
+                </button>
+            </div>
+
+            {/* Tab Panels */}
+            <div>
+                {activeTab === 'users' && (
+                    <UserManagementPanel 
+                        users={users}
+                        loading={loadingUsers}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalElements={totalElements}
+                        onPageChange={setCurrentPage}
+                        onDeleteUser={handleDeleteUser}
+                    />
+                )}
+
+                {activeTab === 'sessions' && (
+                    <ActiveGamesPanel 
+                        activeGames={activeGames} 
+                        loading={loadingGames} 
+                        onForceFinish={handleForceFinish} 
+                    />
+                )}
+
+                {activeTab === 'logs' && (
+                    <AuditLogsPanel 
+                        auditLogs={auditLogs}
+                        loading={loadingLogs}
+                        auditPage={auditPage}
+                        auditTotalPages={auditTotalPages}
+                        auditTotalElements={auditTotalElements}
+                        onAuditPageChange={setAuditPage}
+                    />
+                )}
+
+                {activeTab === 'sandbox' && (
+                    <SandboxTriggerPanel onGameTriggered={fetchActiveGamesData} />
+                )}
+            </div>
         </div>
     );
 }

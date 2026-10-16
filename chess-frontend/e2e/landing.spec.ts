@@ -1,29 +1,71 @@
-import { test, expect } from './setup';
+import { test, expect } from '@playwright/test';
 
-test.describe('LandingPage Core User Journeys', () => {
+test.describe('Dashboard & Landing Page (Master Plan v2.6.0)', () => {
   test.beforeEach(async ({ page }) => {
+    // Arrange
     await page.goto('/menu');
   });
 
-  test('should render game setup and lobby components correctly', async ({ page }) => {
-    const setupPanel = page.locator('text=Command Center').first();
-    await expect(page).toHaveURL(/.*\/menu/);
+  test('should render core dashboard modules and action triggers correctly', async ({ page }) => {
+    // Arrange
+    const initializeMatchBtn = page.getByRole('button', { name: /INITIALIZE MATCH/i });
+    const playVsComputerBtn = page.getByRole('button', { name: /PLAY VS COMPUTER/i });
+    const commandCenterHeading = page.getByRole('heading', { name: /COMMAND CENTER/i });
+    const activeChannelsHeading = page.getByRole('heading', { name: /ACTIVE CHANNELS/i });
+    const topPlayersHeading = page.getByRole('heading', { name: /TOP PLAYERS/i });
+    const deploymentHistoryHeading = page.getByRole('heading', { name: /DEPLOYMENT HISTORY/i });
+
+    // Act
+    await page.waitForLoadState('networkidle');
+
+    // Assert
+    await expect(initializeMatchBtn).toBeVisible();
+    await expect(playVsComputerBtn).toBeVisible();
+    await expect(commandCenterHeading).toBeVisible();
+    await expect(activeChannelsHeading).toBeVisible();
+    await expect(topPlayersHeading).toBeVisible();
+    await expect(deploymentHistoryHeading).toBeVisible();
   });
 
-  test('should open AI match modal when trigger button is clicked', async ({ page }) => {
-    const aiButton = page.locator('button', { hasText: /ai|computer|artificial intelligence/i }).first();
-    if (await aiButton.isVisible()) {
-      await aiButton.click();
-      const modalHeader = page.locator('text=AI').first();
-      await expect(modalHeader).toBeVisible();
-    }
+  test('should navigate to Full Leaderboard view when clicking Top Players View All', async ({ page }) => {
+    // Arrange
+    const topPlayersContainer = page.locator('div', { hasText: /^TOP PLAYERS/i }).first();
+    const viewAllBtn = topPlayersContainer.getByRole('button', { name: /VIEW ALL/i });
+
+    // Act
+    await viewAllBtn.click();
+
+    // Assert
+    await expect(page).toHaveURL(/\/leaderboard/);
+    await expect(page.getByRole('heading', { name: /GLOBAL RANKINGS/i })).toBeVisible();
   });
 
-  test('should navigate to full match history view', async ({ page }) => {
-    const viewAllButton = page.locator('button', { hasText: /view all/i }).first();
-    if (await viewAllButton.isVisible()) {
-      await viewAllButton.click();
-      await expect(page).toHaveURL(/.*\/history/);
-    }
+  test('should navigate to Combat Archive view when clicking Deployment History View All', async ({ page }) => {
+    // Arrange
+    const deploymentContainer = page.locator('div', { hasText: /^DEPLOYMENT HISTORY/i }).first();
+    const viewAllBtn = deploymentContainer.getByRole('button', { name: /VIEW ALL/i });
+
+    // Act
+    await viewAllBtn.click();
+
+    // Assert
+    await expect(page).toHaveURL(/\/history/);
+    await expect(page.getByRole('heading', { name: /COMBAT ARCHIVE/i })).toBeVisible();
+  });
+
+  test('should not generate horizontal scrollbar on mobile viewport (390px)', async ({ page }) => {
+    // Arrange
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    // Act
+    await page.goto('/menu');
+    await page.waitForLoadState('networkidle');
+
+    const hasHorizontalOverflow = await page.evaluate(() => {
+      return document.documentElement.scrollWidth > document.documentElement.clientWidth;
+    });
+
+    // Assert
+    expect(hasHorizontalOverflow).toBe(false);
   });
 });

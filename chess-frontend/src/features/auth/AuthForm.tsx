@@ -1,18 +1,31 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Eye, EyeOff, ShieldCheck, Info } from 'lucide-react';
 import FormField from '../../components/common/FormField';
+import SignUpSuccessCard from './SignUpSuccessCard';
 
 interface AuthFormProps {
   onLogin: (username: string, password: string) => void;
   onRegister: (username: string, password: string, email: string) => Promise<void> | void;
-  onGuestLogin: () => void;
 }
 
-const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin }) => {
+interface ApiErrorResponse {
+  response?: {
+    data?: {
+      message?: string;
+      error?: string;
+    } | string;
+  };
+  message?: string;
+}
+
+export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const isRegistering = location.pathname === '/register';
+  
+  const isSignUp = location.pathname === '/sign-up' || location.pathname === '/register';
 
+  const [registeredUsername, setRegisteredUsername] = useState<string>('');
   const [success, setSuccess] = useState(false); 
   const [formData, setFormData] = useState({ username: '', email: '', password: '' });
   const [errors, setErrors] = useState({ username: '', email: '', password: '' });
@@ -20,22 +33,40 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin }
   const [capsLockOn, setCapsLockOn] = useState(false); 
 
   const usernameRef = useRef<HTMLInputElement>(null); 
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const formDataRef = useRef(formData);
 
   useEffect(() => {
-    usernameRef.current?.focus();
-  }, [isRegistering]);
+    formDataRef.current = formData;
+  }, [formData]);
+
+  useEffect(() => {
+    if (success) return;
+
+    const timer = setTimeout(() => {
+      if (formDataRef.current.username.trim().length > 0) {
+        passwordRef.current?.focus();
+      } else {
+        usernameRef.current?.focus();
+      }
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [isSignUp, success]);
 
   const resetForm = () => {
     setFormData({ username: '', email: '', password: '' });
+    formDataRef.current = { username: '', email: '', password: '' };
     setErrors({ username: '', email: '', password: '' });
   };
 
   const handleToggleMode = () => {
     resetForm();
-    if (isRegistering) {
-      navigate('/login');
+    if (isSignUp) {
+      navigate('/sign-in');
     } else {
-      navigate('/register');
+      navigate('/sign-up');
     }
   };
 
@@ -44,7 +75,67 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin }
     const processedValue = (name === 'username' || name === 'email') 
       ? value.toLowerCase() 
       : value;
+    
     setFormData(prev => ({ ...prev, [name]: processedValue }));
+    if (errors[name as keyof typeof errors]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const validateUsername = (): boolean => {
+    const val = formData.username.trim();
+    if (!val) {
+      setErrors(prev => ({ 
+        ...prev, 
+        username: isSignUp ? 'Username is required' : 'Username or email is required' 
+      }));
+      return false;
+    }
+    if (isSignUp && (val.length < 3 || val.length > 20)) {
+      setErrors(prev => ({ 
+        ...prev, 
+        username: 'Username must be between 3 and 20 characters' 
+      }));
+      return false;
+    }
+    setErrors(prev => ({ ...prev, username: '' }));
+    return true;
+  };
+
+  const validateEmail = (): boolean => {
+    if (!isSignUp) return true;
+    const val = formData.email.trim();
+    if (!val) {
+      setErrors(prev => ({ ...prev, email: 'Email is required' }));
+      return false;
+    }
+    const emailRegex = /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    if (!emailRegex.test(val)) {
+      setErrors(prev => ({ ...prev, email: 'Invalid email format' }));
+      return false;
+    }
+    setErrors(prev => ({ ...prev, email: '' }));
+    return true;
+  };
+
+  const validatePassword = (): boolean => {
+    const val = formData.password;
+    if (!val) {
+      setErrors(prev => ({ ...prev, password: 'Password is required' }));
+      return false;
+    }
+    if (isSignUp) {
+      const passwordRegex = /^(?=.*\d)(?=.*[a-z]).{8,}$/;
+      if (!passwordRegex.test(val)) {
+        setErrors(prev => ({ 
+          ...prev, 
+          password: 'Password must be at least 8 characters with letters and numbers' 
+        }));
+        return false;
+      }
+    }
+    setErrors(prev => ({ ...prev, password: '' }));
+    return true;
   };
 
   const getPasswordStrength = () => {
@@ -54,9 +145,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin }
     let strength = 0;
     if (val.length >= 8) strength++;   
     if (/[a-z]/.test(val)) strength++; 
-    if (/[A-Z]/.test(val)) strength++;
+    if (/[A-Z]/.test(val)) strength++; 
     if (/[0-9]/.test(val)) strength++; 
-    if (/[^A-Za-z0-9]/.test(val)) strength++;
+    if (/[^A-Za-z0-9]/.test(val)) strength++; 
     
     if (strength <= 1) return 0; 
     if (strength <= 2) return 1; 
@@ -65,43 +156,26 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin }
   };
 
   const strength = getPasswordStrength();
-  const strengthColors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-emerald-500'];
+  const strengthColors = ['bg-rose-500', 'bg-amber-500', 'bg-yellow-500', 'bg-emerald-500'];
 
-  const validate = () => {
-      let isValid = true;
-      const newErrors = { username: '', email: '', password: '' };
-
-      if (!formData.username) { 
-          newErrors.username = isRegistering ? 'Username is required' : 'Username or Email is required'; 
-          isValid = false; 
-      }
-
-      if (isRegistering) {
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!formData.email || !emailRegex.test(formData.email)) {
-              newErrors.email = 'Please enter a valid email address';
-              isValid = false;
-          }
-      }
-
-      if (!formData.password) { 
-          newErrors.password = 'Password is required'; 
-          isValid = false; 
-      }
-
-      setErrors(newErrors);
-      return isValid;
+  const validateAll = () => {
+    const isUValid = validateUsername();
+    const isEValid = validateEmail();
+    const isPValid = validatePassword();
+    return isUValid && isEValid && isPValid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validateAll()) return;
 
     setErrors({ username: '', email: '', password: '' });
 
     try {
-      if (isRegistering) {
+      if (isSignUp) {
+        const usernameSubmitted = formData.username;
         await onRegister(formData.username, formData.password, formData.email);
+        setRegisteredUsername(usernameSubmitted);
         setSuccess(true);
         resetForm();
       } else {
@@ -110,124 +184,185 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin }
     } catch (err: unknown) {
       setFormData(prev => ({ ...prev, password: '' })); 
       
-      const error = err as { response?: { data?: any }; message?: string };
+      const error = err as ApiErrorResponse;
       const errData = error.response?.data;
-      const errorMessage = typeof errData === 'string' ? errData : (errData?.message || errData?.error || error.message || "Authentication failed");
+      const errorMessage = typeof errData === 'string' 
+        ? errData 
+        : (errData?.message || errData?.error || error.message || 'Authentication failed');
       const msgLower = errorMessage.toLowerCase();
 
-      if (msgLower.includes("username")) {
-        setErrors(prev => ({ ...prev, username: "This username is already taken." }));
-      } else if (msgLower.includes("email")) {
-        setErrors(prev => ({ ...prev, email: "This email address is already in use." }));
+      if (msgLower.includes('username')) {
+        setErrors(prev => ({ ...prev, username: 'This username is already taken.' }));
+      } else if (msgLower.includes('email')) {
+        setErrors(prev => ({ ...prev, email: 'This email address is already in use.' }));
       } else {
         setErrors(prev => ({ ...prev, password: errorMessage }));
       }
     }
   };
 
-  return (
-    <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6">
-      {!success && (
-        <div className="text-center mb-2">
-          <h1 className="text-4xl font-black tracking-tighter mb-2 text-slate-950 dark:text-white">
-            {isRegistering ? 'REGISTER' : 'LOGIN'}
-          </h1>
-        </div>
-      )}
+  if (success) {
+    return (
+      <SignUpSuccessCard 
+        username={registeredUsername} 
+        onProceedToSignIn={() => {
+          const prefillData = { username: registeredUsername, email: '', password: '' };
+          formDataRef.current = prefillData;
+          setFormData(prefillData);
+          setSuccess(false);
+          navigate('/sign-in');
+        }} 
+      />
+    );
+  }
 
-      {success ? (
-        <div className="p-8 bg-emerald-500/5 border border-emerald-500/10 rounded-3xl text-center flex flex-col items-center max-w-sm mx-auto">
-          <h3 className="text-emerald-500 font-black uppercase tracking-[0.2em] mb-4">Welcome to the Board!</h3>
-          <p className="text-slate-300 text-sm md:text-base mb-6 leading-relaxed">
-            Your account <span className="text-white font-bold">{formData.username}</span> has been successfully created. 
-            You are starting your chess journey with an initial Elo rating of <span className="text-emerald-500 font-bold"> 1200</span>.
+  return (
+    <form noValidate onSubmit={handleSubmit} className="w-full flex flex-col justify-between h-full">
+      <div>
+        {/* Header */}
+        <div className="mb-7">
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-950 dark:text-white uppercase">
+            {isSignUp ? 'SIGN UP' : 'SIGN IN'}
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1.5 font-medium">
+            {isSignUp 
+              ? 'Create an account to start playing rated matches.' 
+              : 'Welcome back. Sign in to access your profile.'}
           </p>
-          <button type="button" onClick={() => { setSuccess(false); navigate('/login'); }} className="w-full px-8 py-3 bg-emerald-600 text-white font-black uppercase tracking-widest rounded-xl hover:bg-emerald-500 transition-all active:scale-95 cursor-pointer">
-            Sign In & Play
-          </button>
         </div>
-      ) : (
-        <>
+
+        {/* Inputs */}
+        <div className="space-y-3.5">
           <FormField 
             ref={usernameRef}
             name="username" 
-            label={isRegistering ? "Username" : "Username or Email"} 
+            label={isSignUp ? "Username" : "Username or Email"} 
             type="text" 
-            placeholder={isRegistering ? "Enter your username" : "Enter username or email"} 
+            placeholder={isSignUp ? "batuchess" : "username or email"} 
             value={formData.username} 
             onChange={handleInputChange} 
+            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if (validateUsername()) {
+                  if (isSignUp) {
+                    emailRef.current?.focus();
+                  } else {
+                    passwordRef.current?.focus();
+                  }
+                }
+              }
+            }}
             error={errors.username} 
           />
           
-          {isRegistering && (
+          {isSignUp && (
             <FormField 
+              ref={emailRef}
               name="email" 
               label="Email Address" 
               type="email" 
-              placeholder="name@chessplatform.com" 
+              placeholder="player@chessplatform.com" 
               value={formData.email} 
               onChange={handleInputChange} 
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (validateEmail()) {
+                    passwordRef.current?.focus();
+                  }
+                }
+              }}
               error={errors.email} 
             />
           )}
           
           <div className="relative">
             <FormField 
+              ref={passwordRef}
               name="password" 
               label="Password" 
               type={showPassword ? "text" : "password"} 
               placeholder="••••••••" 
               value={formData.password} 
               onChange={handleInputChange} 
-              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => setCapsLockOn(e.getModifierState("CapsLock"))}
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                setCapsLockOn(e.getModifierState("CapsLock"));
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSubmit(e);
+                }
+              }}
               error={errors.password} 
             />
-            {capsLockOn && <p className="text-[10px] text-amber-500 font-bold absolute right-0 -top-1">CAPS LOCK IS ON</p>}
             
-            {isRegistering && formData.password && (
-              <div className="w-full h-1 mt-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full transition-all duration-300 ${strengthColors[strength]}`} 
-                  style={{ width: `${((strength + 1) / 4) * 100}%` }} 
-                />
-              </div>
+            {capsLockOn && (
+              <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold absolute right-0 -top-1">
+                CAPS LOCK IS ON
+              </p>
             )}
 
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-9 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer">
-              {showPassword ? "🙈" : "👁️"}
+            <button 
+              type="button" 
+              onClick={() => setShowPassword(!showPassword)} 
+              className="absolute right-3.5 top-9.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+              title={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
+            
+            {isSignUp && (
+              <div className="mt-1.5 space-y-1">
+                {formData.password ? (
+                  <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-300 ${strengthColors[strength]}`} 
+                      style={{ width: `${((strength + 1) / 4) * 100}%` }} 
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                    <Info size={12} className="shrink-0 text-indigo-500" />
+                    <span>Min 8 characters, including letters & numbers</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-          
-          <button type="submit" className="w-full py-4 mt-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black uppercase tracking-widest rounded-xl hover:opacity-90 transition-opacity cursor-pointer">
-            {isRegistering ? 'CREATE ACCOUNT' : 'SIGN IN'}
+        </div>
+
+        {/* Submit Button */}
+        <button 
+          type="submit" 
+          className="w-full py-3.5 mt-5 bg-slate-950 dark:bg-white text-white dark:text-slate-950 font-black uppercase tracking-widest text-xs rounded-xl hover:opacity-90 active:scale-98 transition-all cursor-pointer shadow-md"
+        >
+          {isSignUp ? 'CREATE ACCOUNT' : 'SIGN IN'}
+        </button>
+
+        {/* Mode Switch */}
+        <div className="text-center mt-5 sm:mt-6">
+          <button 
+            type="button" 
+            onClick={handleToggleMode} 
+            className="text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
+          >
+            {isSignUp ? (
+              <>Already have an account? <span className="underline font-bold text-slate-950 dark:text-white ml-1">Sign In</span></>
+            ) : (
+              <>Don't have an account? <span className="underline font-bold text-slate-950 dark:text-white ml-1">Sign Up</span></>
+            )}
           </button>
+        </div>
+      </div>
 
-          <div className="relative flex items-center py-2">
-            <div className="grow border-t border-slate-200 dark:border-slate-800"></div>
-            <span className="shrink-0 mx-4 text-[10px] text-slate-400 font-bold uppercase">OR</span>
-            <div className="grow border-t border-slate-200 dark:border-slate-800"></div>
-          </div>
-
-          <button type="button" onClick={onGuestLogin} className="w-full py-4 border-2 border-slate-200 dark:border-slate-800 rounded-xl text-slate-600 dark:text-slate-400 font-black uppercase tracking-widest hover:border-indigo-500 hover:text-indigo-500 transition-all cursor-pointer">
-            Play as Guest
-          </button>
-
-          <div className="mt-6 p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800">
-            <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 leading-relaxed text-center">
-              <span className="font-bold text-indigo-600 dark:text-indigo-400 block mb-1">Why register?</span>
-              Registered players start with a <span className="font-bold text-emerald-600 dark:text-emerald-500 mx-1">1200 ELO</span> rating. 
-              Guest accounts start at <span className="font-bold text-slate-900 dark:text-white mx-1">400 ELO</span> and have 
-              <span className="text-amber-600 dark:text-amber-500 font-bold ml-1">limited access</span> duration.
-            </p>
-          </div>
-
-          <div className="text-center mt-2">
-            <button type="button" onClick={handleToggleMode} className="text-xs font-bold text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer">
-              {isRegistering ? <>Already have an account? <span className="underline">Sign In</span></> : <>Don't have an account? <span className="underline">Register Now</span></>}
-            </button>
-          </div>
-        </>
-      )}
+      {/* Footer Signature */}
+      <div className="pt-3 border-t border-slate-200/70 dark:border-slate-800/70 flex items-center justify-between text-[11px] font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500 mt-2">
+        <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+          <ShieldCheck size={14} className="text-indigo-600 dark:text-indigo-400" />
+          <span>CHESS PLATFORM</span>
+        </div>
+        <span>BATUHAN BAYSAL • 2026</span>
+      </div>
     </form>
   );
 };

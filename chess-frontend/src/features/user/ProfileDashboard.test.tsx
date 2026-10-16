@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import ProfileDashboard from './ProfileDashboard';
 import * as userService from '../../api/userService';
 import * as authHook from '../../hooks/useAuth';
@@ -35,7 +36,11 @@ describe('ProfileDashboard Component', () => {
 
   it('renders profile data and statistics successfully', async () => {
     // Act
-    render(<ProfileDashboard />);
+    render(
+      <MemoryRouter>
+        <ProfileDashboard />
+      </MemoryRouter>
+    );
 
     // Assert
     await waitFor(() => {

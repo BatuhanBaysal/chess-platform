@@ -41,15 +41,15 @@ export const ActiveGameView: React.FC<ActiveGameViewProps> = ({
 
   if (!game || !isConnected) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#020617] flex items-center justify-center flex-col gap-8 text-slate-900 dark:text-white">
+      <div className="min-h-[80vh] flex items-center justify-center flex-col gap-6 text-slate-950 dark:text-white px-4">
         <div className="relative flex items-center justify-center">
-          <div className="absolute w-24 h-24 border-2 border-blue-500/10 rounded-full" />
-          <div className="absolute w-20 h-20 border-t-2 border-blue-500 rounded-full animate-spin" />
-          <Terminal size={32} className="text-blue-500 animate-pulse" />
+          <div className="w-20 h-20 border-2 border-indigo-500/10 rounded-full" />
+          <div className="absolute w-16 h-16 border-t-2 border-indigo-600 dark:border-indigo-400 rounded-full animate-spin" />
+          <Terminal size={26} className="text-indigo-600 dark:text-indigo-400 animate-pulse" />
         </div>
         <button 
           onClick={onBackToMenu}
-          className="mt-4 group flex items-center gap-2 px-8 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-2xl cursor-pointer"
+          className="min-h-11 flex items-center gap-2 px-6 py-2.5 bg-slate-950 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-950 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md cursor-pointer active:scale-95"
         >
           Abort Deployment
         </button>
@@ -58,8 +58,8 @@ export const ActiveGameView: React.FC<ActiveGameViewProps> = ({
   }
 
   return (
-    <main className="grow flex flex-col items-center justify-center w-full px-4 py-8">
-      <div className="w-full flex justify-center items-center">
+    <main className="grow flex flex-col items-center justify-center w-full max-w-full px-2 sm:px-4 py-4 sm:py-6">
+      <div className="w-full max-w-full flex justify-center items-center">
         <ChessBoard 
           key={game?.gameId || 'active-game'}
           boardRepresentation={game?.boardRepresentation || ""} 
@@ -89,3 +89,5 @@ export const ActiveGameView: React.FC<ActiveGameViewProps> = ({
     </main>
   );
 };
+
+export default ActiveGameView;

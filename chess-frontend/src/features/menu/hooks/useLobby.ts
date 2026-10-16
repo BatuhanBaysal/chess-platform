@@ -29,14 +29,17 @@ export const useLobby = (userId?: string) => {
   }, []);
 
   const handleCancelDeployment = useCallback(async () => {
-    if (waitingRoomId && userId) {
+    const currentRoomId = waitingRoomId;
+    setWaitingRoomId(null);
+
+    const numericUserId = Number(userId);
+    if (currentRoomId && userId && !Number.isNaN(numericUserId)) {
       try {
-        await cancelLobby(waitingRoomId, Number(userId));
+        await cancelLobby(currentRoomId, numericUserId);
       } catch (e) {
         console.error("Cancel lobby error:", e);
       }
     }
-    setWaitingRoomId(null);
   }, [waitingRoomId, userId]);
 
   useEffect(() => {

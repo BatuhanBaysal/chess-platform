@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getFullLeaderboard, type LeaderboardUser } from '../../../api/userService';
 import { ChevronLeft, ChevronRight, Medal, ArrowLeft, Loader2, Trophy } from 'lucide-react';
 
-const FullLeaderboardPage: React.FC = () => {
+export const FullLeaderboardPage: React.FC = () => {
     const navigate = useNavigate();
     const [users, setUsers] = useState<LeaderboardUser[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -42,87 +42,137 @@ const FullLeaderboardPage: React.FC = () => {
 
     const getMedal = (index: number) => {
         const globalIndex = (currentPage - 1) * itemsPerPage + index;
-        if (globalIndex === 0) return <Medal className="text-amber-500" size={32} fill="currentColor" />;
-        if (globalIndex === 1) return <Medal className="text-slate-400" size={32} fill="currentColor" />;
-        if (globalIndex === 2) return <Medal className="text-orange-700 dark:text-amber-800" size={32} fill="currentColor" />;
-        return <span className="font-mono text-slate-500 font-bold w-12 text-center text-lg">#{globalIndex + 1}</span>;
+        if (globalIndex === 0) return <Medal className="text-amber-500 drop-shadow-sm" size={26} fill="currentColor" />;
+        if (globalIndex === 1) return <Medal className="text-slate-400 drop-shadow-sm" size={26} fill="currentColor" />;
+        if (globalIndex === 2) return <Medal className="text-amber-700 dark:text-amber-600 drop-shadow-sm" size={26} fill="currentColor" />;
+        return <span className="font-mono text-slate-500 dark:text-slate-400 font-bold w-8 text-center text-sm sm:text-base">#{globalIndex + 1}</span>;
     };
 
     return (
-        <div className="min-h-screen pt-12 pb-12 px-6 md:px-12 max-w-8xl mx-auto text-slate-900 dark:text-white animate-in fade-in duration-500">
+        <div className="w-full max-w-350 mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 text-slate-900 dark:text-white animate-in fade-in duration-300">
+            {/* Back to Dashboard */}
             <button 
                 onClick={() => navigate('/')} 
-                className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors mb-8 uppercase font-black text-xs tracking-widest cursor-pointer"
+                className="min-h-11 flex items-center gap-2 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors mb-5 uppercase font-black text-xs tracking-widest cursor-pointer"
             >
                 <ArrowLeft size={16} /> Back to Menu
             </button>
 
-            <div className="flex flex-col mb-10">
-                <h2 className="text-6xl font-black uppercase tracking-tighter italic">
+            {/* Header Title */}
+            <div className="flex flex-col mb-6 sm:mb-8">
+                <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-slate-950 dark:text-white">
                     Global Rankings
-                </h2>
-                <div className="h-1.5 w-32 bg-blue-600 dark:bg-blue-500 mt-3 rounded-full" />
+                </h1>
+                <div className="h-1.5 w-24 sm:w-32 bg-indigo-600 mt-2 rounded-full" />
             </div>
 
-            <div className="grid grid-cols-7 px-10 pb-6 text-xs font-black uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">
-                <div className="col-span-1">Rank</div>
-                <div className="col-span-2">Username</div>
-                <div className="col-span-1 text-center">W/L/D</div>
-                <div className="col-span-1 text-center">Total Games</div>
-                <div className="col-span-1 text-center">Winrate</div>
-                <div className="col-span-1 text-right">ELO Rating</div>
+            {/* Responsive Table Container */}
+            <div className="bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 rounded-3xl overflow-hidden shadow-lg shadow-slate-950/5 dark:shadow-slate-950/30">
+                <div className="w-full overflow-hidden">
+                    <table className="w-full text-left border-collapse table-fixed sm:table-auto">
+                        <thead>
+                            <tr className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800/80">
+                                <th className="py-4 px-3 sm:px-6 text-center w-16 sm:w-24">Rank</th>
+                                <th className="py-4 px-3 sm:px-6">Player</th>
+                                <th className="hidden md:table-cell py-4 px-6 text-center">W / L / D</th>
+                                <th className="hidden lg:table-cell py-4 px-6 text-center">Total Games</th>
+                                <th className="hidden sm:table-cell py-4 px-6 text-center">Win Rate</th>
+                                <th className="py-4 px-4 sm:px-8 text-right w-24 sm:w-auto">ELO</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200/80 dark:divide-slate-800/50">
+                            {isLoading ? (
+                                <tr>
+                                    <td colSpan={6} className="py-28 text-center">
+                                        <div className="flex flex-col items-center justify-center gap-3 text-slate-400">
+                                            <Loader2 className="animate-spin text-indigo-600" size={34} />
+                                            <span className="text-xs uppercase font-bold tracking-widest">Fetching rankings...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : users.length > 0 ? (
+                                users.map((user, index) => {
+                                    const userInitial = (user.username?.charAt(0) || 'U').toUpperCase();
+                                    const isAlternate = index % 2 === 1;
+
+                                    return (
+                                        <tr 
+                                          key={user.username} 
+                                          className={`transition-colors ${
+                                            isAlternate 
+                                              ? 'bg-slate-50/90 dark:bg-slate-950/50' 
+                                              : 'bg-white dark:bg-transparent'
+                                          } hover:bg-indigo-500/10 dark:hover:bg-indigo-500/10`}
+                                        >
+                                            <td className="py-4 px-3 sm:px-6 text-center">
+                                                <div className="flex justify-center items-center">
+                                                    {getMedal(index)}
+                                                </div>
+                                            </td>
+                                            <td className="py-4 px-3 sm:px-6">
+                                                <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+                                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs sm:text-sm font-black shrink-0 shadow-xs">
+                                                        {userInitial}
+                                                    </div>
+                                                    <span className="font-bold text-sm sm:text-base text-slate-950 dark:text-white truncate">
+                                                        {user.username}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="hidden md:table-cell py-4.5 px-6 text-center font-mono text-base font-bold text-slate-700 dark:text-slate-300">
+                                                <span className="text-emerald-600 dark:text-emerald-400">{user.totalWins}</span>
+                                                <span className="text-slate-300 dark:text-slate-700 mx-2">/</span>
+                                                <span className="text-rose-600 dark:text-rose-400">{user.totalLosses}</span>
+                                                <span className="text-slate-300 dark:text-slate-700 mx-2">/</span>
+                                                <span className="text-slate-500">{user.totalDraws}</span>
+                                            </td>
+                                            <td className="hidden lg:table-cell py-4.5 px-6 text-center font-bold text-base text-slate-800 dark:text-slate-200">
+                                                {user.totalGames}
+                                            </td>
+                                            <td className="hidden sm:table-cell py-4.5 px-6 text-center font-black text-base text-emerald-600 dark:text-emerald-400">
+                                                {getWinRate(user.totalWins, user.totalGames)}
+                                            </td>
+                                            <td className="py-4 px-4 sm:px-8 text-right font-black text-base sm:text-2xl text-indigo-600 dark:text-indigo-400 tabular-nums">
+                                                {user.eloRating}
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            ) : (
+                                <tr>
+                                    <td colSpan={6} className="py-28 text-center text-slate-400">
+                                        <div className="flex flex-col items-center justify-center gap-2">
+                                            <Trophy size={40} className="opacity-30" />
+                                            <span className="text-xs uppercase font-bold tracking-widest">No players found</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden backdrop-blur-sm divide-y divide-slate-200 dark:divide-slate-800 relative min-h-75">
-                {isLoading ? (
-                    <div className="flex flex-col items-center justify-center py-24 gap-3 text-slate-400">
-                        <Loader2 className="animate-spin text-blue-600" size={36} />
-                        <span className="text-xs uppercase font-bold tracking-widest">Fetching rankings...</span>
-                    </div>
-                ) : users.length > 0 ? (
-                    users.map((user, index) => (
-                        <div key={user.username} className="grid grid-cols-7 px-10 py-8 items-center hover:bg-slate-100 dark:hover:bg-slate-800/30 transition-all duration-200">
-                            <div className="col-span-1">{getMedal(index)}</div>
-                            <div className="col-span-2 font-bold text-2xl tracking-tight">{user.username}</div>
-                            <div className="col-span-1 text-center font-mono text-base text-slate-600 dark:text-slate-400">
-                                {user.totalWins}<span className="text-slate-400 mx-2">/</span>{user.totalLosses}<span className="text-slate-400 mx-2">/</span>{user.totalDraws}
-                            </div>
-                            <div className="col-span-1 text-center font-bold text-slate-600 dark:text-slate-500 text-lg">
-                                {user.totalGames}
-                            </div>
-                            <div className="col-span-1 text-center font-black text-emerald-600 dark:text-emerald-500 text-lg">
-                                {getWinRate(user.totalWins, user.totalGames)}
-                            </div>
-                            <div className="col-span-1 text-right font-black text-3xl text-blue-700 dark:text-blue-400 tabular-nums">
-                                {user.eloRating}
-                            </div>
-                        </div>
-                    ))
-                ) : (
-                    <div className="flex flex-col items-center justify-center py-24 gap-3 text-slate-400">
-                        <Trophy size={42} className="opacity-30" />
-                        <span className="text-xs uppercase font-bold tracking-widest">No players found</span>
-                    </div>
-                )}
-            </div>
-
-            <div className="flex justify-center items-center gap-6 mt-12">
+            {/* Pagination Controls */}
+            <div className="flex justify-center items-center gap-3 sm:gap-4 mt-7 sm:mt-8">
                 <button 
                     disabled={currentPage === 1 || isLoading} 
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
-                    className="p-4 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-800 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed transition-colors"
+                    className="min-h-11 min-w-11 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                    aria-label="Previous Page"
                 >
-                    <ChevronLeft size={24} />
+                    <ChevronLeft size={20} />
                 </button>
-                <span className="text-sm font-black uppercase tracking-widest bg-slate-100 dark:bg-slate-900 px-8 py-4 rounded-xl border border-slate-200 dark:border-slate-800">
-                    Page {currentPage} of {totalPages || 1}
+                <span className="min-h-11 flex items-center text-xs sm:text-sm font-black uppercase tracking-wider bg-white dark:bg-slate-900 px-5 sm:px-7 rounded-xl border border-slate-200 dark:border-slate-800">
+                  Page {currentPage} of {totalPages || 1}
                 </span>
                 <button 
                     disabled={currentPage >= totalPages || isLoading} 
                     onClick={() => setCurrentPage(p => p + 1)} 
-                    className="p-4 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-800 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed transition-colors"
+                    className="min-h-11 min-w-11 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                    aria-label="Next Page"
                 >
-                    <ChevronRight size={24} />
+                    <ChevronRight size={20} />
                 </button>
             </div>
         </div>

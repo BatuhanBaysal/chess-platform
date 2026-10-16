@@ -1,4 +1,4 @@
-import { FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileText, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { type AdminAuditLogResponseDTO } from '../../../api/adminService';
 
 interface AuditLogsPanelProps {
@@ -19,52 +19,69 @@ export default function AuditLogsPanel({
     onAuditPageChange
 }: AuditLogsPanelProps) {
     return (
-        <div className="bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xl">
+        <div className="bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 rounded-3xl p-4 sm:p-7 shadow-sm">
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-bold flex items-center gap-2 text-amber-600 dark:text-amber-400">
-                    <FileText size={20} /> Audit Logs ({auditTotalElements})
-                </h2>
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    Page {auditPage + 1} of {auditTotalPages}
+                <div className="flex items-center gap-2">
+                    <FileText size={18} className="text-amber-600 dark:text-amber-400" />
+                    <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-950 dark:text-white">
+                        Audit Telemetry ({auditTotalElements})
+                    </h2>
+                </div>
+                <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-slate-500">
+                    {auditTotalPages > 0 ? auditPage + 1 : 0} / {Math.max(1, auditTotalPages)}
                 </span>
             </div>
 
             {loading ? (
-                <p className="text-sm text-slate-500">Loading...</p>
+                <div className="py-16 flex flex-col items-center justify-center gap-2 text-slate-500">
+                    <Loader2 className="animate-spin text-amber-600" size={24} />
+                    <span className="text-xs font-black uppercase tracking-widest">Streaming Logs...</span>
+                </div>
             ) : (
                 <>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm border-collapse">
+                    <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800/80">
+                        <table className="w-full text-left text-xs border-collapse">
                             <thead>
-                                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
-                                    <th className="py-3 px-4">ID</th>
-                                    <th className="py-3 px-4">Admin ID</th>
-                                    <th className="py-3 px-4">Action Type</th>
-                                    <th className="py-3 px-4">Details</th>
-                                    <th className="py-3 px-4">Timestamp</th>
+                                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/90 uppercase font-black tracking-wider text-[10px]">
+                                    <th className="hidden sm:table-cell py-3 px-4 w-16">ID</th>
+                                    <th className="py-3 px-3 sm:px-4 w-32 sm:w-40">Action</th>
+                                    <th className="py-3 px-3 sm:px-4">Details</th>
+                                    <th className="hidden sm:table-cell py-3 px-4 text-right w-36">Timestamp</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-200 dark:divide-slate-800/50">
-                                {auditLogs.length > 0 ? (
+                            <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-bold">
+                                {auditLogs && auditLogs.length > 0 ? (
                                     auditLogs.map((log: AdminAuditLogResponseDTO) => (
-                                        <tr key={log.id} className="hover:bg-slate-100 dark:hover:bg-slate-800/20">
-                                            <td className="py-3 px-4 text-slate-500 font-mono text-xs">#{log.id}</td>
-                                            <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{log.adminId ?? 'N/A'}</td>
-                                            <td className="py-3 px-4">
-                                                <span className="px-2 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg text-xs font-bold">
+                                        <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
+                                            <td className="hidden sm:table-cell py-3 px-4 text-slate-500 font-mono text-[11px]">
+                                                #{log.id}
+                                            </td>
+                                            <td className="py-3 px-3 sm:px-4">
+                                                <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 rounded-md text-[10px] font-black uppercase inline-block">
                                                     {log.actionType}
                                                 </span>
+                                                <div className="flex sm:hidden items-center gap-1.5 mt-1 text-[10px] text-slate-500 font-mono font-medium">
+                                                    <span>
+                                                        {log.createdAt ? new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                                                    </span>
+                                                    {log.adminId != null && <span>• Admin #{log.adminId}</span>}
+                                                </div>
                                             </td>
-                                            <td className="py-3 px-4 text-slate-900 dark:text-white font-medium">{log.details}</td>
-                                            <td className="py-3 px-4 text-slate-500 text-xs">
-                                                {log.createdAt ? new Date(log.createdAt).toLocaleString() : 'N/A'}
+                                            <td className="py-3 px-3 sm:px-4 text-slate-950 dark:text-white font-medium text-xs wrap-break-words">
+                                                {log.details}
+                                            </td>
+                                            <td className="hidden sm:table-cell py-3 px-4 text-right text-slate-500 font-mono text-[11px]">
+                                                {log.createdAt ? new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                                             </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={5} className="text-center py-6 text-slate-500 text-xs uppercase tracking-wider">
-                                            No audit logs found.
+                                        <td colSpan={2} className="sm:hidden text-center py-10 text-slate-500 text-xs uppercase tracking-wider font-bold">
+                                            No audit trail recorded.
+                                        </td>
+                                        <td colSpan={4} className="hidden sm:table-cell text-center py-10 text-slate-500 text-xs uppercase tracking-wider font-bold">
+                                            No audit trail recorded.
                                         </td>
                                     </tr>
                                 )}
@@ -73,35 +90,19 @@ export default function AuditLogsPanel({
                     </div>
 
                     {auditTotalPages > 1 && (
-                        <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+                        <div className="flex justify-between items-center mt-5 pt-4 border-t border-slate-200 dark:border-slate-800/80">
                             <button
                                 onClick={() => onAuditPageChange(Math.max(auditPage - 1, 0))}
                                 disabled={auditPage === 0}
-                                className="flex items-center gap-1 px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 disabled:opacity-30 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-slate-900 dark:text-white cursor-pointer"
+                                className="min-h-11 flex items-center gap-1 px-3 sm:px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-30 rounded-xl text-xs font-black uppercase tracking-wider transition-colors text-slate-900 dark:text-white cursor-pointer"
                             >
-                                <ChevronLeft size={16} /> Previous
+                                <ChevronLeft size={16} /> Prev
                             </button>
-
-                            <div className="flex items-center gap-1">
-                                {Array.from({ length: auditTotalPages }, (_, i) => i).map((pageIndex) => (
-                                    <button
-                                        key={pageIndex}
-                                        onClick={() => onAuditPageChange(pageIndex)}
-                                        className={`w-8 h-8 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                                            auditPage === pageIndex 
-                                                ? 'bg-blue-600 text-white'
-                                                : 'bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
-                                        }`}
-                                    >
-                                        {pageIndex + 1}
-                                    </button>
-                                ))}
-                            </div>
 
                             <button
                                 onClick={() => onAuditPageChange(Math.min(auditPage + 1, auditTotalPages - 1))}
                                 disabled={auditPage === auditTotalPages - 1}
-                                className="flex items-center gap-1 px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 disabled:opacity-30 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-slate-900 dark:text-white cursor-pointer"
+                                className="min-h-11 flex items-center gap-1 px-3 sm:px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-30 rounded-xl text-xs font-black uppercase tracking-wider transition-colors text-slate-900 dark:text-white cursor-pointer"
                             >
                                 Next <ChevronRight size={16} />
                             </button>

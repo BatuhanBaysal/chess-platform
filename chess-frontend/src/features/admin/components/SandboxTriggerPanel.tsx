@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Terminal, Play, CheckCircle2 } from 'lucide-react';
+import { Terminal, Play, CheckCircle2, Loader2 } from 'lucide-react';
 import { triggerSandboxGame } from '../../../api/adminService';
 
 interface SandboxTriggerPanelProps {
@@ -19,7 +19,7 @@ export default function SandboxTriggerPanel({ onGameTriggered }: SandboxTriggerP
         setSuccessMessage(null);
         try {
             await triggerSandboxGame(Number(whiteId), Number(blackId));
-            setSuccessMessage("Sandbox game triggered successfully!");
+            setSuccessMessage("Sandbox event dispatched successfully!");
             onGameTriggered();
             setWhiteId('');
             setBlackId('');
@@ -32,46 +32,57 @@ export default function SandboxTriggerPanel({ onGameTriggered }: SandboxTriggerP
     };
 
     return (
-        <div className="bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-            <h2 className="text-lg font-bold flex items-center gap-2 mb-4 text-blue-600 dark:text-blue-400">
-                <Terminal size={20} /> Developer Sandbox Trigger
-            </h2>
+        <div className="bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 rounded-3xl p-5 sm:p-7 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+                <Terminal size={18} className="text-indigo-600 dark:text-indigo-400" />
+                <h2 className="text-sm font-black uppercase tracking-widest text-slate-950 dark:text-white">
+                    Developer Sandbox Trigger
+                </h2>
+            </div>
+            <p className="text-xs text-slate-500 font-medium mb-5">
+                Simulate match deployment between two user accounts to verify event bus and socket listeners.
+            </p>
             
-            <form onSubmit={handleTriggerSandbox} className="flex flex-wrap gap-4 items-end">
-                <div>
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">White Player ID</label>
+            <form onSubmit={handleTriggerSandbox} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                <div className="space-y-1.5">
+                    <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        White Player ID
+                    </label>
                     <input 
                         type="number" 
                         value={whiteId} 
                         onChange={(e) => setWhiteId(e.target.value)}
-                        placeholder="e.g: 1"
-                        className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+                        placeholder="e.g. 1"
+                        className="w-full min-h-11 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-4 text-xs font-bold text-slate-950 dark:text-white focus:outline-none focus:border-indigo-600"
                         required
                     />
                 </div>
-                <div>
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Black Player ID</label>
+                <div className="space-y-1.5">
+                    <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        Black Player ID
+                    </label>
                     <input 
                         type="number" 
                         value={blackId} 
                         onChange={(e) => setBlackId(e.target.value)}
-                        placeholder="e.g: 2"
-                        className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+                        placeholder="e.g. 2"
+                        className="w-full min-h-11 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-4 text-xs font-bold text-slate-950 dark:text-white focus:outline-none focus:border-indigo-600"
                         required
                     />
                 </div>
                 <button 
                     type="submit" 
                     disabled={sandboxLoading}
-                    className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold uppercase tracking-widest transition-all shadow-lg flex items-center gap-2 cursor-pointer"
+                    className="min-h-11 px-5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                 >
-                    <Play size={14} /> {sandboxLoading ? 'Triggering...' : 'Start Test Game'}
+                    {sandboxLoading ? <Loader2 size={16} className="animate-spin" /> : <Play size={15} />}
+                    <span>Deploy Match</span>
                 </button>
             </form>
 
             {successMessage && (
-                <div className="mt-4 flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-bold animate-fadeIn">
-                    <CheckCircle2 size={16} />
+                <div className="mt-4 flex items-center gap-2 p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-400 rounded-xl text-xs font-bold animate-in fade-in">
+                    <CheckCircle2 size={16} className="shrink-0" />
                     <span>{successMessage}</span>
                 </div>
             )}

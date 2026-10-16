@@ -1,9 +1,39 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Sparkles, ExternalLink } from 'lucide-react';
 
 const releases = [
   {
+    version: 'v2.6.0',
+    date: '2026-10-14',
+    title: 'Phase 25: Final Polish, Strict Typing, RBAC UI & Player Identity',
+    description: '12-column responsive dashboard (65% action / 35% telemetry), mobile zero-horizontal-scroll ergonomics, high-contrast light mode typography (text-slate-950), dual-layer modal scroll locks with ESC handling, and complete AAA Vitest & Playwright E2E test suites.',
+    summary: 'UI redesign, mobile responsiveness, and test architecture elevated to v2.6.0 production standards with strict TypeScript DTO alignments and fixed match outcome logic.',
+  },
+  {
+    version: 'v2.5.0',
+    date: '2026-10-08',
+    title: 'Phase 24: Quality Assurance & Integration Testing',
+    description: 'Upgraded backend test suite to containerized PostgreSQL with Testcontainers, resolved Keycloak identity sync, and established frontend component testing with Vitest, RTL, and Playwright E2E.',
+    summary: 'Complete testing pyramid established across Playwright E2E, Vitest/RTL unit tests, and Testcontainers PostgreSQL integration with zero Dependabot vulnerabilities.',
+  },
+  {
+    version: 'v2.4.0',
+    date: '2026-09-21',
+    title: 'Phase 23: Asynchronous Eventing & Observability',
+    description: 'Decoupled resource-intensive post-game Stockfish evaluations using RabbitMQ asynchronous queues and attached OpenTelemetry Java Agent for distributed tracing with the LGTM stack.',
+    summary: 'Asynchronous event-driven game analysis via RabbitMQ and distributed tracing correlation with Loki, Tempo, and Grafana.',
+  },
+  {
+    version: 'v2.3.0',
+    date: '2026-09-16',
+    title: 'Phase 22: Enterprise Data & Identity Management',
+    description: 'Centralized IAM via Keycloak OAuth2/OIDC with RBAC role hierarchy and integrated AWS S3 SDK for file operations with local MinIO and production cloud storage.',
+    summary: 'Centralized Keycloak OAuth2/OIDC authentication and S3-compatible cloud object storage for avatar uploads and PGN artifacts.',
+  },
+  {
     version: 'v2.2.0',
-    date: '2026-09-07',
+    date: '2026-09-08',
     title: 'Phase 21: Production Deployment & Cloud Demo',
     description: 'Provisioning multi-container environments, setting up Vercel static hosting, and deploying the full backend, database, and observability stack via Docker Compose on Oracle Cloud.',
     summary: 'Cloud migration completed. The platform is now fully live with automated container orchestration on Oracle Cloud and frontend edge hosting on Vercel.',
@@ -137,64 +167,73 @@ const releases = [
   {
     version: 'v0.1.0',
     date: '2026-03-08',
-    title: 'Foundations & Scaffolding',
+    title: 'Phase 1: Foundations & Scaffolding',
     description: 'Initial infrastructure setup and architectural foundations retroactively tracked to lifecycle governance.',
     summary: 'Initialized the monorepo structure, Spring Boot backend, and React frontend foundations.',
   }
 ];
 
 export const Changelog: React.FC = () => {
+  const navigate = useNavigate();
   const [selectedVersion, setSelectedVersion] = useState(releases[0].version);
 
   const activeRelease = releases.find((r) => r.version === selectedVersion) || releases[0];
 
   return (
-    <div className="w-full min-h-[calc(100vh-140px)] text-slate-800 dark:text-slate-300 py-12 px-4 sm:px-6 lg:px-8 pt-24 transition-colors">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-4xl font-black uppercase text-slate-900 dark:text-white tracking-tight mb-4">
-            Changelog & Version History
-          </h1>
-          <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            Explore the evolution, architectural milestones, and production releases of the chess platform.
-          </p>
-        </div>
+    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 text-slate-900 dark:text-white animate-in fade-in duration-300">
+      {/* Return to Dashboard */}
+      <button 
+        onClick={() => navigate('/')} 
+        className="min-h-11 flex items-center gap-2 text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors mb-5 uppercase font-black text-xs tracking-widest cursor-pointer"
+      >
+        <ArrowLeft size={16} /> Back to Menu
+      </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
-          <div className="lg:col-span-4 bg-white dark:bg-slate-900/60 backdrop-blur-sm border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl shadow-slate-200/50 dark:shadow-black/20 max-h-175 overflow-y-auto custom-scrollbar">
-            <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 mb-3">
-              Releases & Phases
+      {/* Header */}
+      <div className="flex flex-col mb-8">
+        <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-slate-950 dark:text-white">
+          Changelog & Releases
+        </h1>
+        <div className="h-1.5 w-24 sm:w-32 bg-indigo-600 mt-2 rounded-full" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-stretch">
+        
+        {/* Left Releases List */}
+        <div className="lg:col-span-4 bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 rounded-[2.5rem] p-4 sm:p-5 shadow-sm h-115 sm:h-125 lg:h-155 flex flex-col justify-between">
+          <div className="flex-1 flex flex-col min-h-0">
+            <h3 className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest px-2 py-2 mb-1 shrink-0">
+              Releases & Phases ({releases.length})
             </h3>
-            <div className="space-y-1.5">
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar min-h-0">
               {releases.map((release) => {
                 const isSelected = release.version === selectedVersion;
                 return (
                   <button
                     key={release.version}
                     onClick={() => setSelectedVersion(release.version)}
-                    className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-200 flex items-center justify-between group ${
+                    className={`w-full text-left px-3.5 py-3 rounded-2xl transition-all duration-200 flex items-center justify-between group cursor-pointer border ${
                       isSelected
-                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                        : 'hover:bg-slate-100 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
+                        ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                        : 'border-transparent bg-slate-50/60 dark:bg-slate-900/40 hover:bg-slate-100 dark:hover:bg-slate-900/80 text-slate-800 dark:text-slate-200'
                     }`}
                   >
-                    <div>
+                    <div className="min-w-0 pr-2">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm tracking-wide">{release.version}</span>
+                        <span className="font-black text-sm tracking-wide">{release.version}</span>
                         {release.version === releases[0].version && (
-                          <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded uppercase ${
-                            isSelected ? 'bg-white/20 text-white' : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
+                          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider ${
+                            isSelected ? 'bg-white/20 text-white' : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'
                           }`}>
                             Latest
                           </span>
                         )}
                       </div>
-                      <p className={`text-xs mt-0.5 line-clamp-1 ${isSelected ? 'text-indigo-100' : 'text-slate-500 dark:text-slate-400'}`}>
+                      <p className={`text-xs mt-0.5 truncate font-medium ${isSelected ? 'text-indigo-100' : 'text-slate-500 dark:text-slate-400'}`}>
                         {release.title}
                       </p>
                     </div>
-                    <span className={`text-xs ${isSelected ? 'text-white' : 'text-slate-400 opacity-0 group-hover:opacity-100'} transition-opacity`}>
+                    <span className={`text-xs shrink-0 ${isSelected ? 'text-white' : 'text-slate-400 opacity-0 group-hover:opacity-100'} transition-opacity`}>
                       &rarr;
                     </span>
                   </button>
@@ -202,49 +241,58 @@ export const Changelog: React.FC = () => {
               })}
             </div>
           </div>
+        </div>
 
-          <div className="lg:col-span-8 bg-white dark:bg-slate-900/60 backdrop-blur-sm border border-slate-200 dark:border-slate-800 rounded-2xl p-6 md:p-8 shadow-xl shadow-slate-200/50 dark:shadow-black/20 sticky top-24">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 mb-6 border-b border-slate-200 dark:border-slate-800 gap-3">
+        {/* Right Detail Panel */}
+        <div className="lg:col-span-8 bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 rounded-[2.5rem] p-6 sm:p-8 shadow-sm h-auto lg:h-155 flex flex-col justify-between">
+          <div className="space-y-4 sm:space-y-5 overflow-y-auto pr-1 flex-1 min-h-0 custom-scrollbar">
+            <div className="flex flex-wrap items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800/80 gap-3">
               <div>
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 inline-block mb-3">
+                <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/25 inline-block mb-2">
                   {activeRelease.date}
                 </span>
-                <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white">
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white uppercase tracking-tight">
                   {activeRelease.version}
                 </h2>
               </div>
+              {activeRelease.version === releases[0].version && (
+                <span className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800/50">
+                  <Sparkles size={14} /> Production Live
+                </span>
+              )}
             </div>
 
-            <h3 className="text-base md:text-lg font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-3">
+            <h3 className="text-base sm:text-lg font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">
               {activeRelease.title}
             </h3>
 
-            <p className="text-base font-medium text-slate-700 dark:text-slate-200 mb-6 leading-relaxed">
+            <p className="text-sm sm:text-base font-medium text-slate-700 dark:text-slate-300 leading-relaxed">
               {activeRelease.description}
             </p>
 
-            <div className="bg-slate-50 dark:bg-[#0b0f19]/60 rounded-xl p-5 border border-slate-200 dark:border-slate-800/80 mb-6">
-              <h4 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">
+            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+              <h4 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">
                 Executive Summary
               </h4>
-              <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+              <p className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 leading-relaxed">
                 {activeRelease.summary}
               </p>
             </div>
-
-            <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800/60 text-xs text-slate-500 dark:text-slate-400">
-              <span>Semantic Versioning Release</span>
-              <a 
-                href="https://github.com/BatuhanBaysal/chess-platform" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-indigo-600 dark:text-indigo-400 hover:underline font-bold uppercase tracking-wider"
-              >
-                View on GitHub &rarr;
-              </a>
-            </div>
           </div>
 
+          {/* Repository */}
+          <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800/60 text-xs font-bold text-slate-500 dark:text-slate-400 mt-auto shrink-0">
+            <span>Semantic Versioning Specification</span>
+            <a 
+              href="https://github.com/BatuhanBaysal/chess-platform" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 uppercase tracking-wider"
+            >
+              <span>Repository</span>
+              <ExternalLink size={12} />
+            </a>
+          </div>
         </div>
 
       </div>

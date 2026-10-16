@@ -2,116 +2,141 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
-const Footer: React.FC = () => {
+interface FooterProps {
+  isInGame?: boolean;
+}
+
+export const Footer: React.FC<FooterProps> = ({ isInGame }) => {
   const location = useLocation();
   const { user } = useAuth();
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
-  const isOnline = !!user;
-
   const [ping, setPing] = useState<number>(14);
 
+  const isGamePage = Boolean(isInGame) || location.pathname.startsWith('/game');
+  const isAuthPage = ['/login', '/register', '/sign-in', '/sign-up'].includes(location.pathname);
+  const isOnline = Boolean(user) || Boolean(localStorage.getItem('token'));
+
+  const backendBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  const swaggerUrl = `${backendBaseUrl.replace(/\/+$/, '')}/swagger-ui/index.html`;
+
   useEffect(() => {
+    if (isGamePage) return;
+
+    let isMounted = true;
     const checkPing = async () => {
       const start = performance.now();
       try {
         await fetch('/api/auth/health', { method: 'HEAD' });
         const end = performance.now();
-        setPing(Math.round(end - start));
+        if (isMounted) setPing(Math.round(end - start));
       } catch (error) {
-        setPing(999);
+        if (isMounted) setPing(999);
       }
     };
 
     checkPing();
     const interval = setInterval(checkPing, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [isGamePage]);
+
+  if (isGamePage) {
+    return null;
+  }
 
   return (
-    <footer className="w-full py-6 px-10 bg-slate-100 dark:bg-[#020617] border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-6 transition-colors duration-500">
-      <div className="flex flex-col md:flex-row items-center gap-6">
-        <div className="flex items-center gap-4 flex-wrap">
-          <p className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 opacity-60">
+    <footer className="w-full mt-auto bg-slate-50/80 dark:bg-[#020617] border-t border-slate-200/90 dark:border-slate-800/80 transition-colors duration-300">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col md:flex-row items-center justify-between gap-4">
+        {/* Telemetry & Connectivity */}
+        <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
+          <span className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
             CHESS PLATFORM V2.6.0
-          </p>
-          
+          </span>
+
+          <span className="text-slate-300 dark:text-slate-700 select-none hidden sm:inline">•</span>
+
           {isAuthPage ? (
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20">
-              <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-500">
-                SYSTEM: STANDBY
+            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200/90 dark:bg-amber-950/30 dark:border-amber-800/40">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                STANDBY
               </span>
             </div>
           ) : (
-            <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${isOnline ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-slate-500/10 border-slate-500/20'}`}>
-              <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'}`} />
-              <span className={`text-[10px] font-black uppercase tracking-widest ${isOnline ? 'text-emerald-600 dark:text-emerald-500' : 'text-slate-500 dark:text-slate-400'}`}>
-                {isOnline ? 'LIVE CHANNEL: ONLINE' : 'SYSTEM: STANDBY'}
+            <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border ${
+              isOnline 
+                ? 'bg-emerald-50 border-emerald-200/90 dark:bg-emerald-950/30 dark:border-emerald-800/40' 
+                : 'bg-slate-100 border-slate-200 dark:bg-slate-900 dark:border-slate-800'
+            }`}>
+              <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+              <span className={`text-[11px] font-bold uppercase tracking-wider ${
+                isOnline 
+                  ? 'text-emerald-800 dark:text-emerald-300' 
+                  : 'text-slate-700 dark:text-slate-300'
+              }`}>
+                {isOnline ? 'ONLINE' : 'STANDBY'}
               </span>
             </div>
           )}
 
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-500/10 border border-slate-500/20 text-slate-600 dark:text-slate-400">
-            <span className={`w-2 h-2 rounded-full ${ping > 200 ? 'bg-rose-500' : 'bg-emerald-500'}`}></span>
-            <span className="text-[10px] font-black uppercase tracking-widest">
-              PING: <span className={ping > 200 ? 'text-rose-500' : 'text-emerald-500'}>{ping}ms</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700/60 shadow-2xs">
+            <span className={`w-2 h-2 rounded-full ${ping > 200 ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              PING: <span className={ping > 200 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}>{ping}ms</span>
             </span>
           </div>
         </div>
 
-        <div className="hidden md:block h-6 w-px bg-slate-300 dark:bg-slate-800"></div>
-      
-        <div className="flex flex-col items-center md:items-start">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-500">
+        {/* Creator Attribution */}
+        <div className="flex items-center gap-1.5 text-center">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             CREATED BY
           </span>
-          <span className="text-[14px] font-black uppercase tracking-widest text-slate-900 dark:text-white">
+          <span className="text-xs font-black uppercase tracking-wider text-slate-950 dark:text-white">
             BATUHAN BAYSAL
           </span>
         </div>
-      </div>
 
-      <div className="flex items-center flex-wrap justify-center gap-6">
-        <a 
-          href="/swagger-ui/index.html" 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors group"
-          title="Backend API Documentation"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          <span className="text-[10px] font-black uppercase tracking-widest">SWAGGER</span>
-        </a>
+        {/* External Links */}
+        <div className="flex items-center gap-5 justify-center">
+          <a 
+            href={swaggerUrl} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white transition-colors"
+            title="Swagger API Documentation"
+          >
+            SWAGGER
+          </a>
 
-        <a 
-          href="https://github.com/BatuhanBaysal/chess-platform" 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors group"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-          <span className="text-[10px] font-black uppercase tracking-widest">SOURCE</span>
-        </a>
-        
-        <a 
-          href="https://github.com/BatuhanBaysal" 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors group"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.28 1.15-.28 2.35 0 3.5-1 1-1 2.35 0 3.5 0 3.5 3 5.5 6 5.5-.3.3-.6 1.3-.6 2.5V22"/></svg>
-          <span className="text-[10px] font-black uppercase tracking-widest">GITHUB</span>
-        </a>
+          <a 
+            href="https://github.com/BatuhanBaysal/chess-platform" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white transition-colors"
+          >
+            SOURCE
+          </a>
 
-        <a 
-          href="https://www.linkedin.com/in/batuhan-baysal" 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors group"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>
-          <span className="text-[10px] font-black uppercase tracking-widest">LINKEDIN</span>
-        </a>
+          <a 
+            href="https://github.com/BatuhanBaysal" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white transition-colors"
+          >
+            GITHUB
+          </a>
+
+          <a 
+            href="https://www.linkedin.com/in/batuhan-baysal" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white transition-colors"
+          >
+            LINKEDIN
+          </a>
+        </div>
       </div>
     </footer>
   );

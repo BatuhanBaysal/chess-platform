@@ -48,6 +48,13 @@ public class GameService {
         Game game = sessionManager.getGame(gameId);
         if (game != null) {
             game.setTimeLimit(resolvedTimeLimit);
+            game.setAiDifficulty(difficulty);
+            String botLabel = "Stockfish (Lv. " + difficulty + ")";
+            if (playAsWhite) {
+                game.setPlayerNames(null, botLabel);
+            } else {
+                game.setPlayerNames(botLabel, null);
+            }
         }
 
         if (!playAsWhite && game != null) {
@@ -217,6 +224,9 @@ public class GameService {
             game.getLastMoveMessage(),
             game.getWhitePlayerId(),
             game.getBlackPlayerId(),
+            game.getWhitePlayerName(),
+            game.getBlackPlayerName(),
+            game.getAiDifficulty(),
             isGameStarted(gameId),
             game.getWhiteRemainingTimeMs(),
             game.getBlackRemainingTimeMs(),

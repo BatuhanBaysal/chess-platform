@@ -4,6 +4,7 @@ import com.batuhan.chess.api.dto.lobby.GameRoomResponse;
 import com.batuhan.chess.api.dto.lobby.MatchFoundMessage;
 import com.batuhan.chess.api.exception.GameOperationException;
 import com.batuhan.chess.api.exception.ResourceNotFoundException;
+import com.batuhan.chess.domain.model.chess.Game;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -138,6 +139,11 @@ public class LobbyService {
                     room.setStatus(STATUS_IN_PROGRESS);
 
                     gameService.createNewGameWithPlayers(roomId, room.getHostId(), userId);
+                    Game createdGame = gameService.getGame(roomId);
+                    if (createdGame != null) {
+                        createdGame.setPlayerNames(room.getHostName(), username);
+                    }
+
                     notifyPlayers(room, username);
                     log.info("LOBBY_SERVICE: Match started in room: {}. White: {}, Black: {}", roomId, room.getHostId(), userId);
 

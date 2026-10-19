@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Timer, LogOut, Cpu, ShieldCheck } from 'lucide-react';
+import { Timer, LogOut, Cpu, ShieldCheck, Bot } from 'lucide-react';
 import { EvaluationBar } from './EvaluationBar';
 import type { HintResponse } from '@/api/gameService';
 
@@ -57,6 +57,7 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
     const g = game as any;
     if (!g) return false;
     if (g.gameType === 'AI' || g.isAi || g.vsAi || g.mode === 'AI') return true;
+    if (g.whiteId === -1 || g.blackId === -1 || g.whitePlayerId === -1 || g.blackPlayerId === -1) return true;
     if (g.blackPlayerId === null && !g.roomId) return true;
     return false;
   }, [game]);
@@ -102,13 +103,17 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
       return storedUsername || 'White Player';
     }
 
-    if (isAiMatch) return 'Stockfish AI';
+    if (isAiMatch) {
+      const diff = game?.aiDifficulty;
+      return diff ? `Stockfish (Lv. ${diff})` : 'Stockfish AI';
+    }
 
     const g = game as any;
     if (g?.opponentName || g?.opponentUsername || g?.opponent?.username) {
       return g.opponentName || g.opponentUsername || g.opponent.username;
     }
-    if (g?.whitePlayerId) return `User #${g.whitePlayerId}`;
+    const wId = g?.whiteId ?? g?.whitePlayerId;
+    if (wId && wId !== -1) return `User #${wId}`;
     return 'White Player';
   }, [whitePlayerName, game, isWhiteOrientation, storedUsername, isAiMatch]);
 
@@ -120,13 +125,17 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
       return storedUsername || 'Black Player';
     }
 
-    if (isAiMatch) return 'Stockfish AI';
+    if (isAiMatch) {
+      const diff = game?.aiDifficulty;
+      return diff ? `Stockfish (Lv. ${diff})` : 'Stockfish AI';
+    }
 
     const g = game as any;
     if (g?.opponentName || g?.opponentUsername || g?.opponent?.username) {
       return g.opponentName || g.opponentUsername || g.opponent.username;
     }
-    if (g?.blackPlayerId) return `User #${g.blackPlayerId}`;
+    const bId = g?.blackId ?? g?.blackPlayerId;
+    if (bId && bId !== -1) return `User #${bId}`;
     return 'Black Player';
   }, [blackPlayerName, game, isWhiteOrientation, storedUsername, isAiMatch]);
 
@@ -135,14 +144,16 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
   const topPlayerLabel = isWhiteOrientation ? resolvedBlackName : resolvedWhiteName;
   const isTopTurn = isWhiteOrientation ? isBlackTurn : isWhiteTurn;
   const topCaptured = isWhiteOrientation ? blackCaptured : whiteCaptured;
-  const topInitial = (topPlayerLabel.charAt(0) || (topColor === 'WHITE' ? 'W' : 'B')).toUpperCase();
+  const isTopAi = isAiMatch && (isWhiteOrientation ? (game?.blackId === -1 || game?.blackPlayerId === -1) : (game?.whiteId === -1 || game?.whitePlayerId === -1));
+  const topInitial = isTopAi ? 'AI' : (topPlayerLabel.charAt(0) || (topColor === 'WHITE' ? 'W' : 'B')).toUpperCase();
 
   const bottomColor = isWhiteOrientation ? 'WHITE' : 'BLACK';
   const bottomTime = isWhiteOrientation ? (whiteRemainingTimeMs || 0) : (blackRemainingTimeMs || 0);
   const bottomPlayerLabel = isWhiteOrientation ? resolvedWhiteName : resolvedBlackName;
   const isBottomTurn = isWhiteOrientation ? isWhiteTurn : isBlackTurn;
   const bottomCaptured = isWhiteOrientation ? whiteCaptured : blackCaptured;
-  const bottomInitial = (bottomPlayerLabel.charAt(0) || (bottomColor === 'WHITE' ? 'W' : 'B')).toUpperCase();
+  const isBottomAi = isAiMatch && (!isWhiteOrientation ? (game?.blackId === -1 || game?.blackPlayerId === -1) : (game?.whiteId === -1 || game?.whitePlayerId === -1));
+  const bottomInitial = isBottomAi ? 'AI' : (bottomPlayerLabel.charAt(0) || (bottomColor === 'WHITE' ? 'W' : 'B')).toUpperCase();
 
   const getPlayerStyle = (isTurn: boolean, playerColor: 'WHITE' | 'BLACK') => {
     if (playerColor === 'WHITE') {
@@ -160,14 +171,14 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
     const target = e.currentTarget as HTMLImageElement;
     target.style.display = 'none';
     if (target.parentElement) {
-      target.parentElement.innerHTML = `<span class="text-[14px] font-black font-mono opacity-50">${pieceChar}</span>`;
+      target.parentElement.innerHTML = `<span class="text-[13px] font-black font-mono opacity-60">${pieceChar}</span>`;
     }
   };
 
   return (
-    <div className="w-full xl:w-80 bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 rounded-3xl flex flex-col justify-between p-3.5 sm:p-4 shadow-sm h-full overflow-hidden transition-colors gap-3">
+    <div className="w-full xl:w-80 bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 rounded-3xl flex flex-col justify-between p-3.5 sm:p-4 shadow-sm h-full transition-colors gap-2.5 sm:gap-3">
       {/* Panel Header */}
-      <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800/80">
+      <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800/80 flex-none">
         <div className="flex items-center gap-2">
           <Timer size={14} className="text-amber-500" />
           <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 dark:text-slate-400">Match & Engine</span>
@@ -180,30 +191,30 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
       </div>
 
       {/* Top Player Details */}
-      <div className="flex flex-col items-center gap-2">
-        <div className="flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 shadow-xs max-w-full">
-          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white shrink-0 ${topColor === 'WHITE' ? 'bg-blue-600' : 'bg-rose-600'}`}>
-            {topInitial}
+      <div className="flex items-center justify-between gap-2 w-full flex-none">
+        <div className="flex items-center gap-2 pl-1 pr-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 shadow-xs min-w-0">
+          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0 ${isTopAi ? 'bg-amber-600' : topColor === 'WHITE' ? 'bg-blue-600' : 'bg-rose-600'}`}>
+            {isTopAi ? <Bot size={13} /> : topInitial}
           </div>
-          <span className="text-[11px] font-black uppercase tracking-wider text-slate-900 dark:text-slate-200 max-w-36 truncate">
+          <span className="text-[11px] font-black uppercase tracking-wider text-slate-900 dark:text-slate-200 truncate max-w-28 sm:max-w-32">
             {topPlayerLabel}
           </span>
-          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded font-mono ${topColor === 'WHITE' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'}`}>
+          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded font-mono shrink-0 ${topColor === 'WHITE' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'}`}>
             {topColor === 'WHITE' ? 'W' : 'B'}
           </span>
         </div>
-        <div className={`text-[13px] font-black font-mono px-3 py-1 rounded-xl border transition-all ${getPlayerStyle(isTopTurn, topColor)}`}>
+        <div className={`text-[12px] sm:text-[13px] font-black font-mono px-2.5 py-1 rounded-xl border transition-all shrink-0 ${getPlayerStyle(isTopTurn, topColor)}`}>
           {formatTime(topTime)}
         </div>
       </div>
 
       {/* Top Captured Pieces */}
-      <div className="grid grid-cols-5 gap-1 bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs min-h-12 overflow-hidden items-center justify-items-center">
+      <div className="grid grid-cols-5 gap-1.5 bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs min-h-9.5 items-center justify-items-center content-start transition-all">
         {topCaptured.map((p, i) => (
           <div key={i} className="w-6 h-6 flex items-center justify-center">
             <img 
               src={pieceImages[p]} 
-              className="w-full h-full drop-shadow-md" 
+              className="w-full h-full drop-shadow-md object-contain" 
               alt="cap" 
               onError={(e) => handleCapturedImageError(e, p)} 
             />
@@ -211,10 +222,10 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
         ))}
       </div>
 
-      <div className="w-full h-px bg-slate-200 dark:bg-slate-800/80" />
+      <div className="w-full h-px bg-slate-200 dark:border-slate-800/80 flex-none" />
 
       {/* Stockfish Engine Telemetry */}
-      <div className="flex flex-col justify-between gap-1.5 bg-slate-50 dark:bg-slate-900/50 p-2.5 sm:p-3 rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-xs">
+      <div className="flex flex-col justify-between gap-1.5 bg-slate-50 dark:bg-slate-900/50 p-2.5 sm:p-3 rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-xs flex-none">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
             <Cpu size={14} className="text-indigo-600 dark:text-indigo-400" />
@@ -229,11 +240,11 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
         </div>
 
         {displayedHint ? (
-          <div className="text-xl sm:text-2xl font-mono font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 dark:bg-indigo-900/40 py-1.5 px-3 rounded-xl border border-amber-500/30 tracking-widest text-center shadow-xs animate-in fade-in">
+          <div className="text-xl sm:text-2xl font-mono font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 dark:bg-indigo-900/40 py-1 px-3 rounded-xl border border-amber-500/30 tracking-widest text-center shadow-xs animate-in fade-in">
             {displayedHint.bestMoveUci}
           </div>
         ) : (
-          <div className="text-[10px] text-slate-500 dark:text-slate-400 text-center font-medium min-h-7 flex items-center justify-center">
+          <div className="text-[10px] text-slate-500 dark:text-slate-400 text-center font-medium min-h-6 flex items-center justify-center">
             Click below for an engine recommendation.
           </div>
         )}
@@ -245,7 +256,7 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
             }
           }}
           disabled={!isMyTurn || isHintLoading}
-          className="min-h-10 w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-100 dark:disabled:bg-slate-800/60 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:cursor-not-allowed text-white font-black py-2 px-3 rounded-xl transition-all text-[10px] shadow-sm flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider active:scale-95"
+          className="min-h-9 sm:min-h-10 w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-100 dark:disabled:bg-slate-800/60 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:cursor-not-allowed text-white font-black py-2 px-3 rounded-xl transition-all text-[10px] shadow-sm flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider active:scale-95"
         >
           {isHintLoading ? (
             <>
@@ -258,15 +269,15 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
         </button>
       </div>
 
-      <div className="w-full h-px bg-slate-200 dark:bg-slate-800/80" />
+      <div className="w-full h-px bg-slate-200 dark:border-slate-800/80 flex-none" />
 
       {/* Bottom Captured Pieces */}
-      <div className="grid grid-cols-5 gap-1 bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs min-h-12 overflow-hidden items-center justify-items-center">
+      <div className="grid grid-cols-5 gap-1.5 bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs min-h-9.5 items-center justify-items-center content-start transition-all">
         {bottomCaptured.map((p, i) => (
           <div key={i} className="w-6 h-6 flex items-center justify-center">
             <img 
               src={pieceImages[p]} 
-              className="w-full h-full drop-shadow-md" 
+              className="w-full h-full drop-shadow-md object-contain" 
               alt="cap" 
               onError={(e) => handleCapturedImageError(e, p)} 
             />
@@ -275,25 +286,25 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
       </div>
 
       {/* Bottom Player Details */}
-      <div className="flex flex-col items-center gap-2">
-        <div className={`text-[13px] font-black font-mono px-3 py-1 rounded-xl border transition-all ${getPlayerStyle(isBottomTurn, bottomColor)}`}>
-          {formatTime(bottomTime)}
-        </div>
-        <div className="flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 shadow-xs max-w-full">
-          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white shrink-0 ${bottomColor === 'WHITE' ? 'bg-blue-600' : 'bg-rose-600'}`}>
-            {bottomInitial}
+      <div className="flex items-center justify-between gap-2 w-full flex-none">
+        <div className="flex items-center gap-2 pl-1 pr-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 shadow-xs min-w-0">
+          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0 ${isBottomAi ? 'bg-amber-600' : bottomColor === 'WHITE' ? 'bg-blue-600' : 'bg-rose-600'}`}>
+            {isBottomAi ? <Bot size={13} /> : bottomInitial}
           </div>
-          <span className="text-[11px] font-black uppercase tracking-wider text-slate-900 dark:text-slate-200 max-w-36 truncate">
+          <span className="text-[11px] font-black uppercase tracking-wider text-slate-900 dark:text-slate-200 truncate max-w-28 sm:max-w-32">
             {bottomPlayerLabel}
           </span>
-          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded font-mono ${bottomColor === 'WHITE' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'}`}>
+          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded font-mono shrink-0 ${bottomColor === 'WHITE' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'}`}>
             {bottomColor === 'WHITE' ? 'W' : 'B'}
           </span>
+        </div>
+        <div className={`text-[12px] sm:text-[13px] font-black font-mono px-2.5 py-1 rounded-xl border transition-all shrink-0 ${getPlayerStyle(isBottomTurn, bottomColor)}`}>
+          {formatTime(bottomTime)}
         </div>
       </div>
 
       {/* Footer Signature */}
-      <div className="pt-2.5 border-t border-slate-200/70 dark:border-slate-800/70 flex items-center justify-between text-[10px] font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500 w-full flex-none">
+      <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800/70 flex items-center justify-between text-[10px] font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500 w-full flex-none">
         <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
           <ShieldCheck size={13} className="text-indigo-600 dark:text-indigo-400" />
           <span>CHESS PLATFORM</span>

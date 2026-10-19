@@ -24,6 +24,9 @@ export interface GameResponse {
   lastMoveMessage: string | null;
   whiteId: number | null;
   blackId: number | null;
+  whitePlayerName?: string | null;
+  blackPlayerName?: string | null;
+  aiDifficulty?: number | null;
   isStarted: boolean;
   whiteRemainingTimeMs: number;
   blackRemainingTimeMs: number;

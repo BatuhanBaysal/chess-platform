@@ -45,7 +45,15 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister }) => {
     if (success) return;
 
     const timer = setTimeout(() => {
-      if (formDataRef.current.username.trim().length > 0) {
+      if (
+        document.activeElement &&
+        document.activeElement !== document.body &&
+        document.activeElement.tagName === 'INPUT'
+      ) {
+        return;
+      }
+
+      if (!isSignUp && formDataRef.current.username.trim().length > 0) {
         passwordRef.current?.focus();
       } else {
         usernameRef.current?.focus();

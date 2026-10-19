@@ -3,6 +3,7 @@ package com.batuhan.chess.application.service.game;
 import com.batuhan.chess.api.dto.lobby.GameRoomResponse;
 import com.batuhan.chess.api.dto.lobby.MatchFoundMessage;
 import com.batuhan.chess.api.exception.GameOperationException;
+import com.batuhan.chess.domain.model.chess.Game;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -92,12 +93,15 @@ class LobbyServiceTest {
     class MatchMakingTests {
 
         @Test
-        @DisplayName("Should trigger game creation and notify both players when a match is found")
+        @DisplayName("Should trigger game creation, assign player names, and notify both players when a match is found")
         void shouldStartGameAndNotifyPlayersOnSuccessfulJoin() throws Exception {
             // Arrange
             Long hostId = 1L;
             Long guestId = 2L;
             String roomId = lobbyService.createRoom(hostId, "hostUser", 10, "classic");
+
+            Game mockGame = mock(Game.class);
+            when(gameService.getGame(roomId)).thenReturn(mockGame);
 
             when(redissonClient.getLock(anyString())).thenReturn(rLock);
             when(rLock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
@@ -107,6 +111,8 @@ class LobbyServiceTest {
 
             // Assert
             verify(gameService).createNewGameWithPlayers(roomId, hostId, guestId);
+            verify(gameService).getGame(roomId);
+            verify(mockGame).setPlayerNames("hostUser", "guestUser");
 
             ArgumentCaptor<MatchFoundMessage> messageCaptor = ArgumentCaptor.forClass(MatchFoundMessage.class);
             verify(messagingTemplate, times(2)).convertAndSend(eq("/topic/lobby/" + roomId), messageCaptor.capture());

@@ -26,6 +26,10 @@ public class Game {
     private int halfMoveClock = 0;
     private String lastMoveMessage = "Game started. White to move.";
 
+    private String whitePlayerName;
+    private String blackPlayerName;
+    private Integer aiDifficulty;
+
     private long whiteRemainingTimeMs;
     private long blackRemainingTimeMs;
     private Long lastMoveTimestamp;
@@ -37,6 +41,15 @@ public class Game {
         this.currentTurn = Color.WHITE;
         this.status = GameStatus.ACTIVE;
         this.boardHistory.add(board.toString() + "|WHITE");
+    }
+
+    public synchronized void setPlayerNames(String whitePlayerName, String blackPlayerName) {
+        this.whitePlayerName = whitePlayerName;
+        this.blackPlayerName = blackPlayerName;
+    }
+
+    public synchronized void setAiDifficulty(Integer aiDifficulty) {
+        this.aiDifficulty = aiDifficulty;
     }
 
     public synchronized void setWhitePlayerId(Long whitePlayerId) {
@@ -84,13 +97,17 @@ public class Game {
 
         Piece piece = board.getPiece(start).orElseThrow();
         boolean isEnPassant = validator.isEnPassantAttempt(piece, end, board);
+        boolean isCastling = validator.isCastlingAttempt(piece, start, end);
         boolean isCapture = board.getPiece(end).isPresent() || isEnPassant;
+        String validPromotion = (validator.isPromotionSituation(piece, end) && promotionType != null && !promotionType.isBlank())
+            ? promotionType
+            : null;
 
-        List<ExecutedMoveData> executedMoves = prepareExecutedMoves(start, end, piece, promotionType);
-        executor.execute(start, end, piece, promotionType, board, validator);
+        List<ExecutedMoveData> executedMoves = prepareExecutedMoves(start, end, piece, validPromotion);
+        executor.execute(start, end, piece, validPromotion, board, validator);
 
         updateDrawMetrics(piece, isCapture);
-        recordMove(start, end, piece, isCapture, promotionType);
+        recordMove(start, end, piece, isCapture, validPromotion);
 
         this.lastMove = new Move(start, end, piece);
         this.currentTurn = currentTurn.opposite();
@@ -102,8 +119,7 @@ public class Game {
             this.status = GameStatus.TIMEOUT;
         }
 
-        this.lastMoveMessage = generateMoveMessage(piece, end, isCapture);
-
+        this.lastMoveMessage = generateMoveMessage(piece, start, end, isCapture, isEnPassant, isCastling, validPromotion);
         return executedMoves;
     }
 
@@ -177,7 +193,7 @@ public class Game {
     }
 
     private void recordMove(Position s, Position e, Piece p, boolean isCap, String promotionType) {
-        String notation = String.format("%s%s%s%s", p.getType().getSymbol(), s, isCap ? "x" : "→", e);
+        String notation = String.valueOf(p.getType().getSymbol()) + s + (isCap ? "x" : "→") + e;
         String uciMove = s.toString() + e.toString();
         if (validator.isPromotionSituation(p, e) && promotionType != null && !promotionType.isBlank()) {
             uciMove += promotionType.toLowerCase(java.util.Locale.ROOT).substring(0, 1);
@@ -187,12 +203,33 @@ public class Game {
         humanReadableHistory.add(notation);
     }
 
-    private String generateMoveMessage(Piece p, Position end, boolean isCap) {
-        if (status == GameStatus.CHECKMATE) return "CHECKMATE!";
-        if (status == GameStatus.TIMEOUT) return "TIME OUT!";
-        if (status == GameStatus.STALEMATE || status == GameStatus.DRAW) return "DRAW!";
-        if (status == GameStatus.CHECK) return "CHECK!";
-        return p.getColor() + " " + p.getType().name() + (isCap ? " captured at " : " moved to ") + end;
+    private String generateMoveMessage(Piece p, Position start, Position end, boolean isCap,
+                                       boolean isEnPassant, boolean isCastling, String promotionType) {
+        if (status == GameStatus.TIMEOUT) return "Game Over: Time out!";
+        if (status == GameStatus.STALEMATE) return "DRAW by Stalemate!";
+        if (status == GameStatus.DRAW) return "DRAW!";
+
+        String baseAction;
+        if (isCastling) {
+            boolean isKingside = end.file() > start.file();
+            baseAction = p.getColor() + " executed " + (isKingside ? "Kingside Castling (O-O)" : "Queenside Castling (O-O-O)");
+        } else if (isEnPassant) {
+            baseAction = p.getColor() + " PAWN captured at " + end + " via En Passant (e.p.)";
+        } else if (promotionType != null && !promotionType.isBlank()) {
+            baseAction = p.getColor() + " PAWN promoted to " + promotionType.toUpperCase() + " at " + end;
+        } else if (isCap) {
+            baseAction = p.getColor() + " " + p.getType().name() + " captured at " + end;
+        } else {
+            baseAction = p.getColor() + " " + p.getType().name() + " moved to " + end;
+        }
+
+        if (status == GameStatus.CHECKMATE) {
+            return baseAction + " - CHECKMATE!";
+        }
+        if (status == GameStatus.CHECK) {
+            return baseAction + " - CHECK!";
+        }
+        return baseAction;
     }
 
     public record Move(Position start, Position end, Piece piece) {}

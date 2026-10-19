@@ -9,15 +9,24 @@ interface GameOverModalProps {
   onBackToMenu: () => void;
 }
 
-export const GameOverModal: React.FC<GameOverModalProps> = ({ show, gameStatus, currentTurn, orientation, onBackToMenu }) => {
+export const GameOverModal: React.FC<GameOverModalProps> = ({ 
+  show, 
+  gameStatus, 
+  currentTurn, 
+  orientation, 
+  onBackToMenu 
+}) => {
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const upperStatus = (gameStatus || "").toUpperCase();
-  
-  const isTimeoutOrDismissed = 
-    upperStatus.includes('TIMEOUT') || 
-    upperStatus.includes('DISMISSED') || 
-    upperStatus.includes('ABANDONED');
+  const playerColor = orientation?.toUpperCase();
+  const activeTurn = currentTurn?.toUpperCase();
+
+  const getTimeoutLoser = (): string => {
+    if (upperStatus.includes('WHITE')) return 'WHITE';
+    if (upperStatus.includes('BLACK')) return 'BLACK';
+    return activeTurn;
+  };
 
   const getEndGameTitle = () => {
     if (upperStatus.includes('DISMISSED') || upperStatus.includes('ABANDONED')) {
@@ -27,12 +36,16 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({ show, gameStatus, 
       return "Draw!";
     }
     if (upperStatus.includes('TIMEOUT')) {
-      const loser = upperStatus.split('_')[1];
-      return loser === orientation.toUpperCase() ? "Defeat!" : "Victory!";
+      const loser = getTimeoutLoser();
+      return loser === playerColor ? "Defeat!" : "Victory!";
     }
     if (upperStatus.includes('CHECKMATE')) {
-      const isMyTurn = currentTurn?.toUpperCase() === orientation.toUpperCase();
+      const isMyTurn = activeTurn === playerColor;
       return isMyTurn ? "Defeat!" : "Victory!";
+    }
+    if (upperStatus.includes('RESIGN')) {
+      const loser = upperStatus.includes('WHITE') ? 'WHITE' : upperStatus.includes('BLACK') ? 'BLACK' : activeTurn;
+      return loser === playerColor ? "Defeat!" : "Victory!";
     }
     return "Game Over";
   };
@@ -48,10 +61,13 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({ show, gameStatus, 
       return "The game finished in a draw.";
     }
     if (upperStatus.includes('TIMEOUT')) {
-      return "The time limit has expired for one of the players.";
+      const loser = getTimeoutLoser();
+      return loser === playerColor 
+        ? "Your time limit has expired." 
+        : "Your opponent's time limit has expired.";
     }
     if (upperStatus.includes('CHECKMATE')) {
-      const isMyTurn = currentTurn?.toUpperCase() === orientation.toUpperCase();
+      const isMyTurn = activeTurn === playerColor;
       return isMyTurn ? "Your king has been checkmated." : "You checkmated your opponent's king!";
     }
     return "The match has concluded.";
@@ -59,6 +75,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({ show, gameStatus, 
 
   const endTitle = getEndGameTitle();
   const endDescription = getEndGameDescription();
+  const isVictory = endTitle === "Victory!";
 
   useEffect(() => {
     if (show) {
@@ -84,9 +101,14 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({ show, gameStatus, 
   return (
     <div className={`fixed inset-0 z-500 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 transition-all duration-300 ${show ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
       <div className={`bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 p-6 sm:p-8 rounded-3xl shadow-2xl flex flex-col items-center text-center max-w-sm w-full transition-transform duration-300 ${show ? 'scale-100' : 'scale-95'}`}>
+        
         {/* Status Icon */}
-        <div className="w-16 h-16 bg-amber-500/10 rounded-2xl flex items-center justify-center mb-4 border border-amber-500/20">
-          {isTimeoutOrDismissed ? <AlertCircle size={32} className="text-amber-500" /> : <Trophy size={32} className="text-amber-500" />}
+        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 border ${isVictory ? 'bg-amber-500/10 border-amber-500/20' : 'bg-rose-500/10 border-rose-500/20'}`}>
+          {isVictory ? (
+            <Trophy size={32} className="text-amber-500" />
+          ) : (
+            <AlertCircle size={32} className="text-rose-500" />
+          )}
         </div>
         
         <h2 className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white mb-2 uppercase tracking-tight">

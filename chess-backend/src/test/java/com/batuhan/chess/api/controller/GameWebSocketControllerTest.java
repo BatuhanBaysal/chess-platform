@@ -57,7 +57,7 @@ class GameWebSocketControllerTest {
             Game game = new Game(new Board());
             GameResponse mockResponse = new GameResponse(
                 gameId, "rnbqkbnr...", Color.WHITE, GameStatus.ACTIVE,
-                List.of(), List.of(), "", 1L, 2L, true, 60000L, 60000L, 300
+                List.of(), List.of(), "", 1L, 2L, null, null, null, true, 60000L, 60000L, 300
             );
 
             when(gameService.setPlayerReady(gameId, userId)).thenReturn(true);
@@ -101,7 +101,7 @@ class GameWebSocketControllerTest {
             Game game = new Game(new Board());
             GameResponse mockResponse = new GameResponse(
                 gameId, "rnbqkbnr...", Color.WHITE, GameStatus.ACTIVE,
-                List.of(), List.of(), "Nf3", 1L, 2L, true, 60000L, 60000L, 300
+                List.of(), List.of(), "Nf3", 1L, 2L, null, null, null, true, 60000L, 60000L, 300
             );
 
             when(gameService.makeMove(eq(gameId), any(), any(), any())).thenReturn(List.of());

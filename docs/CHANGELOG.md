@@ -30,8 +30,8 @@ All notable changes to this project will be documented in this file. This projec
 - ✅ **Phase 21: Production Deployment & Cloud Demo (v2.2.0)** ☁️ - Provisioning multi-container environments, setting up Vercel static hosting, and deploying the full backend, database, SonarQube, and LGTM observability stack via Docker Compose on Oracle Cloud.
 - ✅ **Phase 22: Enterprise Data & Identity Management (v2.3.0)** 🔑 - Integrating MinIO object storage for artifacts and Keycloak for centralized OAuth2/OIDC RBAC security.
 - ✅ **Phase 23: Asynchronous Eventing & Observability (v2.4.0)** ⚡ - Decoupling heavy Stockfish analysis tasks via RabbitMQ and integrating OpenTelemetry with the LGTM stack.
-- ✅ **Phase 24: v2.5.0 - Quality Assurance & Integration Testing** 🧪 — Establishing the complete testing pyramid with Playwright E2E automation tests, Vitest & React Testing Library component tests, and Testcontainers PostgreSQL integration.
-- ⏳ **Phase 25: v2.6.0 - v2.6.0: Final Polish, Strict Typing, RBAC UI & Player Identity** 💎 — Enforcing strict TypeScript DTO alignment, fixing AI match state leaks, implementing role-based navigation, polishing player identity (avatar/profile), and delivering admin CRUD capabilities.
+- ✅ **Phase 24: Quality Assurance & Integration Testing (v2.5.0)** 🧪 — Establishing the complete testing pyramid with Playwright E2E automation tests, Vitest & React Testing Library component tests, and Testcontainers PostgreSQL integration.
+- ⏳ **Phase 25: Core Stabilization, RBAC Governance & Player Experience (v2.6.0)** 💎 — Enforcing strict TypeScript DTO alignment, fixing AI match state leaks, implementing role-based navigation, polishing player identity (avatar/profile), and delivering admin CRUD capabilities.
 - 🔜
 
 ---
@@ -40,6 +40,15 @@ All notable changes to this project will be documented in this file. This projec
 
 ### 💎 Phase v2.6.0: Final Polish, Strict Typing, Admin Control & Player Identity 🚀
 > **Note:** Finalizing production readiness by enforcing compile-time type contracts, isolating AI engine state lifecycles, refining authentication and role-based access, polishing player identity systems, and delivering administrative control capabilities.
+
+- **2026-10-19:**
+    - **Desktop Captured Pieces Overflow, Timeout Outcome Inversion, Opponent Telemetry & Match Connection UX (PR #196 | Issue #194):**
+        - **Gameplay Layout & Captured Pieces Dynamic Grid:** Overhauled `MatchInfoPanel.tsx` captured pieces grid layout to eliminate desktop viewport vertical clipping (~1.5 rows cutoff), ensuring symmetric dynamic 3-row matrix rendering on high-resolution screens while maintaining responsive stacking on mobile viewports.
+        - **Timeout Outcome Evaluation & Modal Synchronization:** Corrected inverted victory/defeat condition evaluation logic in `GameOverModal.tsx`, guaranteeing that local timer expiration (`0:00`) accurately triggers the red `DEFEAT!` modal matching backend game records rather than erroneously displaying `VICTORY!`.
+        - **Dynamic Opponent Identity & Difficulty Telemetry:** Replaced hardcoded `WHITE PLAYER` / `BLACK PLAYER` text fallbacks with dynamic player identity bindings across REST/WebSocket DTOs (`GameResponse.java`, `game.ts`), surfacing actual guest session handles (`GUEST_...`), registered usernames, and Stockfish AI difficulty levels across desktop and mobile HUDs.
+        - **Enriched Move Telemetry & Special Event Logging:** Enhanced backend game domain logging orchestrator (`Game.java`) to generate color-prefixed and contextual notations for special moves, including Kingside/Queenside Castling (`O-O` / `O-O-O`), En Passant (`(e.p.)`), Pawn Promotions (`promoted to QUEEN/ROOK`), Check warnings (`- CHECK!`), and Checkmate events (`- CHECKMATE!`), mirrored synchronously to `TelemetrySidebar.tsx`.
+        - **Matchmaking Radar Loader & Telemetry Diagnostics:** Upgraded matchmaking and connection initialization state in `ActiveGameView.tsx` from an abrupt terminal abort screen to an interactive radar sweep/sonar pulse loader, surfacing live match metadata (Time Limit, Theme, Game Mode, Room ID) alongside a refined `Cancel Matchmaking` interaction.
+        - **WebKit E2E Stabilization & Test Suite Hardening:** Eliminated input focus-stealing race condition timer in `AuthForm.tsx` during rapid automated fill executions, securing 100% pass rates across all test suites (78/78 Playwright E2E tests passing across Chromium, Firefox, and WebKit; all backend JUnit controller, service, and domain tests passing).
 
 - **Auth Redesign, RBAC Navigation, Ambient Header/Footer & Diagnostic Tooling (PR #192 | Issue #191):**
     - **2026-10-15:**

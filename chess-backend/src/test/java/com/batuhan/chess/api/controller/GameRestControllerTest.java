@@ -62,7 +62,7 @@ class GameRestControllerTest {
             Game game = new Game(new Board());
             GameResponse response = new GameResponse(
                 gameId, "rnbqkbnr", Color.WHITE, GameStatus.ACTIVE,
-                List.of(), List.of(), "", 1L, 2L, true, 300000L, 300000L, 300
+                List.of(), List.of(), "", 1L, 2L, null, null, null, true, 300000L, 300000L, 300
             );
             when(gameService.getGame(gameId)).thenReturn(game);
             when(gameService.convertToResponse(gameId, game)).thenReturn(response);
@@ -84,7 +84,7 @@ class GameRestControllerTest {
             Game game = new Game(new Board());
             GameResponse response = new GameResponse(
                 gameId, "rnbqkbnr", Color.WHITE, GameStatus.ACTIVE,
-                List.of(), List.of(), "", 1L, 2L, false, 300000L, 300000L, 300
+                List.of(), List.of(), "", 1L, 2L, null, null, null, false, 300000L, 300000L, 300
             );
             when(gameService.createGame(1L, 2L)).thenReturn(gameId);
             when(gameService.getGame(gameId)).thenReturn(game);
@@ -108,7 +108,7 @@ class GameRestControllerTest {
             Game game = new Game(new Board());
             GameResponse response = new GameResponse(
                 gameId, "rnbqkbnr", Color.WHITE, GameStatus.ACTIVE,
-                List.of(), List.of(), "", null, null, false, 300000L, 300000L, 300
+                List.of(), List.of(), "", null, null, null, null, null, false, 300000L, 300000L, 300
             );
             when(gameService.createGame(null, null)).thenReturn(gameId);
             when(gameService.getGame(gameId)).thenReturn(game);
@@ -236,9 +236,9 @@ class GameRestControllerTest {
             Game game = new Game(new Board());
             GameResponse response = new GameResponse(
                 gameId, "rnbqkbnr", Color.WHITE, GameStatus.ACTIVE,
-                List.of(), List.of(), "", 1L, -1L, false, 300000L, 300000L, 300
+                List.of(), List.of(), "", 1L, -1L, null, null, null, false, 300000L, 300000L, 300
             );
-            when(gameService.createAiGame(1L,true,3,10)).thenReturn(gameId);
+            when(gameService.createAiGame(1L, true, 3, 10)).thenReturn(gameId);
             when(gameService.getGame(gameId)).thenReturn(game);
             when(gameService.convertToResponse(gameId, game)).thenReturn(response);
 
@@ -260,7 +260,7 @@ class GameRestControllerTest {
             Game game = new Game(new Board());
             GameResponse response = new GameResponse(
                 gameId, "rnbqkbnr", Color.WHITE, GameStatus.ACTIVE,
-                List.of(), List.of(), "", -1L, 2L, false, 300000L, 300000L, 300
+                List.of(), List.of(), "", -1L, 2L, null, null, null, false, 300000L, 300000L, 300
             );
             when(gameService.createAiGame(2L, false, 3, 10)).thenReturn(gameId);
             when(gameService.getGame(gameId)).thenReturn(game);

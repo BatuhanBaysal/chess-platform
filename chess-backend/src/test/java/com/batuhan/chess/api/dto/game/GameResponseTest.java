@@ -29,6 +29,9 @@ class GameResponseTest {
         String lastMoveMessage = "Pawn moved to e4";
         Long whiteId = 1L;
         Long blackId = 2L;
+        String whitePlayerName = "batuhan";
+        String blackPlayerName = "Stockfish (Lv. 3)";
+        Integer aiDifficulty = 3;
         boolean isStarted = true;
         long whiteTime = 300000L;
         long blackTime = 290000L;
@@ -37,8 +40,8 @@ class GameResponseTest {
         // Act
         GameResponse response = new GameResponse(
             gameId, boardRepr, turn, status, lastMoves, moveHistory,
-            lastMoveMessage, whiteId, blackId, isStarted,
-            whiteTime, blackTime, timeLimit
+            lastMoveMessage, whiteId, blackId, whitePlayerName, blackPlayerName,
+            aiDifficulty, isStarted, whiteTime, blackTime, timeLimit
         );
 
         // Assert
@@ -55,6 +58,9 @@ class GameResponseTest {
         assertThat(response.lastMoveMessage()).isEqualTo(lastMoveMessage);
         assertThat(response.whiteId()).isEqualTo(whiteId);
         assertThat(response.blackId()).isEqualTo(blackId);
+        assertThat(response.whitePlayerName()).isEqualTo(whitePlayerName);
+        assertThat(response.blackPlayerName()).isEqualTo(blackPlayerName);
+        assertThat(response.aiDifficulty()).isEqualTo(aiDifficulty);
         assertThat(response.isStarted()).isTrue();
         assertThat(response.whiteRemainingTimeMs()).isEqualTo(whiteTime);
         assertThat(response.blackRemainingTimeMs()).isEqualTo(blackTime);

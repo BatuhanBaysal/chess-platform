@@ -122,7 +122,7 @@ class GameTest {
 
             // Assert
             assertThat(game.getStatus()).isEqualTo(GameStatus.CHECKMATE);
-            assertThat(game.getLastMoveMessage()).isEqualTo("CHECKMATE!");
+            assertThat(game.getLastMoveMessage()).contains("CHECKMATE!");
         }
 
         @Test

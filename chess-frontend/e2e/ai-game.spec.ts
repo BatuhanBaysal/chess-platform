@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('AI Match Configuration Modal Flow', () => {
   test.beforeEach(async ({ page }) => {
     // Arrange
-    await page.goto('/menu');
+    await page.goto('/menu', { waitUntil: 'domcontentloaded' });
   });
 
   test('should open AI modal, display unrated banner, and lock background scroll', async ({ page }) => {

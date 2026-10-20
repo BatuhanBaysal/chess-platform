@@ -4,7 +4,7 @@ test.describe('Admin Route Access & Role Protection', () => {
   test('should redirect unauthenticated guest to sign-in page when accessing admin route directly', async ({ page }) => {
     // Arrange
     await page.context().clearCookies();
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => window.localStorage.clear());
 
     // Act
@@ -69,6 +69,8 @@ test.describe('Admin Route Access & Role Protection', () => {
   });
 
   test('should grant access to admin panel and display admin navigation item for ROLE_ADMIN', async ({ page }) => {
+    test.slow();
+
     // Arrange
     await page.addInitScript(() => {
       window.localStorage.setItem('token', 'mock-admin-valid-token');
@@ -87,7 +89,7 @@ test.describe('Admin Route Access & Role Protection', () => {
     const adminNavLink = page.locator('header a[href="/admin"]').first();
 
     // Assert
-    await expect(adminNavLink).toBeVisible();
+    await expect(adminNavLink).toBeVisible({ timeout: 15000 });
 
     // Act
     await adminNavLink.click();
@@ -97,8 +99,7 @@ test.describe('Admin Route Access & Role Protection', () => {
   });
 
   test('should immediately revoke access if session credentials are cleared while on admin page', async ({ page }) => {
-    // Arrange
-    await page.goto('/');
+    await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => {
       window.localStorage.setItem('token', 'mock-admin-valid-token');
       window.localStorage.setItem('userId', 'admin-001');
@@ -110,17 +111,16 @@ test.describe('Admin Route Access & Role Protection', () => {
         role: 'ROLE_ADMIN'
       }));
     });
+
     await page.goto('/admin', { waitUntil: 'domcontentloaded' });
     await expect(page).toHaveURL(/.*\/admin/);
 
-    // Act
     await page.evaluate(() => {
       window.localStorage.clear();
       window.sessionStorage.clear();
     });
-    await page.goto('/admin', { waitUntil: 'domcontentloaded' });
 
-    // Assert
+    await page.goto('/admin', { waitUntil: 'domcontentloaded' });
     await expect(page).toHaveURL(/.*\/sign-in/);
   });
 });

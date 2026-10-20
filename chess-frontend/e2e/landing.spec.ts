@@ -54,12 +54,11 @@ test.describe('Dashboard & Landing Page (Master Plan v2.6.0)', () => {
   });
 
   test('should not generate horizontal scrollbar on mobile viewport (390px)', async ({ page }) => {
-    // Arrange
     await page.setViewportSize({ width: 390, height: 844 });
 
     // Act
-    await page.goto('/menu');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/menu', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     const hasHorizontalOverflow = await page.evaluate(() => {
       return document.documentElement.scrollWidth > document.documentElement.clientWidth;

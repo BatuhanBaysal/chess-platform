@@ -176,6 +176,24 @@ class UserServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("User not found with username: missingUser");
         }
+
+        @Test
+        @DisplayName("Should throw AccountDeactivatedException when user exists in DB but is inactive")
+        void shouldThrowAccountDeactivatedExceptionWhenUserIsInactive() {
+            // Arrange
+            Jwt jwt = createJwt(Map.of("preferred_username", "deletedUser", "sub", "sub-123"));
+            JwtAuthenticationToken jwtAuth = new JwtAuthenticationToken(jwt, Collections.emptyList());
+            when(securityContext.getAuthentication()).thenReturn(jwtAuth);
+            when(userRepository.existsByUsername("deletedUser")).thenReturn(true);
+            when(userRepository.findByUsernameAndActiveTrue("deletedUser")).thenReturn(Optional.empty());
+
+            // Act & Assert
+            assertThatThrownBy(() -> userService.getCurrentUserEntity())
+                .isInstanceOf(com.batuhan.chess.api.exception.AccountDeactivatedException.class)
+                .hasMessageContaining("ACCOUNT_DEACTIVATED");
+
+            verify(userSyncService, never()).syncKeycloakUser(any(), any());
+        }
     }
 
     @Nested
@@ -428,7 +446,7 @@ class UserServiceTest {
     class DeleteAccountTests {
 
         @Test
-        @DisplayName("Should soft delete account when password verification succeeds")
+        @DisplayName("Should soft delete account and purge from Keycloak when password verification succeeds")
         void shouldSoftDeleteAccountWhenPasswordMatches() {
             // Arrange
             DeleteAccountRequest request = new DeleteAccountRequest("correct_pass");
@@ -437,11 +455,16 @@ class UserServiceTest {
             when(userRepository.findByUsernameAndActiveTrue("batuhan")).thenReturn(Optional.of(testUser));
             when(passwordEncoder.matches("correct_pass", "encoded_pass")).thenReturn(true);
 
+            when(keycloak.realm("chess-realm")).thenReturn(realmResource);
+            when(realmResource.users()).thenReturn(usersResource);
+            when(usersResource.get(anyString())).thenReturn(userResource);
+
             // Act
             userService.deleteAccount(request);
 
             // Assert
             assertThat(testUser.isActive()).isFalse();
+            verify(userResource, times(1)).remove();
             verify(userRepository, times(1)).save(testUser);
             verify(userRepository, never()).delete(any(UserEntity.class));
         }

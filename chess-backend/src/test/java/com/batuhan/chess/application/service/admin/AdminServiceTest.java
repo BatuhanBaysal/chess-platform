@@ -15,6 +15,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.admin.client.resource.UserResource;
+import org.keycloak.admin.client.resource.UsersResource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -26,6 +30,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -42,6 +47,18 @@ class AdminServiceTest {
     @Mock
     private GameService gameService;
 
+    @Mock
+    private Keycloak keycloak;
+
+    @Mock
+    private RealmResource realmResource;
+
+    @Mock
+    private UsersResource usersResource;
+
+    @Mock
+    private UserResource userResource;
+
     @InjectMocks
     private AdminService adminService;
 
@@ -51,6 +68,7 @@ class AdminServiceTest {
     void setUp() {
         testUser = UserEntity.builder()
             .id(1L)
+            .externalId(UUID.randomUUID())
             .username("admin_test")
             .email("admin@test.com")
             .password("encoded_pass")
@@ -65,41 +83,78 @@ class AdminServiceTest {
     class GetAllUsersTests {
 
         @Test
-        @DisplayName("Should return paginated users successfully")
+        @DisplayName("Should return paginated active users successfully when filter is 'all'")
         void getAllUsers_ValidRequest_ReturnsPageOfUsers() {
             // Arrange
             Pageable pageable = PageRequest.of(0, 10);
             Page<UserEntity> userPage = new PageImpl<>(List.of(testUser), pageable, 1);
-            when(userRepository.findAll(pageable)).thenReturn(userPage);
+            when(userRepository.findAllByActiveTrue(pageable)).thenReturn(userPage);
 
             // Act
-            Page<AdminUserResponseDTO> result = adminService.getAllUsers(pageable);
+            Page<AdminUserResponseDTO> result = adminService.getAllUsers("all", pageable);
 
             // Assert
             assertThat(result).isNotNull();
             assertThat(result.getTotalElements()).isEqualTo(1);
             assertThat(result.getContent().get(0).username()).isEqualTo("admin_test");
-            verify(userRepository, times(1)).findAll(pageable);
+            verify(userRepository, times(1)).findAllByActiveTrue(pageable);
+        }
+
+        @Test
+        @DisplayName("Should return paginated members when filter is 'members'")
+        void getAllUsers_MembersFilter_CallsFindAllActiveMembers() {
+            // Arrange
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<UserEntity> userPage = new PageImpl<>(List.of(testUser), pageable, 1);
+            when(userRepository.findAllActiveMembers(pageable)).thenReturn(userPage);
+
+            // Act
+            Page<AdminUserResponseDTO> result = adminService.getAllUsers("members", pageable);
+
+            // Assert
+            assertThat(result).isNotNull();
+            verify(userRepository, times(1)).findAllActiveMembers(pageable);
+        }
+
+        @Test
+        @DisplayName("Should return paginated guests when filter is 'guests'")
+        void getAllUsers_GuestsFilter_CallsFindAllActiveGuests() {
+            // Arrange
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<UserEntity> userPage = new PageImpl<>(List.of(testUser), pageable, 1);
+            when(userRepository.findAllActiveGuests(pageable)).thenReturn(userPage);
+
+            // Act
+            Page<AdminUserResponseDTO> result = adminService.getAllUsers("guests", pageable);
+
+            // Assert
+            assertThat(result).isNotNull();
+            verify(userRepository, times(1)).findAllActiveGuests(pageable);
         }
     }
 
     @Nested
-    @DisplayName("Delete User (Soft Delete) Tests")
+    @DisplayName("Delete User (Soft Delete & Keycloak Purge) Tests")
     class DeleteUserTests {
 
         @Test
-        @DisplayName("Should soft delete user when user exists")
-        void deleteUser_ValidId_DeactivatesUser() {
+        @DisplayName("Should soft delete user and invoke Keycloak removal when user exists")
+        void deleteUser_ValidId_DeactivatesUserAndPurgesKeycloak() {
             // Arrange
             Long userId = 1L;
             when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
             when(userRepository.save(any(UserEntity.class))).thenReturn(testUser);
+
+            when(keycloak.realm("chess-realm")).thenReturn(realmResource);
+            when(realmResource.users()).thenReturn(usersResource);
+            when(usersResource.get(testUser.getExternalId().toString())).thenReturn(userResource);
 
             // Act
             adminService.deleteUser(userId);
 
             // Assert
             assertThat(testUser.isActive()).isFalse();
+            verify(userResource, times(1)).remove();
             verify(userRepository, times(1)).findById(userId);
             verify(userRepository, times(1)).save(testUser);
         }

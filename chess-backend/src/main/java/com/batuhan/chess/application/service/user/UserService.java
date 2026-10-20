@@ -72,12 +72,26 @@ public class UserService {
 
             final String finalUsername = username;
             return userRepository.findByUsernameAndActiveTrue(finalUsername)
-                .orElseGet(() -> userSyncService.syncKeycloakUser(jwt, finalUsername));
+                .orElseGet(() -> {
+                    if (userRepository.existsByUsername(finalUsername)) {
+                        throw new com.batuhan.chess.api.exception.AccountDeactivatedException(
+                            "ACCOUNT_DEACTIVATED: User account has been deactivated or deleted."
+                        );
+                    }
+                    return userSyncService.syncKeycloakUser(jwt, finalUsername);
+                });
         }
 
         String username = authentication.getName();
         return userRepository.findByUsernameAndActiveTrue(username)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
+            .orElseGet(() -> {
+                if (userRepository.existsByUsername(username)) {
+                    throw new com.batuhan.chess.api.exception.AccountDeactivatedException(
+                        "ACCOUNT_DEACTIVATED: User account has been deactivated or deleted."
+                    );
+                }
+                throw new ResourceNotFoundException("User not found with username: " + username);
+            });
     }
 
     public UserResponseDTO getProfile() {
@@ -270,6 +284,15 @@ public class UserService {
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new GameOperationException("Password verification failed while trying to delete the account.");
+        }
+
+        if (user.getExternalId() != null) {
+            try {
+                keycloak.realm(REALM).users().get(user.getExternalId().toString()).remove();
+                log.info("USER_ACTION: Successfully removed user from Keycloak realm upon self-deletion: {}", user.getUsername());
+            } catch (Exception e) {
+                log.warn("USER_ACTION: Failed to delete user from Keycloak on self-deletion: {}", e.getMessage());
+            }
         }
 
         user.setActive(false);

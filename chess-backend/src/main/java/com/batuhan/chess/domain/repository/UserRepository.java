@@ -17,10 +17,20 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     @Cacheable(value = "users", key = "#username")
     Optional<UserEntity> findByUsernameAndActiveTrue(String username);
 
+    Optional<UserEntity> findByUsername(String username);
+
     Optional<UserEntity> findByEmailAndActiveTrue(String email);
 
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);
+
+    Page<UserEntity> findAllByActiveTrue(Pageable pageable);
+
+    @Query("SELECT u FROM UserEntity u WHERE u.active = true AND (u.isGuest = false OR u.isGuest IS NULL) AND u.role != com.batuhan.chess.domain.model.user.UserRole.ROLE_GUEST")
+    Page<UserEntity> findAllActiveMembers(Pageable pageable);
+
+    @Query("SELECT u FROM UserEntity u WHERE u.active = true AND (u.isGuest = true OR u.role = com.batuhan.chess.domain.model.user.UserRole.ROLE_GUEST)")
+    Page<UserEntity> findAllActiveGuests(Pageable pageable);
 
     Page<UserEntity> findAllByActiveTrueOrderByEloRatingDesc(Pageable pageable);
 

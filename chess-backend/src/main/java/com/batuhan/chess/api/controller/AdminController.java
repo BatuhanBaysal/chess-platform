@@ -28,14 +28,17 @@ public class AdminController {
 
     @Operation(
         summary = "Get paginated registered users",
-        description = "Retrieves a paginated list of all platform users for audit and management purposes."
+        description = "Retrieves a paginated list of platform users filtered by category ('all', 'members', 'guests')."
     )
     @ApiResponse(responseCode = "200", description = "User list retrieved successfully")
     @GetMapping("/users")
-    public ResponseEntity<Page<AdminUserResponseDTO>> getAllUsers(Pageable pageable) {
-        log.info("ADMIN_ACTION: Request received to fetch paginated users - Page: {}, Size: {}",
-            pageable.getPageNumber(), pageable.getPageSize());
-        Page<AdminUserResponseDTO> users = adminService.getAllUsers(pageable);
+    public ResponseEntity<Page<AdminUserResponseDTO>> getAllUsers(
+        @RequestParam(defaultValue = "all") String filter,
+        Pageable pageable
+    ) {
+        log.info("ADMIN_ACTION: Request received to fetch paginated users - Filter: {}, Page: {}, Size: {}",
+            filter, pageable.getPageNumber(), pageable.getPageSize());
+        Page<AdminUserResponseDTO> users = adminService.getAllUsers(filter, pageable);
         log.info("ADMIN_ACTION: Successfully retrieved {} users", users.getTotalElements());
         return ResponseEntity.ok(users);
     }

@@ -12,6 +12,8 @@ import com.batuhan.chess.domain.model.user.UserEntity;
 import com.batuhan.chess.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.keycloak.admin.client.Keycloak;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,35 +27,59 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AdminService {
 
+    private static final String REALM = "chess-realm";
+
     private final UserRepository userRepository;
     private final GameService gameService;
+    private final Keycloak keycloak;
 
     @Transactional(readOnly = true)
-    public Page<AdminUserResponseDTO> getAllUsers(Pageable pageable) {
-        log.info("Admin Service: Fetching paginated system users (Page: {}, Size: {})", pageable.getPageNumber(), pageable.getPageSize());
-        return userRepository.findAll(pageable)
-            .map(user -> AdminUserResponseDTO.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .eloRating(user.getEloRating())
-                .totalWins(user.getTotalWins())
-                .totalLosses(user.getTotalLosses())
-                .totalDraws(user.getTotalDraws())
-                .role(user.getRole())
-                .createdAt(user.getCreatedAt())
-                .build());
+    public Page<AdminUserResponseDTO> getAllUsers(String filter, Pageable pageable) {
+        log.info("Admin Service: Fetching paginated active users (Filter: {}, Page: {}, Size: {})",
+            filter, pageable.getPageNumber(), pageable.getPageSize());
+
+        Page<UserEntity> userPage;
+        if ("members".equalsIgnoreCase(filter)) {
+            userPage = userRepository.findAllActiveMembers(pageable);
+        } else if ("guests".equalsIgnoreCase(filter)) {
+            userPage = userRepository.findAllActiveGuests(pageable);
+        } else {
+            userPage = userRepository.findAllByActiveTrue(pageable);
+        }
+
+        return userPage.map(user -> AdminUserResponseDTO.builder()
+            .id(user.getId())
+            .username(user.getUsername())
+            .email(user.getEmail())
+            .eloRating(user.getEloRating())
+            .totalWins(user.getTotalWins())
+            .totalLosses(user.getTotalLosses())
+            .totalDraws(user.getTotalDraws())
+            .role(user.getRole())
+            .createdAt(user.getCreatedAt())
+            .build());
     }
 
     @Transactional
+    @CacheEvict(value = "users", allEntries = true)
     @AuditableAction(actionType = "TOGGLE_USER_STATUS")
     public void deleteUser(Long id) {
-        log.warn("Admin Service: Execution of soft-delete account termination for user ID: {}", id);
+        log.warn("Admin Service: Execution of account termination for user ID: {}", id);
         UserEntity user = userRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+
+        if (user.getExternalId() != null) {
+            try {
+                keycloak.realm(REALM).users().get(user.getExternalId().toString()).remove();
+                log.info("Admin Service: Successfully removed user from Keycloak realm: {}", user.getUsername());
+            } catch (Exception e) {
+                log.warn("Admin Service: User could not be removed from Keycloak (might not exist): {}", e.getMessage());
+            }
+        }
+
         user.setActive(false);
         userRepository.save(user);
-        log.info("Admin Service: Successfully deactivated (soft-deleted) user account: {}", user.getUsername());
+        log.info("Admin Service: Successfully deactivated user account: {}", user.getUsername());
     }
 
     @Transactional(readOnly = true)

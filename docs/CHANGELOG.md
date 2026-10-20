@@ -36,10 +36,19 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
-## [2.6.0] - 2026-10-15
+## [2.6.0] - 2026-10-20
 
 ### 💎 Phase v2.6.0: Final Polish, Strict Typing, Admin Control & Player Identity 🚀
 > **Note:** Finalizing production readiness by enforcing compile-time type contracts, isolating AI engine state lifecycles, refining authentication and role-based access, polishing player identity systems, and delivering administrative control capabilities.
+
+- **2026-10-20:**
+    - **Admin User Deletion Cascade, Real-Time Session Eviction, Server-Side Filtering & Swagger Security (PR #197 | Issue #195):**
+        - **Robust Admin Deletion Cascade & Keycloak Purge:** Implemented complete administrative account purge in `AdminService.java` and `AdminController.java`, removing target credentials from the Keycloak realm via the Keycloak Admin REST Client, deactivating local PostgreSQL entities, evicting Redis caches (`@CacheEvict(value = "users", allEntries = true)`), and recording governance audit logs.
+        - **Account Deactivation Guard & Invalidation Pipeline:** Added custom `AccountDeactivatedException.java` and wired it into `UserService.java` and `GlobalExceptionHandler.java` (mapped to HTTP `401 UNAUTHORIZED`), preventing deactivated or deleted users from resurrecting sessions across protected endpoints.
+        - **Real-Time Client Session Eviction & UI Interceptor:** Configured Axios response interceptor in `axios.ts` to detect `401 ACCOUNT_DEACTIVATED`, wiping client-side tokens (`localStorage`/`sessionStorage`), disconnecting active WebSockets, prompting notification alerts, and force-redirecting evicted sessions to `/sign-up`.
+        - **Server-Side Paginated Filtering & Optimistic UI Updates:** Upgraded `UserRepository.java` with specialized JPQL queries (`findAllActiveMembers`, `findAllActiveGuests`) and connected them through `adminService.ts` to `AdminDashboard.tsx` and `UserManagementPanel.tsx`; delivered category filter tabs (`All Users`, `Registered Members`, `Guest Accounts`) with server-side pagination synchronization and zero-latency optimistic row removal upon deletion.
+        - **Swagger Bearer OAuth2 Security Scheme:** Introduced `OpenApiConfig.java` registering OpenAPI JWT `SecurityScheme` Bearer authentication, allowing developers and administrators to authorize and execute Keycloak-secured API endpoints directly from Swagger UI.
+        - **Playwright Test Suite Stabilization & Multi-Browser Hardening:** Refactored `admin-security.spec.ts`, `ai-game.spec.ts`, and `landing.spec.ts` to eliminate `networkidle` deadlocks on WebSocket connections, replaced persistent `addInitScript` re-injections with scoped evaluations, and extended global timeouts to 45s in `playwright.config.ts` to guarantee 100% test suite reliability across Chromium, Firefox, and WebKit (78/78 passing).
 
 - **2026-10-19:**
     - **Desktop Captured Pieces Overflow, Timeout Outcome Inversion, Opponent Telemetry & Match Connection UX (PR #196 | Issue #194):**

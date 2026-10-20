@@ -112,6 +112,25 @@ class GlobalExceptionHandlerTest {
                 assertThat(res.getBody().path()).isEqualTo("/api/test-uri");
             });
         }
+
+        @Test
+        @DisplayName("Should return 401 Unauthorized when AccountDeactivatedException is thrown")
+        void shouldHandleAccountDeactivatedWithUnauthorized() {
+            // Arrange
+            AccountDeactivatedException ex = new AccountDeactivatedException("ACCOUNT_DEACTIVATED: User account has been deactivated or deleted.");
+
+            // Act
+            ResponseEntity<ErrorResponse> response = handler.handleAccountDeactivated(ex, requestMock);
+
+            // Assert
+            assertThat(response).satisfies(res -> {
+                assertThat(res.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+                assertThat(res.getBody()).isNotNull();
+                assertThat(res.getBody().message()).contains("ACCOUNT_DEACTIVATED");
+                assertThat(res.getBody().status()).isEqualTo(401);
+                assertThat(res.getBody().path()).isEqualTo("/api/test-uri");
+            });
+        }
     }
 
     @Nested

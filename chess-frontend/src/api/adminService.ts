@@ -15,9 +15,13 @@ export type {
 
 export type AdminAuditLogResponseDTO = AuditLogResponse;
 
-export const getAllUsers = async (page: number = 0, size: number = 10): Promise<PageResponse<AdminUserResponseDTO>> => {
+export const getAllUsers = async (
+  page: number = 0, 
+  size: number = 10,
+  filter: string = 'all'
+): Promise<PageResponse<AdminUserResponseDTO>> => {
   const response = await api.get<PageResponse<AdminUserResponseDTO>>('/api/admin/users', {
-    params: { page, size }
+    params: { page, size, filter }
   });
   return response.data;
 };

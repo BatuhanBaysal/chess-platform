@@ -16,6 +16,7 @@ import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAut
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -69,14 +70,15 @@ class AdminControllerTest {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-            when(adminService.getAllUsers(any())).thenReturn(new PageImpl<>(List.of(userDTO), PageRequest.of(0, 10), 1));
+            when(adminService.getAllUsers(anyString(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(userDTO), PageRequest.of(0, 10), 1));
 
             // Act & Assert
             mockMvc.perform(get("/api/admin/users"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].username").value("admin_test"));
 
-            verify(adminService, times(1)).getAllUsers(any());
+            verify(adminService, times(1)).getAllUsers(eq("all"), any(Pageable.class));
         }
     }
 

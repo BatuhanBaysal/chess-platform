@@ -38,6 +38,7 @@ export default function AdminDashboard() {
     const [loadingGames, setLoadingGames] = useState(false);
     const [loadingLogs, setLoadingLogs] = useState(false);
 
+    const [userFilter, setUserFilter] = useState<'all' | 'members' | 'guests'>('all');
     const [currentPage, setCurrentPage] = useState<number>(0); 
     const [pageSize] = useState<number>(10);
     const [totalPages, setTotalPages] = useState<number>(1);
@@ -47,19 +48,19 @@ export default function AdminDashboard() {
     const [auditTotalPages, setAuditTotalPages] = useState<number>(1);
     const [auditTotalElements, setAuditTotalElements] = useState<number>(0);
 
-    const fetchUsersData = useCallback(async (page: number) => {
+    const fetchUsersData = useCallback(async (page: number, filter: string = userFilter) => {
         setLoadingUsers(true);
         try {
-            const data = await getAllUsers(page, pageSize); 
+            const data = await getAllUsers(page, pageSize, filter); 
             setUsers(data.content);
             setTotalPages(data.totalPages || 1);
-            setTotalElements(data.totalElements || data.content.length);
+            setTotalElements(data.totalElements || 0);
         } catch (error) {
             console.error("Failed to fetch users:", error);
         } finally {
             setLoadingUsers(false);
         }
-    }, [pageSize]);
+    }, [pageSize, userFilter]);
 
     const fetchActiveGamesData = useCallback(async () => {
         setLoadingGames(true);
@@ -88,19 +89,29 @@ export default function AdminDashboard() {
     }, [pageSize]);
 
     useEffect(() => {
-        fetchUsersData(currentPage);
+        fetchUsersData(currentPage, userFilter);
         fetchActiveGamesData();
         fetchAuditLogsData(auditPage);
-    }, [currentPage, auditPage, fetchUsersData, fetchActiveGamesData, fetchAuditLogsData]);
+    }, [currentPage, auditPage, userFilter, fetchUsersData, fetchActiveGamesData, fetchAuditLogsData]);
+
+    const handleFilterChange = (filter: 'all' | 'members' | 'guests') => {
+        setUserFilter(filter);
+        setCurrentPage(0);
+        fetchUsersData(0, filter);
+    };
 
     const handleDeleteUser = async (id: number) => {
         if (window.confirm("Are you sure you want to permanently delete this user account?")) {
             try {
+                setUsers((prev) => prev.filter((user) => user.id !== id));
+                setTotalElements((prev) => Math.max(0, prev - 1));
+
                 await deleteUserAccount(id);
-                fetchUsersData(currentPage);
+                fetchUsersData(currentPage, userFilter);
                 fetchAuditLogsData(auditPage);
             } catch (error) {
                 console.error("Failed to delete user:", error);
+                fetchUsersData(currentPage, userFilter);
             }
         }
     };
@@ -118,7 +129,7 @@ export default function AdminDashboard() {
     };
 
     const handleRefreshAll = () => {
-        fetchUsersData(currentPage);
+        fetchUsersData(currentPage, userFilter);
         fetchActiveGamesData();
         fetchAuditLogsData(auditPage);
     };
@@ -246,6 +257,8 @@ export default function AdminDashboard() {
                         currentPage={currentPage}
                         totalPages={totalPages}
                         totalElements={totalElements}
+                        selectedCategory={userFilter}
+                        onFilterChange={handleFilterChange}
                         onPageChange={setCurrentPage}
                         onDeleteUser={handleDeleteUser}
                     />

@@ -24,7 +24,7 @@
         <mapstruct.version>1.6.3</mapstruct.version>
         <lombok.version>1.18.48</lombok.version>
         <junit.jupiter.version>5.11.0</junit.jupiter.version>
-        <aws.sdk.version>2.55.7</aws.sdk.version>
+        <aws.sdk.version>2.55.15</aws.sdk.version>
     </properties>
 
     <dependencyManagement>
@@ -165,7 +165,7 @@
         <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson-spring-boot-starter</artifactId>
-            <version>4.7.0</version>
+            <version>4.8.0</version>
         </dependency>
         <dependency>
             <groupId>io.github.resilience4j</groupId>
@@ -180,7 +180,7 @@
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-admin-client</artifactId>
-            <version>24.0.1</version>
+            <version>26.0.12</version>
         </dependency>
 
         <dependency>

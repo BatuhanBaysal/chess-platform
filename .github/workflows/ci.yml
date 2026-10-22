@@ -96,16 +96,9 @@ jobs:
                     key: ${{ runner.os }}-playwright-${{ hashFiles('chess-frontend/package-lock.json') }}
 
             -   name: Install Playwright Chromium
-                if: steps.playwright-cache.outputs.cache-hit != 'true'
                 run: |
                     cd chess-frontend
-                    npx playwright install --with-deps chromium
-
-            -   name: Install OS Dependencies (when cached)
-                if: steps.playwright-cache.outputs.cache-hit == 'true'
-                run: |
-                    cd chess-frontend
-                    npx playwright install-deps chromium
+                    npx playwright install chromium
 
             -   name: Build Frontend
                 run: |

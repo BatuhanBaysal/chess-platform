@@ -19,6 +19,7 @@ describe('Header Component', () => {
   const mockUpdateUser = vi.fn();
 
   beforeEach(() => {
+    localStorage.clear();
     vi.clearAllMocks();
     vi.spyOn(ThemeHook, 'useTheme').mockReturnValue({
       colorMode: 'dark',
@@ -68,6 +69,99 @@ describe('Header Component', () => {
       expect(screen.getByText('B')).toBeDefined();
       expect(screen.getByText('batuhan')).toBeDefined();
       expect(screen.getByTitle(/sign out/i)).toBeDefined();
+    });
+
+    it('renders avatar image with dynamic endpoint and cache-busting timestamp', () => {
+      // Arrange
+      vi.spyOn(AuthHook, 'useAuth').mockReturnValue({
+        user: { id: 1, username: 'batuhan', role: 'ROLE_USER' } as any,
+        login: vi.fn(),
+        register: vi.fn(),
+        logout: mockLogout,
+        loginAsGuest: vi.fn(),
+        updateUser: mockUpdateUser,
+        loading: false,
+      });
+
+      // Act
+      renderHeader();
+
+      // Assert
+      const avatarImg = screen.getByRole('img', { name: 'batuhan' }) as HTMLImageElement;
+      expect(avatarImg).toBeDefined();
+      expect(avatarImg.src).toContain('/api/users/batuhan/avatar?t=');
+    });
+
+    it('hides avatar image on error and falls back to user initial', () => {
+      // Arrange
+      vi.spyOn(AuthHook, 'useAuth').mockReturnValue({
+        user: { id: 1, username: 'batuhan', role: 'ROLE_USER' } as any,
+        login: vi.fn(),
+        register: vi.fn(),
+        logout: mockLogout,
+        loginAsGuest: vi.fn(),
+        updateUser: mockUpdateUser,
+        loading: false,
+      });
+
+      renderHeader();
+      const avatarImg = screen.getByRole('img', { name: 'batuhan' }) as HTMLImageElement;
+
+      // Act
+      fireEvent.error(avatarImg);
+
+      // Assert
+      expect(avatarImg.style.display).toBe('none');
+      expect(screen.getByText('B')).toBeDefined();
+    });
+
+    it('updates avatar image timestamp when avatarUpdated event is dispatched', () => {
+      // Arrange
+      vi.spyOn(AuthHook, 'useAuth').mockReturnValue({
+        user: { id: 1, username: 'batuhan', role: 'ROLE_USER' } as any,
+        login: vi.fn(),
+        register: vi.fn(),
+        logout: mockLogout,
+        loginAsGuest: vi.fn(),
+        updateUser: mockUpdateUser,
+        loading: false,
+      });
+
+      renderHeader();
+      const initialImg = screen.getByRole('img', { name: 'batuhan' }) as HTMLImageElement;
+      const initialSrc = initialImg.src;
+
+      vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 5000);
+
+      // Act
+      act(() => {
+        window.dispatchEvent(new Event('avatarUpdated'));
+      });
+
+      // Assert
+      const updatedImg = screen.getByRole('img', { name: 'batuhan' }) as HTMLImageElement;
+      expect(updatedImg.src).not.toBe(initialSrc);
+    });
+
+    it('renders guest initial badge without avatar image request when role is GUEST', () => {
+      // Arrange
+      vi.spyOn(AuthHook, 'useAuth').mockReturnValue({
+        user: { id: 99, username: 'guest_123', role: 'ROLE_GUEST' } as any,
+        login: vi.fn(),
+        register: vi.fn(),
+        logout: mockLogout,
+        loginAsGuest: vi.fn(),
+        updateUser: mockUpdateUser,
+        loading: false,
+      });
+
+      // Act
+      renderHeader();
+
+      // Assert
+      expect(screen.getByText('G')).toBeDefined();
+      expect(screen.getByText('guest_123')).toBeDefined();
+      expect(screen.queryByRole('img', { name: 'guest_123' })).toBeNull();
     });
 
     it('shows admin navigation tab only when user has ROLE_ADMIN', () => {

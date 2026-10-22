@@ -1,5 +1,6 @@
-import { FileText, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { FileText, Loader2 } from 'lucide-react';
 import { type AdminAuditLogResponseDTO } from '../../../api/adminService';
+import Pagination from '../../../components/ui/Pagination';
 
 interface AuditLogsPanelProps {
     auditLogs: AdminAuditLogResponseDTO[];
@@ -24,12 +25,9 @@ export default function AuditLogsPanel({
                 <div className="flex items-center gap-2">
                     <FileText size={18} className="text-amber-600 dark:text-amber-400" />
                     <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-950 dark:text-white">
-                        Audit Telemetry ({auditTotalElements})
+                        Audit Logs ({auditTotalElements})
                     </h2>
                 </div>
-                <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-slate-500">
-                    {auditTotalPages > 0 ? auditPage + 1 : 0} / {Math.max(1, auditTotalPages)}
-                </span>
             </div>
 
             {loading ? (
@@ -89,25 +87,14 @@ export default function AuditLogsPanel({
                         </table>
                     </div>
 
-                    {auditTotalPages > 1 && (
-                        <div className="flex justify-between items-center mt-5 pt-4 border-t border-slate-200 dark:border-slate-800/80">
-                            <button
-                                onClick={() => onAuditPageChange(Math.max(auditPage - 1, 0))}
-                                disabled={auditPage === 0}
-                                className="min-h-11 flex items-center gap-1 px-3 sm:px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-30 rounded-xl text-xs font-black uppercase tracking-wider transition-colors text-slate-900 dark:text-white cursor-pointer"
-                            >
-                                <ChevronLeft size={16} /> Prev
-                            </button>
-
-                            <button
-                                onClick={() => onAuditPageChange(Math.min(auditPage + 1, auditTotalPages - 1))}
-                                disabled={auditPage === auditTotalPages - 1}
-                                className="min-h-11 flex items-center gap-1 px-3 sm:px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-30 rounded-xl text-xs font-black uppercase tracking-wider transition-colors text-slate-900 dark:text-white cursor-pointer"
-                            >
-                                Next <ChevronRight size={16} />
-                            </button>
-                        </div>
-                    )}
+                    <div className="mt-5">
+                        <Pagination
+                            currentPage={auditPage + 1}
+                            totalPages={auditTotalPages}
+                            onPageChange={(page) => onAuditPageChange(page - 1)}
+                            disabled={loading}
+                        />
+                    </div>
                 </>
             )}
         </div>

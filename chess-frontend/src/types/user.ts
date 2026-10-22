@@ -9,6 +9,7 @@ export interface UserResponseDTO {
   totalDraws: number;
   totalGames: number;
   role: UserRole;
+  avatarUrl?: string | null;
 }
 
 export interface UpdateProfileRequest {

@@ -83,53 +83,54 @@ class AdminServiceTest {
     class GetAllUsersTests {
 
         @Test
-        @DisplayName("Should return paginated active users successfully when filter is 'all'")
-        void getAllUsers_ValidRequest_ReturnsPageOfUsers() {
+        @DisplayName("Should return paginated active users successfully when filter is 'all' and search is null")
+        void getAllUsers_ValidRequestWithoutSearch_ReturnsPageOfUsers() {
             // Arrange
             Pageable pageable = PageRequest.of(0, 10);
             Page<UserEntity> userPage = new PageImpl<>(List.of(testUser), pageable, 1);
-            when(userRepository.findAllByActiveTrue(pageable)).thenReturn(userPage);
+            when(userRepository.findUsersWithFilterAndSearch("all", null, pageable)).thenReturn(userPage);
 
             // Act
-            Page<AdminUserResponseDTO> result = adminService.getAllUsers("all", pageable);
+            Page<AdminUserResponseDTO> result = adminService.getAllUsers("all", null, pageable);
 
             // Assert
             assertThat(result).isNotNull();
             assertThat(result.getTotalElements()).isEqualTo(1);
             assertThat(result.getContent().get(0).username()).isEqualTo("admin_test");
-            verify(userRepository, times(1)).findAllByActiveTrue(pageable);
+            verify(userRepository, times(1)).findUsersWithFilterAndSearch("all", null, pageable);
         }
 
         @Test
-        @DisplayName("Should return paginated members when filter is 'members'")
-        void getAllUsers_MembersFilter_CallsFindAllActiveMembers() {
+        @DisplayName("Should return paginated filtered users when filter is 'members' and search keyword is provided")
+        void getAllUsers_WithFilterAndSearch_CallsRepositoryWithParameters() {
             // Arrange
             Pageable pageable = PageRequest.of(0, 10);
             Page<UserEntity> userPage = new PageImpl<>(List.of(testUser), pageable, 1);
-            when(userRepository.findAllActiveMembers(pageable)).thenReturn(userPage);
+            when(userRepository.findUsersWithFilterAndSearch("members", "admin", pageable)).thenReturn(userPage);
 
             // Act
-            Page<AdminUserResponseDTO> result = adminService.getAllUsers("members", pageable);
+            Page<AdminUserResponseDTO> result = adminService.getAllUsers("members", "admin", pageable);
 
             // Assert
             assertThat(result).isNotNull();
-            verify(userRepository, times(1)).findAllActiveMembers(pageable);
+            assertThat(result.getContent().get(0).username()).isEqualTo("admin_test");
+            verify(userRepository, times(1)).findUsersWithFilterAndSearch("members", "admin", pageable);
         }
 
         @Test
-        @DisplayName("Should return paginated guests when filter is 'guests'")
-        void getAllUsers_GuestsFilter_CallsFindAllActiveGuests() {
+        @DisplayName("Should trim and normalize blank search queries to null")
+        void getAllUsers_BlankSearch_NormalizesToNull() {
             // Arrange
             Pageable pageable = PageRequest.of(0, 10);
             Page<UserEntity> userPage = new PageImpl<>(List.of(testUser), pageable, 1);
-            when(userRepository.findAllActiveGuests(pageable)).thenReturn(userPage);
+            when(userRepository.findUsersWithFilterAndSearch("guests", null, pageable)).thenReturn(userPage);
 
             // Act
-            Page<AdminUserResponseDTO> result = adminService.getAllUsers("guests", pageable);
+            Page<AdminUserResponseDTO> result = adminService.getAllUsers("guests", "   ", pageable);
 
             // Assert
             assertThat(result).isNotNull();
-            verify(userRepository, times(1)).findAllActiveGuests(pageable);
+            verify(userRepository, times(1)).findUsersWithFilterAndSearch("guests", null, pageable);
         }
     }
 

@@ -55,6 +55,9 @@ public class UserEntity {
     @Builder.Default
     private boolean active = true;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
     private LocalDateTime createdAt;
 
     public int getTotalGames() {

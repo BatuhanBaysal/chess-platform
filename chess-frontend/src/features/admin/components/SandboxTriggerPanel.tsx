@@ -40,7 +40,7 @@ export default function SandboxTriggerPanel({ onGameTriggered }: SandboxTriggerP
                 </h2>
             </div>
             <p className="text-xs text-slate-500 font-medium mb-5">
-                Simulate match deployment between two user accounts to verify event bus and socket listeners.
+                Simulate a test match between two user accounts to verify event bus and socket listeners.
             </p>
             
             <form onSubmit={handleTriggerSandbox} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
@@ -76,7 +76,7 @@ export default function SandboxTriggerPanel({ onGameTriggered }: SandboxTriggerP
                     className="min-h-11 px-5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                 >
                     {sandboxLoading ? <Loader2 size={16} className="animate-spin" /> : <Play size={15} />}
-                    <span>Deploy Match</span>
+                    <span>Create Test Match</span>
                 </button>
             </form>
 

@@ -22,6 +22,8 @@ interface MatchInfoPanelProps {
   isMyTurn?: boolean;
   whitePlayerName?: string;
   blackPlayerName?: string;
+  whiteAvatarUrl?: string | null;
+  blackAvatarUrl?: string | null;
   game?: any;
 }
 
@@ -30,7 +32,8 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
   whiteCaptured, blackCaptured, pieceImages, formatTime, onDismissGame,
   score = 0, evaluationType = 'CP', hintData, isHintLoading, onGetHint,
   isMyTurn = true,
-  whitePlayerName, blackPlayerName, game
+  whitePlayerName, blackPlayerName,
+  whiteAvatarUrl, blackAvatarUrl, game
 }) => {
   const isWhiteTurn = currentTurn?.toUpperCase() === 'WHITE';
   const isBlackTurn = currentTurn?.toUpperCase() === 'BLACK';
@@ -144,16 +147,34 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
   const topPlayerLabel = isWhiteOrientation ? resolvedBlackName : resolvedWhiteName;
   const isTopTurn = isWhiteOrientation ? isBlackTurn : isWhiteTurn;
   const topCaptured = isWhiteOrientation ? blackCaptured : whiteCaptured;
-  const isTopAi = isAiMatch && (isWhiteOrientation ? (game?.blackId === -1 || game?.blackPlayerId === -1) : (game?.whiteId === -1 || game?.whitePlayerId === -1));
+  
+  const isTopAi = isAiMatch && (isWhiteOrientation 
+    ? (game?.blackId === -1 || game?.blackPlayerId === -1 || topPlayerLabel.toLowerCase().includes('stockfish') || topPlayerLabel.toLowerCase().includes('bot'))
+    : (game?.whiteId === -1 || game?.whitePlayerId === -1 || topPlayerLabel.toLowerCase().includes('stockfish') || topPlayerLabel.toLowerCase().includes('bot')));
+  
   const topInitial = isTopAi ? 'AI' : (topPlayerLabel.charAt(0) || (topColor === 'WHITE' ? 'W' : 'B')).toUpperCase();
+  const isTopGuest = topPlayerLabel.toLowerCase().startsWith('guest') || topPlayerLabel === 'White Player' || topPlayerLabel === 'Black Player';
+  
+  const topAvatarSrc = isWhiteOrientation 
+    ? (blackAvatarUrl || (game as any)?.blackAvatarUrl || (!isTopAi && !isTopGuest ? `/api/users/${topPlayerLabel}/avatar` : null))
+    : (whiteAvatarUrl || (game as any)?.whiteAvatarUrl || (!isTopAi && !isTopGuest ? `/api/users/${topPlayerLabel}/avatar` : null));
 
   const bottomColor = isWhiteOrientation ? 'WHITE' : 'BLACK';
   const bottomTime = isWhiteOrientation ? (whiteRemainingTimeMs || 0) : (blackRemainingTimeMs || 0);
   const bottomPlayerLabel = isWhiteOrientation ? resolvedWhiteName : resolvedBlackName;
   const isBottomTurn = isWhiteOrientation ? isWhiteTurn : isBlackTurn;
   const bottomCaptured = isWhiteOrientation ? whiteCaptured : blackCaptured;
-  const isBottomAi = isAiMatch && (!isWhiteOrientation ? (game?.blackId === -1 || game?.blackPlayerId === -1) : (game?.whiteId === -1 || game?.whitePlayerId === -1));
+
+  const isBottomAi = isAiMatch && (!isWhiteOrientation 
+    ? (game?.blackId === -1 || game?.blackPlayerId === -1 || bottomPlayerLabel.toLowerCase().includes('stockfish') || bottomPlayerLabel.toLowerCase().includes('bot'))
+    : (game?.whiteId === -1 || game?.whitePlayerId === -1 || bottomPlayerLabel.toLowerCase().includes('stockfish') || bottomPlayerLabel.toLowerCase().includes('bot')));
+
   const bottomInitial = isBottomAi ? 'AI' : (bottomPlayerLabel.charAt(0) || (bottomColor === 'WHITE' ? 'W' : 'B')).toUpperCase();
+  const isBottomGuest = bottomPlayerLabel.toLowerCase().startsWith('guest') || bottomPlayerLabel === 'White Player' || bottomPlayerLabel === 'Black Player';
+
+  const bottomAvatarSrc = isWhiteOrientation 
+    ? (whiteAvatarUrl || (game as any)?.whiteAvatarUrl || (!isBottomAi && !isBottomGuest ? `/api/users/${bottomPlayerLabel}/avatar` : null))
+    : (blackAvatarUrl || (game as any)?.blackAvatarUrl || (!isBottomAi && !isBottomGuest ? `/api/users/${bottomPlayerLabel}/avatar` : null));
 
   const getPlayerStyle = (isTurn: boolean, playerColor: 'WHITE' | 'BLACK') => {
     if (playerColor === 'WHITE') {
@@ -193,8 +214,24 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
       {/* Top Player Details */}
       <div className="flex items-center justify-between gap-2 w-full flex-none">
         <div className="flex items-center gap-2 pl-1 pr-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 shadow-xs min-w-0">
-          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0 ${isTopAi ? 'bg-amber-600' : topColor === 'WHITE' ? 'bg-blue-600' : 'bg-rose-600'}`}>
-            {isTopAi ? <Bot size={13} /> : topInitial}
+          <div className={`relative w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0 overflow-hidden ${isTopAi ? 'bg-amber-600' : topColor === 'WHITE' ? 'bg-blue-600' : 'bg-rose-600'}`}>
+            {isTopAi ? (
+              <Bot size={13} />
+            ) : (
+              <>
+                {topAvatarSrc && (
+                  <img 
+                    src={topAvatarSrc} 
+                    alt={topPlayerLabel} 
+                    className="w-full h-full object-cover z-10" 
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                )}
+                <span className="absolute z-0">{topInitial}</span>
+              </>
+            )}
           </div>
           <span className="text-[11px] font-black uppercase tracking-wider text-slate-900 dark:text-slate-200 truncate max-w-28 sm:max-w-32">
             {topPlayerLabel}
@@ -288,8 +325,24 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
       {/* Bottom Player Details */}
       <div className="flex items-center justify-between gap-2 w-full flex-none">
         <div className="flex items-center gap-2 pl-1 pr-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 shadow-xs min-w-0">
-          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0 ${isBottomAi ? 'bg-amber-600' : bottomColor === 'WHITE' ? 'bg-blue-600' : 'bg-rose-600'}`}>
-            {isBottomAi ? <Bot size={13} /> : bottomInitial}
+          <div className={`relative w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0 overflow-hidden ${isBottomAi ? 'bg-amber-600' : bottomColor === 'WHITE' ? 'bg-blue-600' : 'bg-rose-600'}`}>
+            {isBottomAi ? (
+              <Bot size={13} />
+            ) : (
+              <>
+                {bottomAvatarSrc && (
+                  <img 
+                    src={bottomAvatarSrc} 
+                    alt={bottomPlayerLabel} 
+                    className="w-full h-full object-cover z-10" 
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                )}
+                <span className="absolute z-0">{bottomInitial}</span>
+              </>
+            )}
           </div>
           <span className="text-[11px] font-black uppercase tracking-wider text-slate-900 dark:text-slate-200 truncate max-w-28 sm:max-w-32">
             {bottomPlayerLabel}

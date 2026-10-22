@@ -26,6 +26,7 @@ public class S3Config {
 
         S3Configuration serviceConfiguration = S3Configuration.builder()
             .pathStyleAccessEnabled(s3Properties.isPathStyleAccessEnabled())
+            .chunkedEncodingEnabled(false)
             .build();
 
         return S3Client.builder()

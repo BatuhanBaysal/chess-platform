@@ -34,19 +34,13 @@ public class AdminService {
     private final Keycloak keycloak;
 
     @Transactional(readOnly = true)
-    public Page<AdminUserResponseDTO> getAllUsers(String filter, Pageable pageable) {
-        log.info("Admin Service: Fetching paginated active users (Filter: {}, Page: {}, Size: {})",
-            filter, pageable.getPageNumber(), pageable.getPageSize());
+    public Page<AdminUserResponseDTO> getAllUsers(String filter, String search, Pageable pageable) {
+        log.info("Admin Service: Fetching paginated active users (Filter: {}, Search: {}, Page: {}, Size: {})",
+            filter, search, pageable.getPageNumber(), pageable.getPageSize());
 
-        Page<UserEntity> userPage;
-        if ("members".equalsIgnoreCase(filter)) {
-            userPage = userRepository.findAllActiveMembers(pageable);
-        } else if ("guests".equalsIgnoreCase(filter)) {
-            userPage = userRepository.findAllActiveGuests(pageable);
-        } else {
-            userPage = userRepository.findAllByActiveTrue(pageable);
-        }
-
+        String normalizedFilter = (filter == null || filter.isBlank()) ? "all" : filter.toLowerCase();
+        String normalizedSearch = (search == null || search.isBlank()) ? null : search.trim();
+        Page<UserEntity> userPage = userRepository.findUsersWithFilterAndSearch(normalizedFilter, normalizedSearch, pageable);
         return userPage.map(user -> AdminUserResponseDTO.builder()
             .id(user.getId())
             .username(user.getUsername())

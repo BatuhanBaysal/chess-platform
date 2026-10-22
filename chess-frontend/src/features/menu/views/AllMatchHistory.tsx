@@ -1,16 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPlayerHistory } from '../../../api/gameService';
 import type { GameHistory } from '../../../types';
-import { ChevronLeft, ChevronRight, ArrowLeft, Bot, Sword } from 'lucide-react';
+import { ArrowLeft, Bot, Swords, Trophy } from 'lucide-react';
+import Pagination from '../../../components/ui/Pagination';
 
 interface AllMatchHistoryProps {
   userId?: number;
 }
 
+type HistoryTab = 'ranked' | 'ai';
+
 export const AllMatchHistory: React.FC<AllMatchHistoryProps> = ({ userId: propUserId }) => {
   const navigate = useNavigate();
   const [history, setHistory] = useState<GameHistory[]>([]);
+  const [activeTab, setActiveTab] = useState<HistoryTab>('ranked');
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const itemsPerPage = 10;
@@ -26,9 +30,6 @@ export const AllMatchHistory: React.FC<AllMatchHistoryProps> = ({ userId: propUs
       .finally(() => setIsLoading(false));
   }, [effectiveUserId]);
 
-  const totalPages = Math.max(1, Math.ceil(history.length / itemsPerPage));
-  const paginatedHistory = history.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', { 
       year: '2-digit',
@@ -37,10 +38,41 @@ export const AllMatchHistory: React.FC<AllMatchHistoryProps> = ({ userId: propUs
     });
   };
 
+  const isAiMatch = (game: GameHistory) => {
+    const whiteId = Number(game.whitePlayerId);
+    const whiteName = (game.whitePlayerName || '').toLowerCase();
+
+    const isWhite = (effectiveUserId > 0 && whiteId === effectiveUserId) || 
+                    (effectiveUsername !== '' && whiteName === effectiveUsername);
+
+    const rawOpponent = isWhite ? game.blackPlayerName : game.whitePlayerName;
+    const opponentId = isWhite ? game.blackPlayerId : game.whitePlayerId;
+
+    return !rawOpponent || 
+           rawOpponent.trim() === "" || 
+           rawOpponent.toLowerCase().includes('bot') || 
+           rawOpponent.toLowerCase().includes('stockfish') ||
+           opponentId === 0 || 
+           opponentId == null;
+  };
+
+  const rankedMatches = useMemo(() => history.filter(g => !isAiMatch(g)), [history]);
+  const aiMatches = useMemo(() => history.filter(g => isAiMatch(g)), [history]);
+
+  const currentList = activeTab === 'ranked' ? rankedMatches : aiMatches;
+  const totalPages = Math.max(1, Math.ceil(currentList.length / itemsPerPage));
+  const paginatedHistory = currentList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const handleTabChange = (tab: HistoryTab) => {
+    setActiveTab(tab);
+    setCurrentPage(1);
+  };
+
   return (
     <div className="w-full max-w-350 mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 text-slate-900 dark:text-white animate-in fade-in duration-300">
       {/* Return to Dashboard */}
       <button 
+        type="button"
         onClick={() => navigate('/menu')} 
         className="min-h-11 flex items-center gap-2 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors mb-5 uppercase font-black text-xs tracking-widest cursor-pointer"
       >
@@ -50,12 +82,41 @@ export const AllMatchHistory: React.FC<AllMatchHistoryProps> = ({ userId: propUs
       {/* Header */}
       <div className="flex flex-col mb-6 sm:mb-8">
         <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-slate-950 dark:text-white">
-          Combat Archive
+          Match History
         </h1>
         <div className="h-1.5 w-24 sm:w-32 bg-indigo-600 mt-2 rounded-full" />
       </div>
 
-      {/* Responsive Container */}
+      {/* Tab Selectors */}
+      <div className="flex flex-wrap gap-2 mb-6 p-1.5 bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl w-full sm:w-fit">
+        <button
+          type="button"
+          onClick={() => handleTabChange('ranked')}
+          className={`min-h-11 px-4 sm:px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'ranked'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white'
+          }`}
+        >
+          <Swords size={16} />
+          <span>Ranked (PvP) ({rankedMatches.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleTabChange('ai')}
+          className={`min-h-11 px-4 sm:px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'ai'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white'
+          }`}
+        >
+          <Bot size={16} />
+          <span>AI Practice ({aiMatches.length})</span>
+        </button>
+      </div>
+
+      {/* Table Container */}
       <div className="bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 rounded-3xl overflow-hidden shadow-lg shadow-slate-950/5 dark:shadow-slate-950/30">
         <div className="w-full overflow-hidden">
           <table className="w-full text-left border-collapse table-fixed sm:table-auto">
@@ -63,7 +124,7 @@ export const AllMatchHistory: React.FC<AllMatchHistoryProps> = ({ userId: propUs
               <tr className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800/80">
                 <th className="py-4 px-4 sm:px-6">Opponent</th>
                 <th className="py-4 px-3 sm:px-6 text-center w-28 sm:w-auto">Outcome</th>
-                <th className="hidden md:table-cell py-4 px-6 text-center">Tactical End</th>
+                <th className="hidden md:table-cell py-4 px-6 text-center">Result Type</th>
                 <th className="hidden sm:table-cell py-4 px-6 text-center">Date</th>
                 <th className="hidden lg:table-cell py-4 px-8 text-right">Match ID</th>
               </tr>
@@ -93,7 +154,8 @@ export const AllMatchHistory: React.FC<AllMatchHistoryProps> = ({ userId: propUs
 
                   const opponent = isBot ? "Stockfish AI" : rawOpponent;
                   const opponentInitial = (opponent.charAt(0) || 'U').toUpperCase();
-                  const allianceText = isWhite ? 'Black Alliance' : 'White Alliance';
+                  const isGuestOpponent = opponent.toLowerCase().startsWith('guest');
+                  const playerRoleText = isWhite ? 'Playing Black' : 'Playing White';
 
                   const resultStr = String(game.result || '').toUpperCase();
                   const statusStr = String((game as any).status || '').toUpperCase();
@@ -158,8 +220,18 @@ export const AllMatchHistory: React.FC<AllMatchHistoryProps> = ({ userId: propUs
                               <Bot size={18} />
                             </div>
                           ) : (
-                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs sm:text-sm font-black shrink-0 shadow-2xs">
-                              {opponentInitial}
+                            <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs sm:text-sm font-black shrink-0 overflow-hidden shadow-2xs">
+                              {!isGuestOpponent && (
+                                <img 
+                                  src={`/api/users/${opponent}/avatar`} 
+                                  alt={opponent} 
+                                  className="w-full h-full object-cover z-10"
+                                  onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).style.display = 'none';
+                                  }}
+                                />
+                              )}
+                              <span className="absolute z-0">{opponentInitial}</span>
                             </div>
                           )}
                           <div className="min-w-0">
@@ -174,7 +246,7 @@ export const AllMatchHistory: React.FC<AllMatchHistoryProps> = ({ userId: propUs
                               )}
                             </div>
                             <p className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase mt-0.5 truncate">
-                              {allianceText}
+                              {playerRoleText}
                             </p>
                           </div>
                         </div>
@@ -211,11 +283,32 @@ export const AllMatchHistory: React.FC<AllMatchHistoryProps> = ({ userId: propUs
                 </tr>
               ) : (
                 <tr>
-                  <td colSpan={5} className="py-28 text-center text-slate-400">
-                    <div className="flex flex-col items-center gap-2">
-                      <Sword size={40} className="opacity-30" />
-                      <span className="text-xs font-black uppercase tracking-widest">No combat data found in archives</span>
-                    </div>
+                  <td colSpan={5} className="py-24 text-center">
+                    {activeTab === 'ranked' ? (
+                      <div className="flex flex-col items-center justify-center gap-3 text-slate-500 max-w-sm mx-auto">
+                        <div className="w-16 h-16 rounded-3xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-xs">
+                          <Trophy size={32} />
+                        </div>
+                        <h3 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                          No Ranked Matches Yet
+                        </h3>
+                        <p className="text-xs text-slate-500 leading-relaxed font-medium">
+                          Find an online opponent in matchmaking to play rated matches and earn ELO rating points.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center gap-3 text-slate-500 max-w-sm mx-auto">
+                        <div className="w-16 h-16 rounded-3xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 flex items-center justify-center text-purple-600 dark:text-purple-400 shadow-xs">
+                          <Bot size={32} />
+                        </div>
+                        <h3 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                          No AI Matches Recorded
+                        </h3>
+                        <p className="text-xs text-slate-500 leading-relaxed font-medium">
+                          Challenge Stockfish AI engine to practice strategies and improve your tactics risk-free.
+                        </p>
+                      </div>
+                    )}
                   </td>
                 </tr>
               )}
@@ -224,33 +317,20 @@ export const AllMatchHistory: React.FC<AllMatchHistoryProps> = ({ userId: propUs
         </div>
       </div>
 
-      {/* Combat Archive Telemetry Notice */}
+      {/* Notice */}
       <div className="flex items-center gap-2 mt-4 text-[11px] font-medium text-slate-500 dark:text-slate-400 px-1">
         <Bot size={14} className="text-indigo-500 shrink-0" />
-        <span>AI matches are unrated practice encounters and do not impact your ELO rating.</span>
+        <span>AI practice matches do not impact your ELO rating.</span>
       </div>
 
-      {/* Pagination Controls */}
-      <div className="flex justify-center items-center gap-3 sm:gap-4 mt-7 sm:mt-8">
-        <button 
-          disabled={currentPage === 1 || isLoading} 
-          onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
-          className="min-h-11 min-w-11 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed transition-colors flex items-center justify-center"
-          aria-label="Previous Page"
-        >
-          <ChevronLeft size={20} />
-        </button>
-        <span className="min-h-11 flex items-center text-xs sm:text-sm font-black uppercase tracking-wider bg-white dark:bg-slate-900 px-5 sm:px-7 rounded-xl border border-slate-200 dark:border-slate-800">
-          Page {currentPage} of {totalPages}
-        </span>
-        <button 
-          disabled={currentPage >= totalPages || isLoading} 
-          onClick={() => setCurrentPage(p => p + 1)} 
-          className="min-h-11 min-w-11 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed transition-colors flex items-center justify-center"
-          aria-label="Next Page"
-        >
-          <ChevronRight size={20} />
-        </button>
+      {/* Universal Dynamic Sliding Pagination */}
+      <div className="mt-8">
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          disabled={isLoading}
+        />
       </div>
     </div>
   );

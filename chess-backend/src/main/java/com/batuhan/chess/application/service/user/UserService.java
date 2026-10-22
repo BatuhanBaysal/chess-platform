@@ -43,6 +43,21 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class UserService {
 
+    private static final String REALM = "chess-realm";
+    private static final String IMAGE_WEBP = "image/webp";
+    private static final String EXTENSION_WEBP = ".webp";
+    private static final String EXTENSION_PNG = ".png";
+    private static final String EXTENSION_JPG = ".jpg";
+    private static final String EXTENSION_JPEG = ".jpeg";
+    private static final String AVATARS_DIRECTORY = "avatars/";
+
+    private static final String[] SUPPORTED_EXTENSIONS = {
+        EXTENSION_WEBP,
+        EXTENSION_PNG,
+        EXTENSION_JPG,
+        EXTENSION_JPEG
+    };
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final FileStoragePort fileStoragePort;
@@ -57,8 +72,6 @@ public class UserService {
 
     @Value("${keycloak.guest-client-secret:}")
     private String guestClientSecret;
-
-    private static final String REALM = "chess-realm";
 
     public UserEntity getCurrentUserEntity() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -104,6 +117,7 @@ public class UserService {
             .totalLosses(user.getTotalLosses())
             .totalDraws(user.getTotalDraws())
             .role(user.getRole())
+            .avatarUrl(user.getAvatarUrl())
             .build();
     }
 
@@ -120,6 +134,7 @@ public class UserService {
                 .totalDraws(user.getTotalDraws())
                 .totalGames(user.getTotalGames())
                 .role(user.getRole())
+                .avatarUrl(user.getAvatarUrl())
                 .build())
             .toList();
     }
@@ -134,6 +149,7 @@ public class UserService {
                 .totalLosses(user.getTotalLosses())
                 .totalDraws(user.getTotalDraws())
                 .totalGames(user.getTotalGames())
+                .avatarUrl(user.getAvatarUrl())
                 .build());
     }
 
@@ -199,23 +215,44 @@ public class UserService {
         return null;
     }
 
+    @Transactional
+    @CacheEvict(value = "users", allEntries = true)
     public AvatarUploadResponse uploadAvatar(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Avatar file cannot be empty");
         }
 
         String contentType = file.getContentType();
-        if (contentType == null || (!contentType.equals(MediaType.IMAGE_PNG_VALUE) && !contentType.equals(MediaType.IMAGE_JPEG_VALUE))) {
-            throw new IllegalArgumentException("Only PNG and JPEG formats are supported");
+        if (contentType == null) {
+            throw new IllegalArgumentException("Invalid file content type");
+        }
+
+        contentType = contentType.toLowerCase();
+        boolean isValidFormat = contentType.equals(MediaType.IMAGE_PNG_VALUE)
+            || contentType.equals(MediaType.IMAGE_JPEG_VALUE)
+            || contentType.equals(IMAGE_WEBP);
+
+        if (!isValidFormat) {
+            throw new IllegalArgumentException("Only PNG, JPEG, and WEBP formats are supported");
         }
 
         if (file.getSize() > 2 * 1024 * 1024) {
             throw new IllegalArgumentException("Avatar size must not exceed 2MB");
         }
 
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        String extension = contentType.equals(MediaType.IMAGE_PNG_VALUE) ? ".png" : ".jpg";
-        String storageKey = "avatars/" + username + extension;
+        UserEntity user = getCurrentUserEntity();
+        String username = user.getUsername();
+
+        cleanExistingAvatarFiles(username);
+
+        String extension = EXTENSION_JPG;
+        if (contentType.equals(MediaType.IMAGE_PNG_VALUE)) {
+            extension = EXTENSION_PNG;
+        } else if (contentType.equals(IMAGE_WEBP)) {
+            extension = EXTENSION_WEBP;
+        }
+
+        String storageKey = AVATARS_DIRECTORY + username + extension;
 
         try {
             fileStoragePort.uploadFile(storageKey, file.getInputStream(), file.getSize(), contentType);
@@ -223,20 +260,59 @@ public class UserService {
             throw new RuntimeException("Failed to read avatar file stream", e);
         }
 
-        return new AvatarUploadResponse("/api/users/" + username + "/avatar", "Avatar uploaded successfully");
+        String avatarUrl = "/api/users/" + username + "/avatar";
+        user.setAvatarUrl(avatarUrl);
+        userRepository.save(user);
+
+        return new AvatarUploadResponse(avatarUrl, "Avatar uploaded successfully");
+    }
+
+    @Transactional
+    @CacheEvict(value = "users", allEntries = true)
+    public void deleteAvatar() {
+        UserEntity user = getCurrentUserEntity();
+        cleanExistingAvatarFiles(user.getUsername());
+        user.setAvatarUrl(null);
+        userRepository.save(user);
+        log.info("USER_ACTION: Avatar successfully removed for user: {}", user.getUsername());
+    }
+
+    private void cleanExistingAvatarFiles(String username) {
+        for (String ext : SUPPORTED_EXTENSIONS) {
+            String key = AVATARS_DIRECTORY + username + ext;
+            if (fileStoragePort.doesFileExist(key)) {
+                try {
+                    fileStoragePort.deleteFile(key);
+                } catch (Exception e) {
+                    log.warn("Failed to delete existing avatar key [{}]: {}", key, e.getMessage());
+                }
+            }
+        }
     }
 
     public FileDownloadDTO getAvatar(String username) {
-        String baseKey = "avatars/" + username;
-        String key = fileStoragePort.doesFileExist(baseKey + ".png") ? baseKey + ".png" : baseKey + ".jpg";
+        String baseKey = AVATARS_DIRECTORY + username;
 
-        if (!fileStoragePort.doesFileExist(key)) {
-            throw new ResourceNotFoundException("Avatar not found for user: " + username);
+        for (String ext : SUPPORTED_EXTENSIONS) {
+            String key = baseKey + ext;
+            if (fileStoragePort.doesFileExist(key)) {
+                byte[] data = fileStoragePort.downloadFile(key);
+                String contentType = resolveAvatarContentType(ext);
+                return new FileDownloadDTO(data, contentType, username + ext);
+            }
         }
 
-        byte[] data = fileStoragePort.downloadFile(key);
-        String contentType = key.endsWith(".png") ? MediaType.IMAGE_PNG_VALUE : MediaType.IMAGE_JPEG_VALUE;
-        return new FileDownloadDTO(data, contentType, username + (key.endsWith(".png") ? ".png" : ".jpg"));
+        throw new ResourceNotFoundException("Avatar not found for user: " + username);
+    }
+
+    private String resolveAvatarContentType(String extension) {
+        if (EXTENSION_PNG.equals(extension)) {
+            return MediaType.IMAGE_PNG_VALUE;
+        }
+        if (EXTENSION_WEBP.equals(extension)) {
+            return IMAGE_WEBP;
+        }
+        return MediaType.IMAGE_JPEG_VALUE;
     }
 
     @Transactional
@@ -285,6 +361,8 @@ public class UserService {
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new GameOperationException("Password verification failed while trying to delete the account.");
         }
+
+        cleanExistingAvatarFiles(user.getUsername());
 
         if (user.getExternalId() != null) {
             try {

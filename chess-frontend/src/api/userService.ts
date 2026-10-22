@@ -71,3 +71,7 @@ export const uploadAvatar = async (file: File): Promise<AvatarUploadResponse> =>
   });
   return response.data;
 };
+
+export const deleteAvatar = async (): Promise<void> => {
+  await api.delete('/api/users/me/avatar');
+};

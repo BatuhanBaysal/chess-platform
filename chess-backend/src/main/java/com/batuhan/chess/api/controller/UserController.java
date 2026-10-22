@@ -100,7 +100,7 @@ public class UserController {
 
     @Operation(
         summary = "Upload user avatar",
-        description = "Uploads profile avatar image (PNG/JPEG, max 2MB) for authenticated user."
+        description = "Uploads profile avatar image (PNG/JPEG/WEBP, max 2MB) for authenticated user."
     )
     @ApiResponse(responseCode = "200", description = "Avatar uploaded successfully")
     @PostMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -110,6 +110,20 @@ public class UserController {
         AvatarUploadResponse response = userService.uploadAvatar(file);
         log.info("USER_ACTION: Avatar successfully uploaded");
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+        summary = "Delete user avatar",
+        description = "Deletes avatar image for authenticated user and reverts to default initial."
+    )
+    @ApiResponse(responseCode = "204", description = "Avatar deleted successfully")
+    @DeleteMapping("/me/avatar")
+    @RateLimiter(name = "profileUpdateLimiter")
+    public ResponseEntity<Void> deleteAvatar() {
+        log.info("USER_ACTION: Avatar deletion requested");
+        userService.deleteAvatar();
+        log.info("USER_ACTION: Avatar successfully deleted");
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(

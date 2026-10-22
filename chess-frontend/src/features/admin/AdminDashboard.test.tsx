@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import AdminDashboard from './AdminDashboard';
@@ -41,18 +41,15 @@ describe('AdminDashboard Component', () => {
   });
 
   it('renders admin control center header and default user management list', async () => {
-    // Arrange
+    // Arrange & Act
     render(
       <MemoryRouter>
         <AdminDashboard />
       </MemoryRouter>
     );
 
-    // Act
-    const controlCenterHeader = screen.getByText(/admin control center/i);
-
     // Assert
-    expect(controlCenterHeader).toBeDefined();
+    expect(screen.getByText(/admin control center/i)).toBeDefined();
     await waitFor(() => {
       expect(screen.getByText('testuser')).toBeDefined();
     });
@@ -70,8 +67,7 @@ describe('AdminDashboard Component', () => {
     });
 
     // Act
-    const sessionsTabButton = screen.getByRole('button', { name: /sessions/i });
-    fireEvent.click(sessionsTabButton);
+    fireEvent.click(screen.getByRole('button', { name: /sessions/i }));
 
     // Assert
     await waitFor(() => {
@@ -91,12 +87,41 @@ describe('AdminDashboard Component', () => {
     });
 
     // Act
-    const logsTabButton = screen.getByRole('button', { name: /logs/i });
-    fireEvent.click(logsTabButton);
+    fireEvent.click(screen.getByRole('button', { name: /logs/i }));
 
     // Assert
     await waitFor(() => {
       expect(screen.getByText('DELETE_USER')).toBeDefined();
+    });
+  });
+
+  it('disables delete button and triggers deletion when confirmed', async () => {
+    // Arrange
+    vi.spyOn(window, 'confirm').mockImplementation(() => true);
+    vi.mocked(adminService.deleteUserAccount).mockImplementation(
+      () => new Promise((resolve) => setTimeout(resolve, 100))
+    );
+
+    render(
+      <MemoryRouter>
+        <AdminDashboard />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('testuser')).toBeDefined();
+    });
+
+    // Act
+    const testUserRow = screen.getByText('testuser').closest('tr')!;
+    const deleteButton = within(testUserRow).getByTitle('Delete User') as HTMLButtonElement;
+    
+    fireEvent.click(deleteButton);
+
+    // Assert
+    expect(deleteButton.disabled).toBe(true);
+    await waitFor(() => {
+      expect(adminService.deleteUserAccount).toHaveBeenCalledWith(2);
     });
   });
 });

@@ -23,6 +23,8 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -49,6 +51,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("User Service Business Logic Tests")
 class UserServiceTest {
 
@@ -289,7 +292,7 @@ class UserServiceTest {
             // Act & Assert
             assertThatThrownBy(() -> userService.uploadAvatar(invalidFile))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Only PNG and JPEG formats are supported");
+                .hasMessage("Only PNG, JPEG, and WEBP formats are supported");
         }
 
         @Test
@@ -308,7 +311,7 @@ class UserServiceTest {
         }
 
         @Test
-        @DisplayName("Should upload avatar successfully when file is valid PNG")
+        @DisplayName("Should upload avatar successfully when file is valid PNG and update user entity")
         void shouldUploadValidAvatarSuccessfully() {
             // Arrange
             MockMultipartFile validFile = new MockMultipartFile(
@@ -316,6 +319,7 @@ class UserServiceTest {
             );
             when(securityContext.getAuthentication()).thenReturn(authentication);
             when(authentication.getName()).thenReturn("batuhan");
+            when(userRepository.findByUsernameAndActiveTrue("batuhan")).thenReturn(Optional.of(testUser));
 
             // Act
             AvatarUploadResponse response = userService.uploadAvatar(validFile);
@@ -323,7 +327,30 @@ class UserServiceTest {
             // Assert
             assertThat(response).isNotNull();
             assertThat(response.avatarUrl()).isEqualTo("/api/users/batuhan/avatar");
+            assertThat(testUser.getAvatarUrl()).isEqualTo("/api/users/batuhan/avatar");
+            verify(userRepository, times(1)).save(testUser);
             verify(fileStoragePort).uploadFile(eq("avatars/batuhan.png"), any(InputStream.class), eq(validFile.getSize()), eq(MediaType.IMAGE_PNG_VALUE));
+        }
+
+        @Test
+        @DisplayName("Should delete avatar successfully and reset avatarUrl")
+        void shouldDeleteAvatarSuccessfully() {
+            // Arrange
+            testUser.setAvatarUrl("/api/users/batuhan/avatar");
+            when(securityContext.getAuthentication()).thenReturn(authentication);
+            when(authentication.getName()).thenReturn("batuhan");
+            when(userRepository.findByUsernameAndActiveTrue("batuhan")).thenReturn(Optional.of(testUser));
+
+            when(fileStoragePort.doesFileExist("avatars/batuhan.webp")).thenReturn(false);
+            when(fileStoragePort.doesFileExist("avatars/batuhan.png")).thenReturn(true);
+
+            // Act
+            userService.deleteAvatar();
+
+            // Assert
+            assertThat(testUser.getAvatarUrl()).isNull();
+            verify(fileStoragePort, times(1)).deleteFile("avatars/batuhan.png");
+            verify(userRepository, times(1)).save(testUser);
         }
 
         @Test
@@ -331,6 +358,7 @@ class UserServiceTest {
         void shouldReturnAvatarWhenFileExists() {
             // Arrange
             byte[] content = "image-binary-payload".getBytes();
+            when(fileStoragePort.doesFileExist("avatars/batuhan.webp")).thenReturn(false);
             when(fileStoragePort.doesFileExist("avatars/batuhan.png")).thenReturn(true);
             when(fileStoragePort.downloadFile("avatars/batuhan.png")).thenReturn(content);
 
@@ -348,8 +376,7 @@ class UserServiceTest {
         @DisplayName("Should throw ResourceNotFoundException when avatar does not exist")
         void shouldThrowExceptionWhenAvatarNotFound() {
             // Arrange
-            when(fileStoragePort.doesFileExist("avatars/unknown.png")).thenReturn(false);
-            when(fileStoragePort.doesFileExist("avatars/unknown.jpg")).thenReturn(false);
+            when(fileStoragePort.doesFileExist(anyString())).thenReturn(false);
 
             // Act & Assert
             assertThatThrownBy(() -> userService.getAvatar("unknown"))

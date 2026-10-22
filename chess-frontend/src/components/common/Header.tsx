@@ -34,6 +34,7 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame, activeGa
 
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [confirmResign, setConfirmResign] = useState(false);
+    const [avatarTimestamp, setAvatarTimestamp] = useState<number>(Date.now());
 
     const isGamePage = Boolean(isInGame) || location.pathname.startsWith('/game');
 
@@ -54,6 +55,18 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame, activeGa
     const isAdmin = normalizedRole.includes('ADMIN') || normalizedRole === 'ROLE_ADMIN';
 
     const userInitial = (currentUsername.charAt(0) || 'U').toUpperCase();
+
+    useEffect(() => {
+        const handleAvatarUpdate = () => {
+            setAvatarTimestamp(Date.now());
+        };
+        window.addEventListener('avatarUpdated', handleAvatarUpdate);
+        return () => window.removeEventListener('avatarUpdated', handleAvatarUpdate);
+    }, []);
+
+    const avatarSrc = currentUsername && !isGuest 
+        ? `/api/users/${currentUsername}/avatar?t=${avatarTimestamp}` 
+        : null;
 
     const isSignInActive = location.pathname === '/sign-in' || location.pathname === '/login';
     const isSignUpActive = location.pathname === '/sign-up' || location.pathname === '/register';
@@ -233,7 +246,6 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame, activeGa
 
                 {/* Action Controls */}
                 <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-                    {/* In-Game Action Buttons */}
                     {isGamePage && (
                         <div className="flex items-center gap-1.5 sm:gap-2">
                             <button
@@ -269,7 +281,6 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame, activeGa
                         </div>
                     )}
 
-                    {/* Unauthenticated Nav Buttons */}
                     {!hasActiveSession && !isGamePage && (
                         <div className="hidden sm:flex items-center gap-1.5 sm:gap-2">
                             <Link
@@ -295,11 +306,11 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame, activeGa
                         </div>
                     )}
 
-                    {/* Active User Badge -> Profile Link */}
+                    {/* Active User Badge */}
                     {hasActiveSession && !isGamePage && (
                         isGuest ? (
                             <div className="hidden sm:flex items-center gap-2 pl-2 pr-3 py-1 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 shadow-xs shrink-0 select-none">
-                                <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black">
+                                <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black shrink-0">
                                     {userInitial}
                                 </div>
                                 <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-slate-200 max-w-44 truncate">
@@ -313,8 +324,19 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame, activeGa
                                 className="hidden sm:flex items-center gap-2 pl-2 pr-3 py-1 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:border-indigo-500/40 shadow-xs shrink-0 transition-all cursor-pointer group active:scale-95"
                                 title="Open Profile Settings"
                             >
-                                <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black group-hover:scale-105 transition-transform">
-                                    {userInitial}
+                                <div className="relative w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black overflow-hidden group-hover:scale-105 transition-transform shrink-0">
+                                    {avatarSrc && (
+                                        <img 
+                                            key={avatarSrc}
+                                            src={avatarSrc} 
+                                            alt={currentUsername} 
+                                            className="w-full h-full object-cover z-10" 
+                                            onError={(e) => {
+                                                (e.currentTarget as HTMLImageElement).style.display = 'none';
+                                            }}
+                                        />
+                                    )}
+                                    <span className="absolute z-0">{userInitial}</span>
                                 </div>
                                 <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 max-w-44 truncate transition-colors">
                                     {currentUsername}
@@ -385,8 +407,19 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame, activeGa
                                     className="flex items-center gap-2.5 min-w-0 group cursor-pointer"
                                     title="Open Profile Settings"
                                 >
-                                    <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-black shrink-0 group-hover:scale-105 transition-transform">
-                                        {userInitial}
+                                    <div className="relative w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-black overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
+                                        {avatarSrc && (
+                                            <img 
+                                                key={avatarSrc}
+                                                src={avatarSrc} 
+                                                alt={currentUsername} 
+                                                className="w-full h-full object-cover z-10" 
+                                                onError={(e) => {
+                                                    (e.currentTarget as HTMLImageElement).style.display = 'none';
+                                                }}
+                                            />
+                                        )}
+                                        <span className="absolute z-0">{userInitial}</span>
                                     </div>
                                     <div className="min-w-0">
                                         <div className="text-xs font-black uppercase text-slate-950 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 truncate transition-colors">

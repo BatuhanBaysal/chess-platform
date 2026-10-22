@@ -65,8 +65,16 @@ export const GlobalLeaderboard: React.FC = () => {
                                     <div className="flex items-center justify-center shrink-0">
                                         <Trophy size={22} className={getTrophyColor(index)} />
                                     </div>
-                                    <div className="w-11 h-11 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-black shrink-0 shadow-xs">
-                                        {userInitial}
+                                    <div className="w-11 h-11 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-black shrink-0 shadow-xs overflow-hidden">
+                                        {user.avatarUrl ? (
+                                            <img 
+                                                src={user.avatarUrl} 
+                                                alt={user.username} 
+                                                className="w-full h-full object-cover" 
+                                            />
+                                        ) : (
+                                            userInitial
+                                        )}
                                     </div>
                                     <div className="min-w-0 flex flex-col">
                                         <span className="font-black text-base sm:text-lg text-slate-950 dark:text-white truncate">

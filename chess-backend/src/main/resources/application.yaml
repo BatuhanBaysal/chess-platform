@@ -1,6 +1,10 @@
 spring:
     application:
         name: chess-backend
+    servlet:
+        multipart:
+            max-file-size: 2MB
+            max-request-size: 2MB
     security:
         oauth2:
             resourceserver:

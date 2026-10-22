@@ -25,6 +25,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -58,8 +60,8 @@ class AdminControllerTest {
 
         @Test
         @WithMockUser(roles = "ADMIN")
-        @DisplayName("Should return 200 OK with paginated users when admin requests")
-        void getAllUsers_ValidRequest_ReturnsOk() throws Exception {
+        @DisplayName("Should return 200 OK with paginated users when admin requests without search")
+        void getAllUsers_ValidRequestWithoutSearch_ReturnsOk() throws Exception {
             // Arrange
             AdminUserResponseDTO userDTO = AdminUserResponseDTO.builder()
                 .id(1L)
@@ -70,7 +72,7 @@ class AdminControllerTest {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-            when(adminService.getAllUsers(anyString(), any(Pageable.class)))
+            when(adminService.getAllUsers(anyString(), any(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(userDTO), PageRequest.of(0, 10), 1));
 
             // Act & Assert
@@ -78,7 +80,34 @@ class AdminControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].username").value("admin_test"));
 
-            verify(adminService, times(1)).getAllUsers(eq("all"), any(Pageable.class));
+            verify(adminService, times(1)).getAllUsers(eq("all"), isNull(), any(Pageable.class));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        @DisplayName("Should return 200 OK with filtered users when search keyword is provided")
+        void getAllUsers_WithSearchQuery_ReturnsFilteredUsers() throws Exception {
+            // Arrange
+            AdminUserResponseDTO userDTO = AdminUserResponseDTO.builder()
+                .id(2L)
+                .username("batuhan")
+                .email("batuhan@test.com")
+                .eloRating(1600)
+                .role(UserRole.ROLE_USER)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+            when(adminService.getAllUsers(eq("members"), eq("batuhan"), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(userDTO), PageRequest.of(0, 10), 1));
+
+            // Act & Assert
+            mockMvc.perform(get("/api/admin/users")
+                    .param("filter", "members")
+                    .param("search", "batuhan"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].username").value("batuhan"));
+
+            verify(adminService, times(1)).getAllUsers(eq("members"), eq("batuhan"), any(Pageable.class));
         }
     }
 

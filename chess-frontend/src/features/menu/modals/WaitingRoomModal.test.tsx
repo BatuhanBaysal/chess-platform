@@ -28,19 +28,24 @@ describe('WaitingRoomModal', () => {
   });
 
   it('should render modal content, room ID, and match telemetry when waitingRoomId is provided', () => {
-    // Arrange
     const props = { ...defaultProps };
-
-    // Act
     render(<WaitingRoomModal {...props} />);
 
-    // Assert
     expect(screen.getByRole('heading', { name: /SEARCHING OPPONENT/i })).toBeDefined();
     expect(screen.getByText(/ROOM-1234/i)).toBeDefined();
     expect(screen.getByText(/RATED MATCH • DYNAMIC ELO/i)).toBeDefined();
     expect(screen.getByText(/10 MIN/i)).toBeDefined();
     expect(screen.getByText(/MODERN/i)).toBeDefined();
-    expect(screen.getByRole('button', { name: /CANCEL DEPLOYMENT/i })).toBeDefined();
+    expect(screen.getByRole('button', { name: /CANCEL MATCHMAKING/i })).toBeDefined();
+  });
+
+  it('should trigger onCancel when clicking the Cancel Matchmaking button', () => {
+    render(<WaitingRoomModal {...defaultProps} />);
+    const cancelBtn = screen.getByRole('button', { name: /CANCEL MATCHMAKING/i });
+
+    fireEvent.click(cancelBtn);
+
+    expect(defaultProps.onCancel).toHaveBeenCalledTimes(1);
   });
 
   it('should lock document body and html scroll when mounted and restore on unmount', () => {
@@ -65,7 +70,7 @@ describe('WaitingRoomModal', () => {
   it('should trigger onCancel when clicking the Cancel Deployment button', () => {
     // Arrange
     render(<WaitingRoomModal {...defaultProps} />);
-    const cancelBtn = screen.getByRole('button', { name: /CANCEL DEPLOYMENT/i });
+    const cancelBtn = screen.getByRole('button', { name: /Cancel Matchmaking/i });
 
     // Act
     fireEvent.click(cancelBtn);

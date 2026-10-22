@@ -36,10 +36,21 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
-## [2.6.0] - 2026-10-20
+## [2.6.0] - 2026-10-22
 
 ### 💎 Phase v2.6.0: Final Polish, Strict Typing, Admin Control & Player Identity 🚀
 > **Note:** Finalizing production readiness by enforcing compile-time type contracts, isolating AI engine state lifecycles, refining authentication and role-based access, polishing player identity systems, and delivering administrative control capabilities.
+
+- **2026-10-22:**
+    - **Auth Visual Redesign, Plain Terminology, Avatar Media CRUD, Tabbed History & Sliding Pagination (PR #199 | Issue #198):**
+        - **Auth Visual Identity & Themed Background Motifs:** Introduced 3 atmospheric tactical chess visual themes across onboarding workflows (Tactical Security Card for Sign In, Dynamic Competition Motif for Sign Up, and Grandmaster Initiation Artwork for Account Creation), resolving sterile dark cards while preserving responsive dual-column alignment.
+        - **Universal Action Loading & Button Feedback:** Equipped all primary asynchronous CTA buttons across the platform (Sign In/Up submission, Profile updates, Password changes, Online Match Creation, AI Session trigger, and Admin deletion) with animated loading spinners, interaction disabling during flight, and state recovery upon API rejection.
+        - **Plain Standard Microcopy & Interactive Tooltips:** Completely decommissioned complex sci-fi/military terminology across navigation bars, headers, sidebars, and control centers (`OPERATIVES` ➔ `PLAYERS`, `COMBAT ARCHIVE` ➔ `MATCH HISTORY`, `TACTICAL END` ➔ `RESULT TYPE`, `INITIALIZE MATCH` ➔ `FIND MATCH`, `ROTATE PASSWORD` ➔ `CHANGE PASSWORD`); integrated context tooltips clarifying time formats and ELO mechanics.
+        - **Dashboard Hero Banner & Dynamic Quotes:** Designed `DashboardHeroBanner.tsx` featuring dynamic time-of-day player greetings (`Welcome back, [Username]`), live combat rating badges, a randomized chess grandmaster quote rotation library (`chessQuotes.ts`), and quick-start match triggers.
+        - **Full-Stack Avatar Media CRUD & S3 Storage Architecture:** Added comprehensive user profile photo lifecycle management in `UserService.java`, `UserController.java`, and `S3StorageAdapter.java` backed by S3/MinIO bucket persistence. Enforced strict 2MB constraints, format validation (`image/png`, `image/jpeg`, `image/webp`), and byte-stream chunk upload handling (`RequestBody.fromBytes`); delivered circular preview uploading, confirmation deletion, and multi-extension cleanup with zero-downtime Liquibase column migration (`005-add-avatar-url-column.sql`).
+        - **Cross-Platform Reactive Avatar Synchronization:** Implemented `avatarUpdated` CustomEvent mechanism triggering real-time UI updates (cache-busting timestamping `?t=`) across `Header.tsx`, `ProfileDashboard.tsx`, `GlobalLeaderboard.tsx`, and `MatchHistory.tsx` without page refreshes, paired with automatic initial/fallback rendering upon error (`onError`).
+        - **Tabbed Match History & Universal Sliding Pagination:** Split combat archives in `AllMatchHistory.tsx` into dedicated, query-isolated tabs for `Ranked (PvP)` and `AI Practice` matches featuring bot icons and opponent identity fallbacks; deployed reusable sliding `Pagination.tsx` component with ellipsis boundary locking across User Management, Audit Logs, Leaderboard, and Match History tables.
+        - **Vitest & Playwright Test Suite Fortification:** Expanded frontend test suites to 16 test files (83/83 passing) with AAA coverage for avatar validation, fallback switching, and tabbed filtering; stabilized backend Mockito strictness across `UserServiceStorageTest` and `UserServiceTest`; and verified full multi-browser E2E integrity (78/78 passing across Chromium, Firefox, and WebKit).
 
 - **2026-10-20:**
     - **Admin User Deletion Cascade, Real-Time Session Eviction, Server-Side Filtering & Swagger Security (PR #197 | Issue #195):**

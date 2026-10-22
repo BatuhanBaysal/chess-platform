@@ -23,15 +23,16 @@ public class S3StorageAdapter implements FileStoragePort {
     public String uploadFile(String key, InputStream inputStream, long contentLength, String contentType) {
         try {
             ensureBucketExists();
+            byte[] bytes = inputStream.readAllBytes();
 
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(s3Properties.getBucketName())
                 .key(key)
                 .contentType(contentType)
-                .contentLength(contentLength)
+                .contentLength((long) bytes.length)
                 .build();
 
-            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, contentLength));
+            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(bytes));
             log.info("File successfully uploaded to S3 storage with key: {}", key);
             return key;
         } catch (Exception e) {

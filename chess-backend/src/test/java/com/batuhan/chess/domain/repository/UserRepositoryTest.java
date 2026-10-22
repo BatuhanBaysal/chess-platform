@@ -6,6 +6,7 @@ import com.batuhan.chess.domain.model.user.UserRole;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -55,8 +56,8 @@ class UserRepositoryTest extends AbstractIntegrationTest {
     @DisplayName("Should find active user by username")
     void findByUsernameAndActiveTrue_ReturnsActiveUser() {
         // Arrange
-        persistUser("batuhan", "batuhan@chess.com", true, 1500);
-        persistUser("inactive", "inactive@chess.com", false, 1200);
+        persistUser("batuhan", "batuhan@chess.com", true, 1500, UserRole.ROLE_USER, false);
+        persistUser("inactive", "inactive@chess.com", false, 1200, UserRole.ROLE_USER, false);
 
         // Act
         Optional<UserEntity> found = userRepository.findByUsernameAndActiveTrue("batuhan");
@@ -72,7 +73,7 @@ class UserRepositoryTest extends AbstractIntegrationTest {
     @DisplayName("Should find active user by email")
     void findByEmailAndActiveTrue_ReturnsActiveUser() {
         // Arrange
-        persistUser("batuhan", "batuhan@chess.com", true, 1500);
+        persistUser("batuhan", "batuhan@chess.com", true, 1500, UserRole.ROLE_USER, false);
 
         // Act
         Optional<UserEntity> found = userRepository.findByEmailAndActiveTrue("batuhan@chess.com");
@@ -86,7 +87,7 @@ class UserRepositoryTest extends AbstractIntegrationTest {
     @DisplayName("Should correctly check existence by username and email")
     void existsChecks_ReturnCorrectBooleans() {
         // Arrange
-        persistUser("batuhan", "batuhan@chess.com", true, 1200);
+        persistUser("batuhan", "batuhan@chess.com", true, 1200, UserRole.ROLE_USER, false);
 
         // Act & Assert
         assertThat(userRepository.existsByUsername("batuhan")).isTrue();
@@ -100,9 +101,9 @@ class UserRepositoryTest extends AbstractIntegrationTest {
     @DisplayName("Should return active users ordered by Elo rating descending in a page")
     void findAllByActiveTrueOrderByEloRatingDesc_ReturnsPagedUsers() {
         // Arrange
-        persistUser("user1", "user1@chess.com", true, 1000);
-        persistUser("user2", "user2@chess.com", true, 2000);
-        persistUser("user3", "user3@chess.com", false, 3000);
+        persistUser("user1", "user1@chess.com", true, 1000, UserRole.ROLE_USER, false);
+        persistUser("user2", "user2@chess.com", true, 2000, UserRole.ROLE_USER, false);
+        persistUser("user3", "user3@chess.com", false, 3000, UserRole.ROLE_USER, false);
 
         Pageable pageable = PageRequest.of(0, 10);
 
@@ -119,9 +120,9 @@ class UserRepositoryTest extends AbstractIntegrationTest {
     @DisplayName("Should return top users ordered by Elo rating")
     void findTop3ByOrderByEloRatingDesc_ReturnsLimitedTopUsers() {
         // Arrange
-        persistUser("user1", "user1@chess.com", true, 1100);
-        persistUser("user2", "user2@chess.com", true, 1900);
-        persistUser("user3", "user3@chess.com", true, 1500);
+        persistUser("user1", "user1@chess.com", true, 1100, UserRole.ROLE_USER, false);
+        persistUser("user2", "user2@chess.com", true, 1900, UserRole.ROLE_USER, false);
+        persistUser("user3", "user3@chess.com", true, 1500, UserRole.ROLE_USER, false);
 
         Pageable pageable = PageRequest.of(0, 2);
 
@@ -134,12 +135,90 @@ class UserRepositoryTest extends AbstractIntegrationTest {
         assertThat(topUsers.get(1).getEloRating()).isEqualTo(1500);
     }
 
-    private void persistUser(String username, String email, boolean active, int elo) {
+    @Nested
+    @DisplayName("findUsersWithFilterAndSearch Query Tests")
+    class FindUsersWithFilterAndSearchTests {
+
+        @Test
+        @DisplayName("Should return all active members and guests when filter is 'all' and search is empty")
+        void filterAll_NoSearch_ReturnsAllActive() {
+            // Arrange
+            persistUser("member1", "member1@chess.com", true, 1200, UserRole.ROLE_USER, false);
+            persistUser("guest_1", "guest1@chess.com", true, 1200, UserRole.ROLE_GUEST, true);
+            persistUser("inactive", "inactive@chess.com", false, 1200, UserRole.ROLE_USER, false);
+
+            Pageable pageable = PageRequest.of(0, 10);
+
+            // Act
+            Page<UserEntity> result = userRepository.findUsersWithFilterAndSearch("all", null, pageable);
+
+            // Assert
+            assertThat(result.getTotalElements()).isEqualTo(2);
+            assertThat(result.getContent()).extracting(UserEntity::getUsername)
+                .containsExactlyInAnyOrder("member1", "guest_1");
+        }
+
+        @Test
+        @DisplayName("Should return only active registered members when filter is 'members'")
+        void filterMembers_ReturnsOnlyMembers() {
+            // Arrange
+            persistUser("member1", "member1@chess.com", true, 1200, UserRole.ROLE_USER, false);
+            persistUser("guest_1", "guest1@chess.com", true, 1200, UserRole.ROLE_GUEST, true);
+
+            Pageable pageable = PageRequest.of(0, 10);
+
+            // Act
+            Page<UserEntity> result = userRepository.findUsersWithFilterAndSearch("members", null, pageable);
+
+            // Assert
+            assertThat(result.getTotalElements()).isEqualTo(1);
+            assertThat(result.getContent().get(0).getUsername()).isEqualTo("member1");
+        }
+
+        @Test
+        @DisplayName("Should return only active guest accounts when filter is 'guests'")
+        void filterGuests_ReturnsOnlyGuests() {
+            // Arrange
+            persistUser("member1", "member1@chess.com", true, 1200, UserRole.ROLE_USER, false);
+            persistUser("guest_1", "guest1@chess.com", true, 1200, UserRole.ROLE_GUEST, true);
+
+            Pageable pageable = PageRequest.of(0, 10);
+
+            // Act
+            Page<UserEntity> result = userRepository.findUsersWithFilterAndSearch("guests", null, pageable);
+
+            // Assert
+            assertThat(result.getTotalElements()).isEqualTo(1);
+            assertThat(result.getContent().get(0).getUsername()).isEqualTo("guest_1");
+        }
+
+        @Test
+        @DisplayName("Should filter users case-insensitively by username or email search term")
+        void searchFilter_MatchesUsernameOrEmailCaseInsensitively() {
+            // Arrange
+            persistUser("batuhan", "batu@example.com", true, 1200, UserRole.ROLE_USER, false);
+            persistUser("ahmet", "batuhan_fan@chess.com", true, 1200, UserRole.ROLE_USER, false);
+            persistUser("mehmet", "mehmet@chess.com", true, 1200, UserRole.ROLE_USER, false);
+
+            Pageable pageable = PageRequest.of(0, 10);
+
+            // Act
+            Page<UserEntity> result = userRepository.findUsersWithFilterAndSearch("all", "BATU", pageable);
+
+            // Assert
+            assertThat(result.getTotalElements()).isEqualTo(2);
+            assertThat(result.getContent()).extracting(UserEntity::getUsername)
+                .containsExactlyInAnyOrder("batuhan", "ahmet");
+        }
+    }
+
+    private void persistUser(String username, String email, boolean active, int elo, UserRole role, Boolean isGuest) {
         UserEntity user = UserEntity.builder()
             .username(username)
             .email(email)
             .password("Password123!")
-            .role(UserRole.ROLE_USER)
+            .role(role)
+            .isGuest(isGuest)
             .active(active)
             .eloRating(elo)
             .build();

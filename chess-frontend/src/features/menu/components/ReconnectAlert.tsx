@@ -26,10 +26,11 @@ export const ReconnectAlert: React.FC<ReconnectAlertProps> = ({
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
             </span>
             <span className="text-[11px] font-black uppercase tracking-widest text-slate-900 dark:text-slate-200">
-              Active Match Signal
+              Active Match Found
             </span>
           </div>
           <button
+            type="button"
             onClick={onDismiss}
             className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 cursor-pointer"
             aria-label="Dismiss reconnect notification"
@@ -40,7 +41,7 @@ export const ReconnectAlert: React.FC<ReconnectAlertProps> = ({
 
         {/* Description */}
         <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
-          You have an unfinished game in progress. Re-establish live connection to match <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">#{matchSector}</span>?
+          You have an unfinished game in progress. Reconnect to match <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">#{matchSector}</span>?
         </p>
 
         {/* Action Buttons */}

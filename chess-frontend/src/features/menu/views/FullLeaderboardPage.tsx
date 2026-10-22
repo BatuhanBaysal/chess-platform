@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getFullLeaderboard, type LeaderboardUser } from '../../../api/userService';
-import { ChevronLeft, ChevronRight, Medal, ArrowLeft, Loader2, Trophy } from 'lucide-react';
+import { Medal, ArrowLeft, Loader2, Trophy } from 'lucide-react';
+import Pagination from '../../../components/ui/Pagination';
 
 export const FullLeaderboardPage: React.FC = () => {
     const navigate = useNavigate();
@@ -52,7 +53,7 @@ export const FullLeaderboardPage: React.FC = () => {
         <div className="w-full max-w-350 mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 text-slate-900 dark:text-white animate-in fade-in duration-300">
             {/* Back to Dashboard */}
             <button 
-                onClick={() => navigate('/')} 
+                onClick={() => navigate('/menu')} 
                 className="min-h-11 flex items-center gap-2 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors mb-5 uppercase font-black text-xs tracking-widest cursor-pointer"
             >
                 <ArrowLeft size={16} /> Back to Menu
@@ -111,8 +112,16 @@ export const FullLeaderboardPage: React.FC = () => {
                                             </td>
                                             <td className="py-4 px-3 sm:px-6">
                                                 <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
-                                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs sm:text-sm font-black shrink-0 shadow-xs">
-                                                        {userInitial}
+                                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs sm:text-sm font-black shrink-0 overflow-hidden shadow-xs">
+                                                        {user.avatarUrl ? (
+                                                            <img 
+                                                                src={user.avatarUrl} 
+                                                                alt={user.username} 
+                                                                className="w-full h-full object-cover" 
+                                                            />
+                                                        ) : (
+                                                            userInitial
+                                                        )}
                                                     </div>
                                                     <span className="font-bold text-sm sm:text-base text-slate-950 dark:text-white truncate">
                                                         {user.username}
@@ -153,27 +162,14 @@ export const FullLeaderboardPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Pagination Controls */}
-            <div className="flex justify-center items-center gap-3 sm:gap-4 mt-7 sm:mt-8">
-                <button 
-                    disabled={currentPage === 1 || isLoading} 
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
-                    className="min-h-11 min-w-11 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed transition-colors flex items-center justify-center"
-                    aria-label="Previous Page"
-                >
-                    <ChevronLeft size={20} />
-                </button>
-                <span className="min-h-11 flex items-center text-xs sm:text-sm font-black uppercase tracking-wider bg-white dark:bg-slate-900 px-5 sm:px-7 rounded-xl border border-slate-200 dark:border-slate-800">
-                  Page {currentPage} of {totalPages || 1}
-                </span>
-                <button 
-                    disabled={currentPage >= totalPages || isLoading} 
-                    onClick={() => setCurrentPage(p => p + 1)} 
-                    className="min-h-11 min-w-11 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed transition-colors flex items-center justify-center"
-                    aria-label="Next Page"
-                >
-                    <ChevronRight size={20} />
-                </button>
+            {/* Universal Sliding Pagination */}
+            <div className="mt-8">
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    disabled={isLoading}
+                />
             </div>
         </div>
     );

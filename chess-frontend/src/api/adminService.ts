@@ -18,10 +18,16 @@ export type AdminAuditLogResponseDTO = AuditLogResponse;
 export const getAllUsers = async (
   page: number = 0, 
   size: number = 10,
-  filter: string = 'all'
+  filter: string = 'all',
+  search: string = ''
 ): Promise<PageResponse<AdminUserResponseDTO>> => {
+  const params: Record<string, any> = { page, size, filter };
+  if (search && search.trim() !== '') {
+    params.search = search.trim();
+  }
+
   const response = await api.get<PageResponse<AdminUserResponseDTO>>('/api/admin/users', {
-    params: { page, size, filter }
+    params
   });
   return response.data;
 };

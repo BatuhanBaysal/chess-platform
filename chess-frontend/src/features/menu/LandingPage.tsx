@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import Dashboard from './Dashboard';
@@ -7,6 +7,7 @@ import GlobalLeaderboard from './panels/GlobalLeaderboard';
 import api from '../../api/axios';
 import { getActiveGame, createAiGame } from '../../api/gameService'; 
 import type { GameResponse } from '../../api/gameService';
+import { getMyProfile, type UserResponse } from '../../api/userService';
 
 import { useLobby } from './hooks/useLobby';
 import type { TimeControl } from './hooks/useLobby';
@@ -14,6 +15,7 @@ import { GameSetupPanel } from './panels/GameSetupPanel';
 import { LobbyRoomsList } from './panels/LobbyRoomsList';
 import { AiMatchModal } from './modals/AiMatchModal';
 import { ReconnectAlert } from './components/ReconnectAlert';
+import { DashboardHeroBanner } from './components/DashboardHeroBanner';
 import { WaitingRoomModal } from './modals/WaitingRoomModal';
 import { History } from 'lucide-react';
 
@@ -40,6 +42,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   } = useLobby(user?.id ? String(user.id) : undefined);
 
   const [reconnectGame, setReconnectGame] = useState<GameResponse | null>(null);
+  const [userProfile, setUserProfile] = useState<UserResponse | null>(null);
   const [showAiModal, setShowAiModal] = useState(false);
   const [aiPlayAsWhite, setAiPlayAsWhite] = useState(true);
   const [aiDifficulty, setAiDifficulty] = useState(3);
@@ -59,8 +62,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   }, [selectedTheme]);
 
   useEffect(() => {
-    const checkActiveGame = async () => {
+    const fetchUserData = async () => {
       if (user?.id) {
+        getMyProfile()
+          .then(setUserProfile)
+          .catch((err) => console.error("Banner profile fetch error:", err));
+
         const activeGame = await getActiveGame(Number(user.id));
         if (activeGame && (activeGame.status as string) !== 'CLOSING') {
           const dismissedGames: string[] = JSON.parse(localStorage.getItem('dismissed_games') || '[]');
@@ -81,8 +88,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         }
       }
     };
-    checkActiveGame();
+    fetchUserData();
   }, [user]);
+
+  const totalGames = useMemo(() => {
+    if (!userProfile) return 0;
+    return (userProfile.totalWins || 0) + (userProfile.totalLosses || 0) + (userProfile.totalDraws || 0);
+  }, [userProfile]);
 
   const handleStartGame = useCallback((roomId: string, time?: number, customTheme?: any) => {
     setWaitingRoomId(null);
@@ -209,6 +221,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         />
       )}
 
+      {/* Dashboard Hero Banner */}
+      <DashboardHeroBanner 
+        username={userProfile?.username || user?.username || localStorage.getItem('username') || 'Player'}
+        eloRating={userProfile?.eloRating ?? null}
+        totalGames={totalGames}
+        onQuickMatch={() => {
+          setSelectedTime(10);
+          handleCreateRoom();
+        }}
+        isCreating={isCreating}
+      />
+
       {/* Full-Screen Gated Modals */}
       <WaitingRoomModal 
         waitingRoomId={waitingRoomId}
@@ -232,7 +256,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         isAiLoading={isAiLoading}
       />
 
-      {/* ROW 1: Game Setup & Active Channels */}
+      {/* Game Setup & Active Rooms */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-stretch">
         <div className="lg:col-span-8 flex flex-col h-auto lg:h-full">
           <GameSetupPanel
@@ -253,12 +277,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         </div>
       </div>
 
-      {/* ROW 2: Command Center & Top Players */}
+      {/* Player Dashboard & Top Players */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-stretch">
         <div className="lg:col-span-8 flex flex-col h-auto lg:h-full">
           <div className="bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 rounded-[2.5rem] p-6 sm:p-8 shadow-sm h-full flex flex-col justify-between">
             <h2 className="text-base sm:text-lg font-black uppercase tracking-wider mb-5 text-slate-950 dark:text-white">
-              COMMAND CENTER
+              PLAYER DASHBOARD
             </h2>
             {user && <Dashboard userId={user.id} activeLobbyId={waitingRoomId} />}
           </div>
@@ -270,7 +294,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         </div>
       </div>
 
-      {/* ROW 3: Deployment History & Ecosystem Architecture */}
+      {/* Match History & Ecosystem Architecture */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-stretch">
         <div className="lg:col-span-8 flex flex-col h-auto lg:h-full">
           <div className="bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 rounded-[2.5rem] p-6 sm:p-8 shadow-sm h-full flex flex-col justify-between">
@@ -278,10 +302,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
               <div className="flex items-center gap-2">
                 <History className="text-indigo-600 dark:text-indigo-400" size={18} />
                 <h2 className="text-base sm:text-lg font-black uppercase tracking-wider text-slate-950 dark:text-white">
-                  DEPLOYMENT HISTORY
+                  MATCH HISTORY
                 </h2>
               </div>
               <button 
+                type="button"
                 onClick={() => {
                   window.scrollTo({ top: 0, behavior: 'instant' });
                   navigate('/history');

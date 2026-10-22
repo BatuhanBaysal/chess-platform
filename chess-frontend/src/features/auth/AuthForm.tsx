@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, ShieldCheck, Info } from 'lucide-react';
+import { Eye, EyeOff, ShieldCheck, Info, Loader2 } from 'lucide-react';
 import FormField from '../../components/common/FormField';
 import SignUpSuccessCard from './SignUpSuccessCard';
 
 interface AuthFormProps {
-  onLogin: (username: string, password: string) => void;
+  onLogin: (username: string, password: string) => void | Promise<void>;
   onRegister: (username: string, password: string, email: string) => Promise<void> | void;
+  onSuccessChange?: (isSuccess: boolean) => void;
 }
 
 interface ApiErrorResponse {
@@ -19,7 +20,7 @@ interface ApiErrorResponse {
   message?: string;
 }
 
-export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister }) => {
+export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onSuccessChange }) => {
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -31,6 +32,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister }) => {
   const [errors, setErrors] = useState({ username: '', email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [capsLockOn, setCapsLockOn] = useState(false); 
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const usernameRef = useRef<HTMLInputElement>(null); 
   const emailRef = useRef<HTMLInputElement>(null);
@@ -40,6 +42,10 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister }) => {
   useEffect(() => {
     formDataRef.current = formData;
   }, [formData]);
+
+  useEffect(() => {
+    onSuccessChange?.(success);
+  }, [success, onSuccessChange]);
 
   useEffect(() => {
     if (success) return;
@@ -175,9 +181,10 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateAll()) return;
+    if (!validateAll() || isSubmitting) return;
 
     setErrors({ username: '', email: '', password: '' });
+    setIsSubmitting(true);
 
     try {
       if (isSignUp) {
@@ -206,6 +213,8 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister }) => {
       } else {
         setErrors(prev => ({ ...prev, password: errorMessage }));
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -229,10 +238,10 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister }) => {
       <div>
         {/* Header */}
         <div className="mb-7">
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-950 dark:text-white uppercase">
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white uppercase drop-shadow-sm">
             {isSignUp ? 'SIGN UP' : 'SIGN IN'}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1.5 font-medium">
+          <p className="text-xs sm:text-sm text-slate-300 mt-1.5 font-medium">
             {isSignUp 
               ? 'Create an account to start playing rated matches.' 
               : 'Welcome back. Sign in to access your profile.'}
@@ -305,7 +314,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister }) => {
             />
             
             {capsLockOn && (
-              <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold absolute right-0 -top-1">
+              <p className="text-[11px] text-amber-400 font-bold absolute right-0 -top-1">
                 CAPS LOCK IS ON
               </p>
             )}
@@ -313,7 +322,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister }) => {
             <button 
               type="button" 
               onClick={() => setShowPassword(!showPassword)} 
-              className="absolute right-3.5 top-9.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+              className="absolute right-3.5 top-9.5 text-slate-400 hover:text-white transition-colors cursor-pointer"
               title={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -322,15 +331,15 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister }) => {
             {isSignUp && (
               <div className="mt-1.5 space-y-1">
                 {formData.password ? (
-                  <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
                     <div 
                       className={`h-full transition-all duration-300 ${strengthColors[strength]}`} 
                       style={{ width: `${((strength + 1) / 4) * 100}%` }} 
                     />
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                    <Info size={12} className="shrink-0 text-indigo-500" />
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium">
+                    <Info size={12} className="shrink-0 text-indigo-400" />
                     <span>Min 8 characters, including letters & numbers</span>
                   </div>
                 )}
@@ -339,12 +348,14 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister }) => {
           </div>
         </div>
 
-        {/* Submit Button */}
+        {/* Submit Button with Loading State */}
         <button 
           type="submit" 
-          className="w-full py-3.5 mt-5 bg-slate-950 dark:bg-white text-white dark:text-slate-950 font-black uppercase tracking-widest text-xs rounded-xl hover:opacity-90 active:scale-98 transition-all cursor-pointer shadow-md"
+          disabled={isSubmitting}
+          className="w-full py-3.5 mt-5 bg-white text-slate-950 font-black uppercase tracking-widest text-xs rounded-xl hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed active:scale-98 transition-all cursor-pointer shadow-lg flex items-center justify-center gap-2"
         >
-          {isSignUp ? 'CREATE ACCOUNT' : 'SIGN IN'}
+          {isSubmitting && <Loader2 size={16} className="animate-spin text-slate-900" />}
+          <span>{isSignUp ? 'CREATE ACCOUNT' : 'SIGN IN'}</span>
         </button>
 
         {/* Mode Switch */}
@@ -352,21 +363,21 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister }) => {
           <button 
             type="button" 
             onClick={handleToggleMode} 
-            className="text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
+            className="text-sm font-medium text-slate-400 hover:text-white transition-colors cursor-pointer"
           >
             {isSignUp ? (
-              <>Already have an account? <span className="underline font-bold text-slate-950 dark:text-white ml-1">Sign In</span></>
+              <>Already have an account? <span className="underline font-bold text-white ml-1">Sign In</span></>
             ) : (
-              <>Don't have an account? <span className="underline font-bold text-slate-950 dark:text-white ml-1">Sign Up</span></>
+              <>Don't have an account? <span className="underline font-bold text-white ml-1">Sign Up</span></>
             )}
           </button>
         </div>
       </div>
 
       {/* Footer Signature */}
-      <div className="pt-3 border-t border-slate-200/70 dark:border-slate-800/70 flex items-center justify-between text-[11px] font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500 mt-2">
-        <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-          <ShieldCheck size={14} className="text-indigo-600 dark:text-indigo-400" />
+      <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-bold tracking-wider uppercase text-slate-400 mt-2">
+        <div className="flex items-center gap-1.5 text-slate-400">
+          <ShieldCheck size={14} className="text-indigo-400" />
           <span>CHESS PLATFORM</span>
         </div>
         <span>BATUHAN BAYSAL • 2026</span>

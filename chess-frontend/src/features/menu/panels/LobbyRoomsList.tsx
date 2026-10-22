@@ -1,6 +1,7 @@
 import React from 'react';
-import { Users, Shield, Sword } from 'lucide-react';
+import { Users, Shield, Sword, Info } from 'lucide-react';
 import type { GameRoom } from '../hooks/useLobby';
+import { Tooltip } from '../../../components/ui/Tooltip';
 
 interface LobbyRoomsListProps {
   rooms: GameRoom[];
@@ -12,16 +13,19 @@ export const LobbyRoomsList: React.FC<LobbyRoomsListProps> = ({ rooms, onJoinRoo
     <div className="p-6 sm:p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#070b19] shadow-sm flex flex-col justify-between h-auto lg:h-full">
       <div>
         <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <Users className="text-indigo-600 dark:text-indigo-400" size={18} />
             <h2 className="text-base font-black uppercase tracking-wider text-slate-950 dark:text-white">
-              ACTIVE CHANNELS
+              ACTIVE ROOMS
             </h2>
+            <Tooltip content="Open lobbies created by players. Join an active room to start an instant online PvP match.">
+              <Info size={12} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer" />
+            </Tooltip>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
             <span className="text-[10px] font-black text-slate-900 dark:text-slate-400 uppercase tracking-wider">
-              {rooms.length} ACTIVE
+              {rooms.length} OPEN
             </span>
           </div>
         </div>
@@ -45,10 +49,11 @@ export const LobbyRoomsList: React.FC<LobbyRoomsListProps> = ({ rooms, onJoinRoo
                   </div>
                 </div>
                 <button 
+                  type="button"
                   onClick={() => onJoinRoom(room)} 
                   className="shrink-0 min-h-11 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[10px] font-black uppercase tracking-wider shadow-sm transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
                 >
-                  <span>Engage</span>
+                  <span>Join Match</span>
                   <Sword size={12} />
                 </button>
               </div>
@@ -57,7 +62,7 @@ export const LobbyRoomsList: React.FC<LobbyRoomsListProps> = ({ rooms, onJoinRoo
             <div className="py-12 flex flex-col items-center justify-center text-slate-600 dark:text-slate-400 gap-2.5">
               <Sword size={26} className="opacity-50 text-slate-800 dark:text-slate-400" />
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-slate-400">
-                No signals detected...
+                No open matches available
               </p>
             </div>
           )}

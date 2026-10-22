@@ -37,8 +37,10 @@ export default function AdminDashboard() {
     const [loadingUsers, setLoadingUsers] = useState(false);
     const [loadingGames, setLoadingGames] = useState(false);
     const [loadingLogs, setLoadingLogs] = useState(false);
+    const [deletingUserId, setDeletingUserId] = useState<number | null>(null);
 
     const [userFilter, setUserFilter] = useState<'all' | 'members' | 'guests'>('all');
+    const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState<number>(0); 
     const [pageSize] = useState<number>(10);
     const [totalPages, setTotalPages] = useState<number>(1);
@@ -48,10 +50,14 @@ export default function AdminDashboard() {
     const [auditTotalPages, setAuditTotalPages] = useState<number>(1);
     const [auditTotalElements, setAuditTotalElements] = useState<number>(0);
 
-    const fetchUsersData = useCallback(async (page: number, filter: string = userFilter) => {
+    const fetchUsersData = useCallback(async (
+        page: number, 
+        filter: string = userFilter, 
+        search: string = searchQuery
+    ) => {
         setLoadingUsers(true);
         try {
-            const data = await getAllUsers(page, pageSize, filter); 
+            const data = await getAllUsers(page, pageSize, filter, search); 
             setUsers(data.content);
             setTotalPages(data.totalPages || 1);
             setTotalElements(data.totalElements || 0);
@@ -60,7 +66,7 @@ export default function AdminDashboard() {
         } finally {
             setLoadingUsers(false);
         }
-    }, [pageSize, userFilter]);
+    }, [pageSize, userFilter, searchQuery]);
 
     const fetchActiveGamesData = useCallback(async () => {
         setLoadingGames(true);
@@ -89,29 +95,36 @@ export default function AdminDashboard() {
     }, [pageSize]);
 
     useEffect(() => {
-        fetchUsersData(currentPage, userFilter);
+        fetchUsersData(currentPage, userFilter, searchQuery);
         fetchActiveGamesData();
         fetchAuditLogsData(auditPage);
-    }, [currentPage, auditPage, userFilter, fetchUsersData, fetchActiveGamesData, fetchAuditLogsData]);
+    }, [currentPage, auditPage, userFilter, searchQuery, fetchUsersData, fetchActiveGamesData, fetchAuditLogsData]);
 
     const handleFilterChange = (filter: 'all' | 'members' | 'guests') => {
         setUserFilter(filter);
         setCurrentPage(0);
-        fetchUsersData(0, filter);
+        fetchUsersData(0, filter, searchQuery);
+    };
+
+    const handleSearchChange = (query: string) => {
+        setSearchQuery(query);
+        setCurrentPage(0);
+        fetchUsersData(0, userFilter, query);
     };
 
     const handleDeleteUser = async (id: number) => {
+        if (deletingUserId !== null) return;
         if (window.confirm("Are you sure you want to permanently delete this user account?")) {
+            setDeletingUserId(id);
             try {
-                setUsers((prev) => prev.filter((user) => user.id !== id));
-                setTotalElements((prev) => Math.max(0, prev - 1));
-
                 await deleteUserAccount(id);
-                fetchUsersData(currentPage, userFilter);
+                await fetchUsersData(currentPage, userFilter, searchQuery);
                 fetchAuditLogsData(auditPage);
             } catch (error) {
                 console.error("Failed to delete user:", error);
-                fetchUsersData(currentPage, userFilter);
+                await fetchUsersData(currentPage, userFilter, searchQuery);
+            } finally {
+                setDeletingUserId(null);
             }
         }
     };
@@ -129,7 +142,7 @@ export default function AdminDashboard() {
     };
 
     const handleRefreshAll = () => {
-        fetchUsersData(currentPage, userFilter);
+        fetchUsersData(currentPage, userFilter, searchQuery);
         fetchActiveGamesData();
         fetchAuditLogsData(auditPage);
     };
@@ -138,6 +151,7 @@ export default function AdminDashboard() {
         <div className="w-full max-w-6xl mx-auto py-6 sm:py-10 px-4 sm:px-6 text-slate-900 dark:text-slate-100 animate-in fade-in duration-300">
             {/* Return to Dashboard */}
             <button 
+                type="button"
                 onClick={() => navigate('/menu')} 
                 className="min-h-11 flex items-center gap-2 text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors uppercase font-black text-xs tracking-widest cursor-pointer mb-5"
             >
@@ -156,6 +170,7 @@ export default function AdminDashboard() {
                     </h1>
                 </div>
                 <button 
+                    type="button"
                     onClick={handleRefreshAll}
                     className="min-h-11 w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-indigo-600/20 active:scale-95 shrink-0"
                 >
@@ -200,6 +215,7 @@ export default function AdminDashboard() {
             {/* 4-Tab Navigation Bar */}
             <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 mb-6 p-1.5 bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl w-full sm:w-fit">
                 <button
+                    type="button"
                     onClick={() => setActiveTab('users')}
                     className={`min-h-11 px-3 sm:px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center sm:justify-start gap-2 cursor-pointer ${
                         activeTab === 'users'
@@ -212,6 +228,7 @@ export default function AdminDashboard() {
                 </button>
 
                 <button
+                    type="button"
                     onClick={() => setActiveTab('sessions')}
                     className={`min-h-11 px-3 sm:px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center sm:justify-start gap-2 cursor-pointer ${
                         activeTab === 'sessions'
@@ -224,6 +241,7 @@ export default function AdminDashboard() {
                 </button>
 
                 <button
+                    type="button"
                     onClick={() => setActiveTab('logs')}
                     className={`min-h-11 px-3 sm:px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center sm:justify-start gap-2 cursor-pointer ${
                         activeTab === 'logs'
@@ -236,6 +254,7 @@ export default function AdminDashboard() {
                 </button>
 
                 <button
+                    type="button"
                     onClick={() => setActiveTab('sandbox')}
                     className={`min-h-11 px-3 sm:px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center sm:justify-start gap-2 cursor-pointer ${
                         activeTab === 'sandbox'
@@ -258,9 +277,12 @@ export default function AdminDashboard() {
                         totalPages={totalPages}
                         totalElements={totalElements}
                         selectedCategory={userFilter}
+                        searchQuery={searchQuery}
+                        onSearchChange={handleSearchChange}
                         onFilterChange={handleFilterChange}
                         onPageChange={setCurrentPage}
                         onDeleteUser={handleDeleteUser}
+                        deletingUserId={deletingUserId}
                     />
                 )}
 

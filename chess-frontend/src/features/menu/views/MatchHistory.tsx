@@ -58,15 +58,16 @@ const MatchHistory = forwardRef(({ userId: propUserId, limit }: MatchHistoryProp
       <div className="flex justify-between items-center mb-4 px-1">
         <div className="flex items-center gap-3">
           <button 
+            type="button"
             onClick={fetchHistory} 
             className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-700 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-            title="Refresh logs"
-            aria-label="Refresh logs"
+            title="Refresh match history"
+            aria-label="Refresh match history"
           >
             <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
           </button>
           <span className="text-[11px] font-black text-slate-800 dark:text-slate-400 uppercase tracking-wider">
-            {history.length} Matches Logged
+            {history.length} Matches Recorded
           </span>
         </div>
       </div>
@@ -77,8 +78,8 @@ const MatchHistory = forwardRef(({ userId: propUserId, limit }: MatchHistoryProp
             <tr className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-slate-400 bg-slate-100/90 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800/80">
               <th className="py-3 px-3 sm:px-5">Opponent</th>
               <th className="py-3 px-2 sm:px-4 text-center sm:text-center w-28 sm:w-auto">Outcome</th>
-              <th className="hidden md:table-cell py-3 px-4">Tactical End</th>
-              <th className="hidden sm:table-cell py-3 px-4 sm:px-5 text-right">Timestamp</th>
+              <th className="hidden md:table-cell py-3 px-4">Result Type</th>
+              <th className="hidden sm:table-cell py-3 px-4 sm:px-5 text-right">Date</th>
             </tr>
           </thead>
           <tbody className="text-xs font-bold divide-y divide-slate-200 dark:divide-slate-800/50">
@@ -106,7 +107,8 @@ const MatchHistory = forwardRef(({ userId: propUserId, limit }: MatchHistoryProp
 
                 const opponentDisplay = isBot ? "Stockfish AI" : rawOpponentName;
                 const opponentInitial = (opponentDisplay.charAt(0) || 'U').toUpperCase();
-                const opponentAlliance = isWhite ? 'Black Alliance' : 'White Alliance';
+                const isGuestOpponent = opponentDisplay.toLowerCase().startsWith('guest');
+                const opponentRole = isWhite ? 'Playing Black' : 'Playing White';
 
                 const resultStr = String(game.result || '').toUpperCase();
                 const statusStr = String((game as any).status || '').toUpperCase();
@@ -171,8 +173,18 @@ const MatchHistory = forwardRef(({ userId: propUserId, limit }: MatchHistoryProp
                             <Bot size={16} />
                           </div>
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black shrink-0 shadow-2xs">
-                            {opponentInitial}
+                          <div className="relative w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black shrink-0 overflow-hidden shadow-2xs">
+                            {!isGuestOpponent && (
+                              <img 
+                                src={`/api/users/${opponentDisplay}/avatar`} 
+                                alt={opponentDisplay} 
+                                className="w-full h-full object-cover z-10"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                            )}
+                            <span className="absolute z-0">{opponentInitial}</span>
                           </div>
                         )}
                         <div className="flex flex-col min-w-0">
@@ -187,7 +199,7 @@ const MatchHistory = forwardRef(({ userId: propUserId, limit }: MatchHistoryProp
                             )}
                           </div>
                           <span className="text-[10px] text-slate-800 dark:text-slate-400 uppercase font-black truncate">
-                            {opponentAlliance}
+                            {opponentRole}
                           </span>
                         </div>
                       </div>
@@ -224,7 +236,9 @@ const MatchHistory = forwardRef(({ userId: propUserId, limit }: MatchHistoryProp
                 <td colSpan={4} className="py-16 text-center text-slate-700 dark:text-slate-400">
                   <div className="flex flex-col items-center gap-2">
                     <Sword size={32} className="opacity-40" />
-                    <span className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-slate-400">No combat data logged</span>
+                    <span className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-slate-400">
+                      No match data recorded
+                    </span>
                   </div>
                 </td>
               </tr>
@@ -233,10 +247,9 @@ const MatchHistory = forwardRef(({ userId: propUserId, limit }: MatchHistoryProp
         </table>
       </div>
 
-      {/* Deployment History Telemetry Notice */}
       <div className="flex items-center gap-2 mt-3 text-[10px] font-medium text-slate-600 dark:text-slate-400 px-1">
         <Bot size={13} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
-        <span>AI matches do not impact your ELO rating.</span>
+        <span>AI practice matches do not impact your ELO rating.</span>
       </div>
     </div>
   );

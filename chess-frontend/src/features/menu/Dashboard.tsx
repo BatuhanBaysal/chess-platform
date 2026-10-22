@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { getMyProfile } from '../../api/userService';
-import { Trophy, Swords, BarChart3, Activity, TrendingUp, Percent } from 'lucide-react';
+import { Trophy, Swords, BarChart3, Activity, TrendingUp, Percent, Info } from 'lucide-react';
 import ChessBoard from '../chess/components/ChessBoard.tsx';
 import { useChess } from '../chess/hooks/useChess.ts';
 import { MatchDistributionGraph } from '../../components/charts/MatchDistributionGraph';
+import { Tooltip } from '../../components/ui/Tooltip';
 
 interface Stats {
   username: string;
@@ -54,28 +55,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) =
         value: stats.eloRating ?? 'N/A', 
         icon: <TrendingUp size={13} />, 
         borderColor: 'border-yellow-500', 
-        textColor: 'text-amber-600 dark:text-yellow-400' 
+        textColor: 'text-amber-600 dark:text-yellow-400',
+        tooltip: 'Standard chess rating based on wins/losses against ranked players'
       },
       { 
         label: 'Wins', 
         value: stats.totalWins, 
         icon: <Trophy size={13} />, 
         borderColor: 'border-emerald-500', 
-        textColor: 'text-emerald-700 dark:text-emerald-400' 
+        textColor: 'text-emerald-700 dark:text-emerald-400',
+        tooltip: 'Total victories in ranked multiplayer games'
       },
       { 
         label: 'Losses', 
         value: stats.totalLosses, 
         icon: <Swords size={13} />, 
         borderColor: 'border-rose-500', 
-        textColor: 'text-rose-700 dark:text-rose-400' 
+        textColor: 'text-rose-700 dark:text-rose-400',
+        tooltip: 'Total defeats in ranked multiplayer games'
       },
       { 
         label: 'Draws', 
         value: stats.totalDraws, 
         icon: <Activity size={13} />, 
-        borderColor: 'border-slate-500', 
-        textColor: 'text-slate-800 dark:text-slate-400' 
+        borderColor: 'border-slate-300', 
+        textColor: 'text-slate-800 dark:text-slate-400',
+        tooltip: 'Matches ending in stalemate, agreement, or draw rules'
       }
     ];
   }, [stats]);
@@ -109,7 +114,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) =
           <div className="flex items-center gap-3">
             <Activity className="text-indigo-600" size={20} />
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-800 dark:text-slate-400">
-              Live Deployment
+              Live Match
             </span>
           </div>
         </div>
@@ -137,38 +142,41 @@ export const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) =
       <section>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {statsCards.map((card, idx) => (
-            <div 
-              key={idx} 
-              className={`bg-slate-50 dark:bg-slate-900/60 p-3.5 sm:p-4 rounded-2xl border-l-4 ${card.borderColor} border-t border-r border-b border-slate-200 dark:border-slate-800 shadow-xs`}
-            >
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className={card.textColor}>{card.icon}</span>
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-900 dark:text-slate-300">
-                  {card.label}
+            <Tooltip key={idx} content={card.tooltip} position="top">
+              <div 
+                className={`w-full bg-slate-50 dark:bg-slate-900/60 p-3.5 sm:p-4 rounded-2xl border ${card.borderColor} dark:border-slate-800 shadow-xs cursor-help transition-colors`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className={card.textColor}>{card.icon}</span>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-900 dark:text-slate-300">
+                      {card.label}
+                    </p>
+                  </div>
+                  <Info size={11} className="text-slate-400 opacity-60" />
+                </div>
+                <p className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white tabular-nums tracking-tight">
+                  {card.value}
                 </p>
               </div>
-              <p className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white tabular-nums tracking-tight">
-                {card.value}
-              </p>
-            </div>
+            </Tooltip>
           ))}
         </div>
       </section>
 
-      {/* Rating Telemetry Notice */}
+      {/* Rating Notice */}
       <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 shadow-xs">
         <TrendingUp size={14} className="shrink-0 text-indigo-600 dark:text-indigo-400" />
         <p className="leading-relaxed font-medium">
           <span className="font-black text-slate-950 dark:text-white uppercase tracking-wider text-[10px] mr-1">
             Rating System:
           </span>
-          Online match ratings are calculated relative to opponent rating. AI matches do not affect ELO.
+          Ranked PvP matches adjust your ELO rating based on outcome and opponent skill. AI matches do not affect ELO.
         </p>
       </div>
 
       {/* Match Distribution Card */}
       <section className="bg-slate-50 dark:bg-slate-900/60 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-xs">
-        {/* Header Row */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800/80 mb-5">
           <div className="flex items-center gap-2">
             <BarChart3 className="text-indigo-600 dark:text-indigo-400" size={16} />
@@ -184,14 +192,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) =
 
         {totalMatches > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-            {/* Donut Chart Container */}
             <div className="lg:col-span-5 min-h-55 flex items-center justify-center relative">
               <MatchDistributionGraph data={matchData} />
             </div>
 
-            {/* High-Contrast Progress Bars */}
             <div className="lg:col-span-7 flex flex-col justify-center space-y-3.5 pl-0 lg:pl-4">
-              {/* Victories */}
               <div>
                 <div className="flex justify-between text-xs font-black mb-1.5">
                   <span className="flex items-center gap-2 text-emerald-800 dark:text-emerald-400 font-extrabold">
@@ -210,7 +215,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) =
                 </div>
               </div>
 
-              {/* Defeats */}
               <div>
                 <div className="flex justify-between text-xs font-black mb-1.5">
                   <span className="flex items-center gap-2 text-rose-800 dark:text-rose-400 font-extrabold">
@@ -229,7 +233,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) =
                 </div>
               </div>
 
-              {/* Draws */}
               <div>
                 <div className="flex justify-between text-xs font-black mb-1.5">
                   <span className="flex items-center gap-2 text-slate-900 dark:text-slate-300 font-extrabold">

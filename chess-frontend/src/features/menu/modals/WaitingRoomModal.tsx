@@ -89,10 +89,11 @@ export const WaitingRoomModal: React.FC<WaitingRoomModalProps> = ({
 
         {/* Cancel Button */}
         <button 
+          type="button"
           onClick={onCancel}
           className="w-full min-h-11 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer border border-rose-200 dark:border-rose-900/40 active:scale-98"
         >
-          Cancel Deployment
+          Cancel Matchmaking
         </button>
       </div>
     </div>

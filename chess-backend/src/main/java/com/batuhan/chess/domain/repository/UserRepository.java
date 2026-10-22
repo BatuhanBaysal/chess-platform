@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -31,6 +32,26 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     @Query("SELECT u FROM UserEntity u WHERE u.active = true AND (u.isGuest = true OR u.role = com.batuhan.chess.domain.model.user.UserRole.ROLE_GUEST)")
     Page<UserEntity> findAllActiveGuests(Pageable pageable);
+
+    @Query("""
+        SELECT u FROM UserEntity u
+        WHERE u.active = true
+          AND (
+            :filter = 'all'
+            OR (:filter = 'members' AND (u.isGuest = false OR u.isGuest IS NULL) AND u.role != com.batuhan.chess.domain.model.user.UserRole.ROLE_GUEST)
+            OR (:filter = 'guests' AND (u.isGuest = true OR u.role = com.batuhan.chess.domain.model.user.UserRole.ROLE_GUEST))
+          )
+          AND (
+            :search IS NULL OR :search = ''
+            OR LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))
+          )
+    """)
+    Page<UserEntity> findUsersWithFilterAndSearch(
+        @Param("filter") String filter,
+        @Param("search") String search,
+        Pageable pageable
+    );
 
     Page<UserEntity> findAllByActiveTrueOrderByEloRatingDesc(Pageable pageable);
 

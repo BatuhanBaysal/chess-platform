@@ -40,7 +40,8 @@ public class SecurityConfig {
                     "/actuator/**",
                     "/v3/api-docs/**",
                     "/swagger-ui/**",
-                    "/swagger-ui.html"
+                    "/swagger-ui.html",
+                    "/api/users/*/avatar"
                 ).permitAll()
                 .requestMatchers("/api/users/me", "/api/users/me/**").hasAnyRole(ADMIN, USER, GUEST)
                 .requestMatchers("/api/games/**").hasAnyRole(ADMIN, USER, GUEST)

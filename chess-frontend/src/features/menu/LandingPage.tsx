@@ -17,7 +17,7 @@ import { AiMatchModal } from './modals/AiMatchModal';
 import { ReconnectAlert } from './components/ReconnectAlert';
 import { DashboardHeroBanner } from './components/DashboardHeroBanner';
 import { WaitingRoomModal } from './modals/WaitingRoomModal';
-import { History } from 'lucide-react';
+import { History, User, Bot, FileText, ChevronRight } from 'lucide-react';
 
 interface LandingPageProps {
   onStart: (theme: any, time: TimeControl, roomId?: string) => void;
@@ -294,7 +294,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         </div>
       </div>
 
-      {/* Match History & Ecosystem Architecture */}
+      {/* Match History & Platform Hub */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-stretch">
         <div className="lg:col-span-8 flex flex-col h-auto lg:h-full">
           <div className="bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 rounded-[2.5rem] p-6 sm:p-8 shadow-sm h-full flex flex-col justify-between">
@@ -323,24 +323,109 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
           </div>
         </div>
 
+        {/* Quick Navigation Platform Hub */}
         <div className="lg:col-span-4 flex flex-col h-auto lg:h-full">
-          <div 
-            onClick={() => navigate('/about')}
-            className="relative w-full h-full min-h-65 rounded-[2.5rem] overflow-hidden shadow-sm border border-slate-200 dark:border-slate-800/80 cursor-pointer group bg-slate-950 flex flex-col justify-end"
-          >
+          <div className="relative w-full h-full min-h-85 sm:min-h-95 rounded-[2.5rem] overflow-hidden shadow-sm border border-slate-200 dark:border-slate-800/80 bg-slate-950 p-6 sm:p-8 flex flex-col justify-between">
             <img
               src="/assets/images/chess-platform.jpg"
               alt="Chess Platform Arena"
-              className="absolute inset-0 w-full h-full object-cover object-center transform scale-105 group-hover:scale-100 transition-transform duration-700 ease-out opacity-80"
+              className="absolute inset-0 w-full h-full object-cover object-center opacity-65 pointer-events-none"
             />
-            <div className="relative z-10 bg-linear-to-t from-slate-950/95 via-slate-950/60 to-transparent p-6 sm:p-8 flex flex-col justify-end">
-              <span className="text-[10px] font-black uppercase tracking-wider text-indigo-400 mb-2 bg-indigo-500/15 px-3 py-1 rounded-full w-fit border border-indigo-500/25">
-                Distributed Multiplayer
+            <div className="absolute inset-0 bg-linear-to-b from-slate-950/70 via-slate-950/50 to-slate-950/95 pointer-events-none" />
+            
+            <div className="relative z-10 flex items-center justify-between pb-3 border-b border-white/10">
+              <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400 bg-indigo-500/20 px-3 py-1 rounded-full border border-indigo-500/30">
+                PLATFORM HUB
               </span>
-              <h3 className="text-base sm:text-lg font-black text-white tracking-tight flex items-center gap-2">
-                <span>Ecosystem Architecture</span>
-                <span className="transition-transform group-hover:translate-x-1">&rarr;</span>
-              </h3>
+              <span className="text-[10px] font-mono font-bold text-slate-400">
+                v2.6.0
+              </span>
+            </div>
+
+            {/* 3 Full-Height Navigation Cards */}
+            <div className="relative z-10 flex-1 flex flex-col justify-between gap-3 sm:gap-4 py-3">
+              <button
+                type="button"
+                onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'instant' });
+                  navigate('/about');
+                }}
+                className="flex-1 min-h-18 sm:min-h-20 flex items-center justify-between p-4 sm:p-5 rounded-2xl border-2 border-indigo-400/40 bg-slate-950/70 hover:bg-indigo-950/60 hover:border-indigo-400 backdrop-blur-md transition-all text-left group cursor-pointer shadow-md shadow-indigo-950/30"
+              >
+                <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 pr-2">
+                  <div className="w-11 h-11 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                    <User size={20} />
+                  </div>
+                  <div className="min-w-0 flex flex-col">
+                    <span className="font-black text-sm sm:text-base text-white group-hover:text-indigo-300 transition-colors truncate">
+                      About Developer
+                    </span>
+                    <span className="text-xs font-mono font-bold text-slate-300 mt-0.5 truncate">
+                      Architecture & Background
+                    </span>
+                  </div>
+                </div>
+                <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center shrink-0 text-slate-300 group-hover:text-white group-hover:translate-x-1 group-hover:bg-indigo-600 transition-all">
+                  <ChevronRight size={16} />
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'instant' });
+                  navigate('/contact');
+                }}
+                className="flex-1 min-h-18 sm:min-h-20 flex items-center justify-between p-4 sm:p-5 rounded-2xl border-2 border-purple-400/40 bg-slate-950/70 hover:bg-purple-950/60 hover:border-purple-400 backdrop-blur-md transition-all text-left group cursor-pointer shadow-md shadow-purple-950/30"
+              >
+                <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 pr-2">
+                  <div className="w-11 h-11 rounded-full bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                    <Bot size={20} />
+                  </div>
+                  <div className="min-w-0 flex flex-col">
+                    <span className="font-black text-sm sm:text-base text-white group-hover:text-purple-300 transition-colors truncate">
+                      Contact & Inquiries
+                    </span>
+                    <span className="text-xs font-mono font-bold text-slate-300 mt-0.5 truncate">
+                      Direct Communication
+                    </span>
+                  </div>
+                </div>
+                <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center shrink-0 text-slate-300 group-hover:text-white group-hover:translate-x-1 group-hover:bg-purple-600 transition-all">
+                  <ChevronRight size={16} />
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'instant' });
+                  navigate('/changelog');
+                }}
+                className="flex-1 min-h-18 sm:min-h-20 flex items-center justify-between p-4 sm:p-5 rounded-2xl border-2 border-emerald-400/40 bg-slate-950/70 hover:bg-emerald-950/60 hover:border-emerald-400 backdrop-blur-md transition-all text-left group cursor-pointer shadow-md shadow-emerald-950/30"
+              >
+                <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 pr-2">
+                  <div className="w-11 h-11 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                    <FileText size={20} />
+                  </div>
+                  <div className="min-w-0 flex flex-col">
+                    <span className="font-black text-sm sm:text-base text-white group-hover:text-emerald-300 transition-colors truncate">
+                      Release Notes
+                    </span>
+                    <span className="text-xs font-mono font-bold text-slate-300 mt-0.5 truncate">
+                      Changelog & History
+                    </span>
+                  </div>
+                </div>
+                <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center shrink-0 text-slate-300 group-hover:text-white group-hover:translate-x-1 group-hover:bg-emerald-600 transition-all">
+                  <ChevronRight size={16} />
+                </div>
+              </button>
+            </div>
+
+            <div className="relative z-10 pt-3 border-t border-white/10 flex items-center justify-between text-[10px] font-bold text-slate-400">
+              <span>Single-Page Architecture</span>
+              <span className="text-indigo-400 uppercase tracking-widest font-black">Explore Platform</span>
             </div>
           </div>
         </div>

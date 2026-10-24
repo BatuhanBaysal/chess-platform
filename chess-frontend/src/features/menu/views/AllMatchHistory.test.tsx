@@ -4,8 +4,14 @@ import { MemoryRouter } from 'react-router-dom';
 import AllMatchHistory from './AllMatchHistory';
 import * as gameService from '../../../api/gameService';
 
-vi.mock('../../../api/gameService', () => ({
+const serviceMocks = vi.hoisted(() => ({
   getPlayerHistory: vi.fn(),
+  getGamePgn: vi.fn(() => Promise.resolve('1. e4 e5 1-0')),
+}));
+
+vi.mock('../../../api/gameService', () => ({
+  getPlayerHistory: serviceMocks.getPlayerHistory,
+  getGamePgn: serviceMocks.getGamePgn,
 }));
 
 describe('AllMatchHistory Tabbed Component', () => {
@@ -37,6 +43,7 @@ describe('AllMatchHistory Tabbed Component', () => {
     localStorage.setItem('userId', '1');
     localStorage.setItem('username', 'batuhanbaysal');
     vi.mocked(gameService.getPlayerHistory).mockResolvedValue(mockMatches as any);
+    vi.mocked(gameService.getGamePgn).mockResolvedValue('1. e4 e5 1-0');
   });
 
   it('renders ranked matches by default and displays correct tab count', async () => {
@@ -95,6 +102,29 @@ describe('AllMatchHistory Tabbed Component', () => {
       expect(screen.getByText('AI')).toBeDefined();
     });
     expect(screen.queryByText('grandmaster')).toBeNull();
+  });
+
+  it('opens replay modal when clicking replay button on a match row', async () => {
+    // Arrange
+    render(
+      <MemoryRouter>
+        <AllMatchHistory userId={1} />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('grandmaster')).toBeDefined();
+    });
+
+    const replayBtn = screen.getByRole('button', { name: /replay/i });
+
+    // Act
+    fireEvent.click(replayBtn);
+
+    // Assert
+    await waitFor(() => {
+      expect(screen.getByText('Match #101')).toBeDefined();
+    });
   });
 
   it('hides avatar image on error and falls back to opponent initial', async () => {

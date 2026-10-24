@@ -3,8 +3,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import MatchHistory from './MatchHistory';
 import * as gameService from '../../../api/gameService';
 
-vi.mock('../../../api/gameService', () => ({
+const serviceMocks = vi.hoisted(() => ({
   getPlayerHistory: vi.fn(),
+  getGamePgn: vi.fn(() => Promise.resolve('1. e4 e5 1-0')),
+}));
+
+vi.mock('../../../api/gameService', () => ({
+  getPlayerHistory: serviceMocks.getPlayerHistory,
+  getGamePgn: serviceMocks.getGamePgn,
 }));
 
 describe('MatchHistory Widget Component', () => {
@@ -36,6 +42,7 @@ describe('MatchHistory Widget Component', () => {
     localStorage.setItem('userId', '1');
     localStorage.setItem('username', 'batuhan');
     vi.mocked(gameService.getPlayerHistory).mockResolvedValue(mockHistoryData as any);
+    vi.mocked(gameService.getGamePgn).mockResolvedValue('1. e4 e5 1-0');
   });
 
   it('renders recorded match count and opponent rows successfully', async () => {
@@ -51,6 +58,24 @@ describe('MatchHistory Widget Component', () => {
     expect(screen.getByText(/2 Matches Recorded/i)).toBeDefined();
     expect(screen.getByText('Victory')).toBeDefined();
     expect(screen.getByText('Defeat')).toBeDefined();
+  });
+
+  it('opens replay modal when clicking replay button on match row', async () => {
+    // Arrange
+    render(<MatchHistory userId={1} />);
+    await waitFor(() => {
+      expect(screen.getByText('magnus')).toBeDefined();
+    });
+
+    const replayButtons = screen.getAllByRole('button', { name: /replay/i });
+
+    // Act
+    fireEvent.click(replayButtons[0]);
+
+    // Assert
+    await waitFor(() => {
+      expect(screen.getByText('Match #201')).toBeDefined();
+    });
   });
 
   it('renders opponent avatar image for registered users and bot icon for AI', async () => {

@@ -42,7 +42,7 @@ describe('GlobalLeaderboard Component', () => {
     window.scrollTo = vi.fn();
   });
 
-  it('renders top players with avatars and fallback initials correctly', async () => {
+  it('renders top players with podium badges and avatars correctly', async () => {
     // Arrange
     vi.mocked(userService.getLeaderboard).mockResolvedValue(mockLeaderboardData as any);
 
@@ -58,6 +58,11 @@ describe('GlobalLeaderboard Component', () => {
       expect(screen.getByText('batuhan')).toBeDefined();
       expect(screen.getByText('grandmaster')).toBeDefined();
     });
+
+    expect(screen.getByText('1')).toBeDefined();
+    expect(screen.getByText('2')).toBeDefined();
+    expect(screen.getByText('1st Place • Gold Medal')).toBeDefined();
+    expect(screen.getByText('2nd Place • Silver Medal')).toBeDefined();
 
     const avatarImg = screen.getByRole('img', { name: 'batuhan' }) as HTMLImageElement;
     expect(avatarImg).toBeDefined();

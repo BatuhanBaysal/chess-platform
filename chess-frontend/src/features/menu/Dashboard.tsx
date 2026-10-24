@@ -54,15 +54,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) =
         label: 'ELO', 
         value: stats.eloRating ?? 'N/A', 
         icon: <TrendingUp size={13} />, 
-        borderColor: 'border-yellow-500', 
-        textColor: 'text-amber-600 dark:text-yellow-400',
+        cardStyle: 'border-amber-500/90 dark:border-amber-400/80 bg-amber-500/5 dark:bg-amber-500/10 shadow-amber-500/5', 
+        textColor: 'text-amber-600 dark:text-amber-400',
         tooltip: 'Standard chess rating based on wins/losses against ranked players'
       },
       { 
         label: 'Wins', 
         value: stats.totalWins, 
         icon: <Trophy size={13} />, 
-        borderColor: 'border-emerald-500', 
+        cardStyle: 'border-emerald-500/90 dark:border-emerald-400/80 bg-emerald-500/5 dark:bg-emerald-500/10 shadow-emerald-500/5', 
         textColor: 'text-emerald-700 dark:text-emerald-400',
         tooltip: 'Total victories in ranked multiplayer games'
       },
@@ -70,7 +70,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) =
         label: 'Losses', 
         value: stats.totalLosses, 
         icon: <Swords size={13} />, 
-        borderColor: 'border-rose-500', 
+        cardStyle: 'border-rose-500/90 dark:border-rose-400/80 bg-rose-500/5 dark:bg-rose-500/10 shadow-rose-500/5', 
         textColor: 'text-rose-700 dark:text-rose-400',
         tooltip: 'Total defeats in ranked multiplayer games'
       },
@@ -78,8 +78,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) =
         label: 'Draws', 
         value: stats.totalDraws, 
         icon: <Activity size={13} />, 
-        borderColor: 'border-slate-300', 
-        textColor: 'text-slate-800 dark:text-slate-400',
+        cardStyle: 'border-slate-400/90 dark:border-slate-400/70 bg-slate-500/5 dark:bg-slate-500/10 shadow-slate-500/5', 
+        textColor: 'text-slate-800 dark:text-slate-300',
         tooltip: 'Matches ending in stalemate, agreement, or draw rules'
       }
     ];
@@ -144,12 +144,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) =
           {statsCards.map((card, idx) => (
             <Tooltip key={idx} content={card.tooltip} position="top">
               <div 
-                className={`w-full bg-slate-50 dark:bg-slate-900/60 p-3.5 sm:p-4 rounded-2xl border ${card.borderColor} dark:border-slate-800 shadow-xs cursor-help transition-colors`}
+                className={`w-full p-3.5 sm:p-4 rounded-2xl border-2 transition-all cursor-help shadow-xs ${card.cardStyle}`}
               >
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-2">
                     <span className={card.textColor}>{card.icon}</span>
-                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-900 dark:text-slate-300">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-900 dark:text-slate-200">
                       {card.label}
                     </p>
                   </div>

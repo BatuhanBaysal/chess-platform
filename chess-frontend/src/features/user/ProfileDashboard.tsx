@@ -16,6 +16,7 @@ import {
     Camera, Trash2
 } from 'lucide-react';
 import { Tooltip } from '../../components/ui/Tooltip';
+import { getFullAvatarUrl } from '../../utils/avatarUtils';
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_AVATAR_SIZE = 2 * 1024 * 1024;
@@ -215,7 +216,7 @@ const ProfileDashboard: React.FC = () => {
                             <div className="relative w-24 h-24 rounded-full border-2 border-indigo-600/30 dark:border-indigo-500/30 overflow-hidden shrink-0 shadow-md flex items-center justify-center bg-indigo-600 text-white select-none">
                                 {formData.avatarUrl ? (
                                     <img 
-                                        src={formData.avatarUrl} 
+                                        src={getFullAvatarUrl(formData.avatarUrl)} 
                                         alt={formData.username} 
                                         className="w-full h-full object-cover"
                                     />

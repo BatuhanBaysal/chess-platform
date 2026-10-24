@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import type { LogEntry, MovePair } from '../types/chess.types';
+import { useChessAudio } from './useChessAudio';
 
 const INITIAL_PIECES = {
   white: ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'N', 'N', 'B', 'B', 'R', 'R', 'Q', 'K'],
@@ -27,6 +28,14 @@ export const useChessGameLogic = (
   const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
   const [promotionPending, setPromotionPending] = useState<{ from: number, to: number } | null>(null);
   const [legalMoves, setLegalMoves] = useState<{ file: number, rank: number }[]>([]);
+
+  const {
+    playMoveSound,
+    playCaptureSound,
+    playCheckSound,
+    playVictorySound,
+    playDefeatSound,
+  } = useChessAudio();
 
   const currentGameId = game?.gameId;
   const storageKey = currentGameId ? `chess_game_logs_${currentGameId}` : `chess_game_logs_active`;
@@ -59,6 +68,8 @@ export const useChessGameLogic = (
 
   const lastProcessedMessage = useRef<string | null>(null);
   const prevGameIdRef = useRef<string | undefined>(currentGameId);
+  const prevCheckRef = useRef<boolean>(false);
+  const prevGameOverRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (prevGameIdRef.current !== currentGameId) {
@@ -68,6 +79,8 @@ export const useChessGameLogic = (
       setLegalMoves([]);
       setMoveQualities({});
       lastProcessedMessage.current = null;
+      prevCheckRef.current = false;
+      prevGameOverRef.current = false;
 
       const initialLog = createInitialLog();
 
@@ -154,7 +167,7 @@ export const useChessGameLogic = (
     }
   }, [isStarted, logs.length]);
 
-  const getEndGameReason = () => {
+  const getEndGameReason = useCallback(() => {
     if (upperStatus.includes('DISMISSED') || upperStatus.includes('ABANDONED')) {
       return "Game Dismissed / Abandoned";
     }
@@ -183,15 +196,40 @@ export const useChessGameLogic = (
       return "Defeat!";
     }
     return "Game Over";
-  };
+  }, [upperStatus, orientation]);
 
   useEffect(() => {
-    if (isGameOver) setShowGameOverModal(true);
-  }, [isGameOver]);
+    if (isCheck && !prevCheckRef.current) {
+      playCheckSound();
+    }
+    prevCheckRef.current = isCheck;
+  }, [isCheck, playCheckSound]);
+
+  useEffect(() => {
+    if (isGameOver && !prevGameOverRef.current) {
+      setShowGameOverModal(true);
+      const reason = getEndGameReason();
+      if (reason.includes("Victory")) {
+        playVictorySound();
+      } else if (reason.includes("Defeat") || reason.includes("timed out")) {
+        playDefeatSound();
+      }
+    }
+    prevGameOverRef.current = isGameOver;
+  }, [isGameOver, getEndGameReason, playVictorySound, playDefeatSound]);
 
   useEffect(() => {
     if (lastMoveMessage && lastMoveMessage !== lastProcessedMessage.current) {
       const isError = lastMoveMessage.includes("Illegal") || lastMoveMessage.includes("not your turn");
+
+      if (!isError && lastProcessedMessage.current !== null) {
+        const isCapture = lastMoveMessage.toLowerCase().includes("capture") || lastMoveMessage.includes("takes");
+        if (isCapture) {
+          playCaptureSound();
+        } else {
+          playMoveSound();
+        }
+      }
 
       setLogs(prev => {
         if (prev.length > 0 && prev[0].text === lastMoveMessage) {
@@ -209,10 +247,6 @@ export const useChessGameLogic = (
       });
 
       lastProcessedMessage.current = lastMoveMessage;
-      if (!isError) {
-        setSelectedSquare(null);
-        setLegalMoves([]);
-      }
     }
   }, [lastMoveMessage, currentTurn]);
 
@@ -235,16 +269,22 @@ export const useChessGameLogic = (
     const movingPiece = squares[fromIndex];
     const isPawn = movingPiece.toLowerCase() === 'p';
     const isPromotion = isPawn && (to.rank === 7 || to.rank === 0);
+
     setSelectedSquare(null);
     setLegalMoves([]);
-    if (isPromotion) setPromotionPending({ from: fromIndex, to: toIndex });
-    else onMove(from.file, from.rank, to.file, to.rank);
+
+    if (isPromotion) {
+      setPromotionPending({ from: fromIndex, to: toIndex });
+    } else {
+      onMove(from.file, from.rank, to.file, to.rank);
+    }
   };
 
   const handleSquareClick = async (actualIndex: number) => {
     if (isGameOver || !isMyTurn || !isStarted) return;
     const { file, rank } = getCoordsFromIndex(actualIndex);
     const pieceAtTarget = squares[actualIndex];
+
     if (selectedSquare === null) {
       const isOwnPiece = (orientation === 'WHITE' && pieceAtTarget !== '.' && pieceAtTarget === pieceAtTarget.toUpperCase()) ||
         (orientation === 'BLACK' && pieceAtTarget !== '.' && pieceAtTarget === pieceAtTarget.toLowerCase());
@@ -257,8 +297,9 @@ export const useChessGameLogic = (
       }
     } else {
       const isLegal = legalMoves.some(m => m.file === file && m.rank === rank);
-      if (isLegal) executeMove(selectedSquare, actualIndex);
-      else {
+      if (isLegal) {
+        executeMove(selectedSquare, actualIndex);
+      } else {
         const isOwnPiece = (orientation === 'WHITE' && pieceAtTarget !== '.' && pieceAtTarget === pieceAtTarget.toUpperCase()) ||
           (orientation === 'BLACK' && pieceAtTarget !== '.' && pieceAtTarget === pieceAtTarget.toLowerCase());
         if (isOwnPiece) {
@@ -294,8 +335,9 @@ export const useChessGameLogic = (
     if (fromIndex !== toIndex) {
       const to = getCoordsFromIndex(toIndex);
       const isLegal = legalMoves.some(m => m.file === to.file && m.rank === to.rank);
-      if (isLegal) executeMove(fromIndex, toIndex);
-      else {
+      if (isLegal) {
+        executeMove(fromIndex, toIndex);
+      } else {
         setSelectedSquare(null);
         setLegalMoves([]);
       }

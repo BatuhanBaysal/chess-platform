@@ -5,8 +5,14 @@ import { afterEach, vi } from 'vitest';
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+  vi.clearAllMocks();
 });
 
-window.scrollTo = () => {};
-window.HTMLElement.prototype.scrollIntoView = function() {};
-window.HTMLElement.prototype.scrollTo = function() {};
+window.scrollTo = vi.fn();
+window.HTMLElement.prototype.scrollIntoView = vi.fn();
+window.HTMLElement.prototype.scrollTo = vi.fn();
+
+if (typeof window.URL.createObjectURL === 'undefined') {
+  window.URL.createObjectURL = vi.fn(() => 'blob:mock-url');
+  window.URL.revokeObjectURL = vi.fn();
+}

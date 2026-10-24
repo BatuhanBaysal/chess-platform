@@ -141,6 +141,13 @@ export const getPlayerHistory = async (userId: number): Promise<GameHistory[]> =
   }
 };
 
+export const getGamePgn = async (gameId: string | number): Promise<string> => {
+  const response = await api.get(`/api/games/${gameId}/export/pgn`, {
+    responseType: 'text'
+  });
+  return response.data;
+};
+
 export const finishGame = async (gameId: string): Promise<void> => {
   await api.post(`/api/games/${gameId}/finish`);
 };

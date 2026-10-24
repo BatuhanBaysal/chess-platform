@@ -66,64 +66,8 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
       {/* Main Board Container */}
       <div className="bg-white/95 dark:bg-[#070b19]/90 backdrop-blur-xl border border-slate-200 dark:border-slate-800/80 rounded-3xl p-3 sm:p-5 shadow-2xl flex flex-col xl:flex-row items-center justify-center gap-4 sm:gap-6 mx-auto box-border w-full max-w-full xl:w-auto">
 
-        {/* Center Section: Chess Board Grid */}
-        <div className="order-1 xl:order-2 flex flex-col items-center justify-center relative shrink-0 box-border w-full max-w-[min(100vw-2rem,520px)] xl:max-w-none xl:w-156 xl:h-156 overflow-visible">
-          <BoardGrid
-            sensors={sensors}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            squares={squares}
-            orientation={orientation}
-            selectedSquare={selectedSquare}
-            legalMoves={legalMoves}
-            isCheck={isCheck}
-            currentTurn={currentTurn}
-            isStarted={isStarted}
-            isGameOver={isGameOver}
-            isMyTurn={isMyTurn}
-            currentTheme={currentTheme}
-            activePiece={activePiece}
-            pieceImages={PIECE_IMAGES}
-            getActualIndex={getActualIndex}
-            getCoordsFromIndex={getCoordsFromIndex}
-            handleSquareClick={handleSquareClick}
-          />
-
-          {showSyncing && (
-            <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center gap-4 z-50">
-              <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-              <span className="text-white font-black text-xs uppercase tracking-[0.2em]">Synchronizing Game...</span>
-            </div>
-          )}
-        </div>
-
-        {/* Left Section: Match Info & Engine Panel */}
-        <div className="order-2 xl:order-1 w-full max-w-md xl:max-w-none xl:w-80 flex flex-col box-border h-auto xl:h-156 shrink-0">
-          <MatchInfoPanel
-            orientation={orientation}
-            currentTurn={currentTurn}
-            isGameOver={isGameOver}
-            whiteRemainingTimeMs={whiteRemainingTimeMs}
-            blackRemainingTimeMs={blackRemainingTimeMs}
-            whiteCaptured={whiteCaptured}
-            blackCaptured={blackCaptured}
-            pieceImages={PIECE_IMAGES}
-            formatTime={formatTime}
-            onDismissGame={onDismissGame}
-            score={evaluationScore}
-            evaluationType={evaluationType}
-            hintData={hintData}
-            isHintLoading={isHintLoading}
-            onGetHint={() => { if (isMyTurn) onGetHint(); }}
-            isMyTurn={isMyTurn}
-            whitePlayerName={game?.whitePlayerName}
-            blackPlayerName={game?.blackPlayerName}
-            game={game}
-          />
-        </div>
-
-        {/* Right Section: Telemetry & Notation Tabs */}
-        <div className="order-3 xl:order-3 w-full max-w-md xl:max-w-none xl:w-80 shrink-0 bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 rounded-2xl flex flex-col overflow-hidden transition-all shadow-inner box-border h-80 sm:h-96 xl:h-156">
+        {/* Left Section: Telemetry & Notation Tabs */}
+        <div className="order-3 xl:order-1 w-full max-w-md xl:max-w-none xl:w-80 shrink-0 bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 rounded-2xl flex flex-col overflow-hidden transition-all shadow-inner box-border h-80 sm:h-96 xl:h-156">
           {/* Tab Navigation Header */}
           <div className="flex border-b border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-900/60 p-1.5 gap-1.5 flex-none">
             <button
@@ -159,6 +103,62 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
               <NotationSidebar pairedMoves={pairedMoves} />
             </div>
           </div>
+        </div>
+
+        {/* Center Section: Chess Board Grid */}
+        <div className="order-1 xl:order-2 flex flex-col items-center justify-center relative shrink-0 box-border w-full max-w-[min(100vw-2rem,520px)] xl:max-w-none xl:w-156 xl:h-156 overflow-visible">
+          <BoardGrid
+            sensors={sensors}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            squares={squares}
+            orientation={orientation}
+            selectedSquare={selectedSquare}
+            legalMoves={legalMoves}
+            isCheck={isCheck}
+            currentTurn={currentTurn}
+            isStarted={isStarted}
+            isGameOver={isGameOver}
+            isMyTurn={isMyTurn}
+            currentTheme={currentTheme}
+            activePiece={activePiece}
+            pieceImages={PIECE_IMAGES}
+            getActualIndex={getActualIndex}
+            getCoordsFromIndex={getCoordsFromIndex}
+            handleSquareClick={handleSquareClick}
+          />
+
+          {showSyncing && (
+            <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center gap-4 z-50">
+              <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+              <span className="text-white font-black text-xs uppercase tracking-[0.2em]">Synchronizing Game...</span>
+            </div>
+          )}
+        </div>
+
+        {/* Right Section: Match Info & Engine Panel */}
+        <div className="order-2 xl:order-3 w-full max-w-md xl:max-w-none xl:w-80 flex flex-col box-border h-auto xl:h-156 shrink-0">
+          <MatchInfoPanel
+            orientation={orientation}
+            currentTurn={currentTurn}
+            isGameOver={isGameOver}
+            whiteRemainingTimeMs={whiteRemainingTimeMs}
+            blackRemainingTimeMs={blackRemainingTimeMs}
+            whiteCaptured={whiteCaptured}
+            blackCaptured={blackCaptured}
+            pieceImages={PIECE_IMAGES}
+            formatTime={formatTime}
+            onDismissGame={onDismissGame}
+            score={evaluationScore}
+            evaluationType={evaluationType}
+            hintData={hintData}
+            isHintLoading={isHintLoading}
+            onGetHint={() => { if (isMyTurn) onGetHint(); }}
+            isMyTurn={isMyTurn}
+            whitePlayerName={game?.whitePlayerName}
+            blackPlayerName={game?.blackPlayerName}
+            game={game}
+          />
         </div>
 
       </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Timer, LogOut, Cpu, ShieldCheck, Bot } from 'lucide-react';
 import { EvaluationBar } from './EvaluationBar';
 import type { HintResponse } from '@/api/gameService';
+import { getFullAvatarUrl, getUsernameAvatarUrl } from '@/utils/avatarUtils';
 
 interface MatchInfoPanelProps {
   orientation: 'WHITE' | 'BLACK';
@@ -156,8 +157,16 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
   const isTopGuest = topPlayerLabel.toLowerCase().startsWith('guest') || topPlayerLabel === 'White Player' || topPlayerLabel === 'Black Player';
   
   const topAvatarSrc = isWhiteOrientation 
-    ? (blackAvatarUrl || (game as any)?.blackAvatarUrl || (!isTopAi && !isTopGuest ? `/api/users/${topPlayerLabel}/avatar` : null))
-    : (whiteAvatarUrl || (game as any)?.whiteAvatarUrl || (!isTopAi && !isTopGuest ? `/api/users/${topPlayerLabel}/avatar` : null));
+    ? (blackAvatarUrl 
+        ? getFullAvatarUrl(blackAvatarUrl) 
+        : (game as any)?.blackAvatarUrl 
+          ? getFullAvatarUrl((game as any).blackAvatarUrl) 
+          : (!isTopAi && !isTopGuest ? getUsernameAvatarUrl(topPlayerLabel) : null))
+    : (whiteAvatarUrl 
+        ? getFullAvatarUrl(whiteAvatarUrl) 
+        : (game as any)?.whiteAvatarUrl 
+          ? getFullAvatarUrl((game as any).whiteAvatarUrl) 
+          : (!isTopAi && !isTopGuest ? getUsernameAvatarUrl(topPlayerLabel) : null));
 
   const bottomColor = isWhiteOrientation ? 'WHITE' : 'BLACK';
   const bottomTime = isWhiteOrientation ? (whiteRemainingTimeMs || 0) : (blackRemainingTimeMs || 0);
@@ -173,8 +182,16 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
   const isBottomGuest = bottomPlayerLabel.toLowerCase().startsWith('guest') || bottomPlayerLabel === 'White Player' || bottomPlayerLabel === 'Black Player';
 
   const bottomAvatarSrc = isWhiteOrientation 
-    ? (whiteAvatarUrl || (game as any)?.whiteAvatarUrl || (!isBottomAi && !isBottomGuest ? `/api/users/${bottomPlayerLabel}/avatar` : null))
-    : (blackAvatarUrl || (game as any)?.blackAvatarUrl || (!isBottomAi && !isBottomGuest ? `/api/users/${bottomPlayerLabel}/avatar` : null));
+    ? (whiteAvatarUrl 
+        ? getFullAvatarUrl(whiteAvatarUrl) 
+        : (game as any)?.whiteAvatarUrl 
+          ? getFullAvatarUrl((game as any).whiteAvatarUrl) 
+          : (!isBottomAi && !isBottomGuest ? getUsernameAvatarUrl(bottomPlayerLabel) : null))
+    : (blackAvatarUrl 
+        ? getFullAvatarUrl(blackAvatarUrl) 
+        : (game as any)?.blackAvatarUrl 
+          ? getFullAvatarUrl((game as any).blackAvatarUrl) 
+          : (!isBottomAi && !isBottomGuest ? getUsernameAvatarUrl(bottomPlayerLabel) : null));
 
   const getPlayerStyle = (isTurn: boolean, playerColor: 'WHITE' | 'BLACK') => {
     if (playerColor === 'WHITE') {

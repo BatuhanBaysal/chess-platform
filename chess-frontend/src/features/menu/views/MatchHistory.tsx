@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { getPlayerHistory } from '../../../api/gameService';
 import type { GameHistory } from '../../../types';
-import { Bot, Sword, RefreshCw } from 'lucide-react';
+import { Bot, Sword, RefreshCw, Play } from 'lucide-react';
+import { getUsernameAvatarUrl } from '../../../utils/avatarUtils';
+import { MatchReplayModal } from '../../chess/modals/MatchReplayModal';
 
 interface MatchHistoryProps {
   userId?: number;
@@ -11,6 +13,12 @@ interface MatchHistoryProps {
 const MatchHistory = forwardRef(({ userId: propUserId, limit }: MatchHistoryProps, ref) => {
   const [history, setHistory] = useState<GameHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedReplayGame, setSelectedReplayGame] = useState<{
+    id: number | string;
+    opponent: string;
+    result: string;
+    playerColor: 'white' | 'black';
+  } | null>(null);
 
   const effectiveUserId = Number(propUserId || localStorage.getItem('userId') || 0);
   const effectiveUsername = (localStorage.getItem('username') || '').toLowerCase();
@@ -73,13 +81,14 @@ const MatchHistory = forwardRef(({ userId: propUserId, limit }: MatchHistoryProp
       </div>
 
       <div className="w-full rounded-2xl border border-slate-200 dark:border-slate-800/80 overflow-hidden">
-        <table className="w-full text-left border-collapse table-fixed sm:table-auto">
+        <table className="w-full text-left border-collapse">
           <thead>
             <tr className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-slate-400 bg-slate-100/90 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800/80">
               <th className="py-3 px-3 sm:px-5">Opponent</th>
-              <th className="py-3 px-2 sm:px-4 text-center sm:text-center w-28 sm:w-auto">Outcome</th>
+              <th className="py-3 px-2 sm:px-4 text-center w-24 sm:w-32 whitespace-nowrap">Outcome</th>
               <th className="hidden md:table-cell py-3 px-4">Result Type</th>
               <th className="hidden sm:table-cell py-3 px-4 sm:px-5 text-right">Date</th>
+              <th className="py-3 px-2 sm:px-4 text-center w-14 sm:w-16 whitespace-nowrap">Replay</th>
             </tr>
           </thead>
           <tbody className="text-xs font-bold divide-y divide-slate-200 dark:divide-slate-800/50">
@@ -90,10 +99,13 @@ const MatchHistory = forwardRef(({ userId: propUserId, limit }: MatchHistoryProp
                 const whiteName = (game.whitePlayerName || '').toLowerCase();
                 const blackName = (game.blackPlayerName || '').toLowerCase();
 
-                const isWhite = (effectiveUserId > 0 && whiteId === effectiveUserId) || 
-                                (effectiveUsername !== '' && whiteName === effectiveUsername);
-                const isBlack = (effectiveUserId > 0 && blackId === effectiveUserId) || 
-                                (effectiveUsername !== '' && blackName === effectiveUsername);
+                const isBotWhite = whiteId === -1 || whiteName.includes('stockfish') || whiteName.includes('bot');
+                const isUserWhite = (effectiveUserId > 0 && whiteId === effectiveUserId) || 
+                                    (effectiveUsername !== '' && whiteName === effectiveUsername) ||
+                                    (!isBotWhite && (blackId === -1 || blackName.includes('stockfish') || blackName.includes('bot')));
+
+                const isWhite = isUserWhite && !isBotWhite;
+                const userColor: 'white' | 'black' = isWhite ? 'white' : 'black';
 
                 const rawOpponentName = isWhite ? game.blackPlayerName : game.whitePlayerName;
                 const opponentId = isWhite ? game.blackPlayerId : game.whitePlayerId;
@@ -103,12 +115,14 @@ const MatchHistory = forwardRef(({ userId: propUserId, limit }: MatchHistoryProp
                               rawOpponentName.toLowerCase().includes('bot') || 
                               rawOpponentName.toLowerCase().includes('stockfish') ||
                               opponentId === 0 || 
-                              opponentId == null;
+                              opponentId == null ||
+                              opponentId === -1;
 
                 const opponentDisplay = isBot ? "Stockfish AI" : rawOpponentName;
                 const opponentInitial = (opponentDisplay.charAt(0) || 'U').toUpperCase();
                 const isGuestOpponent = opponentDisplay.toLowerCase().startsWith('guest');
-                const opponentRole = isWhite ? 'Playing Black' : 'Playing White';
+                
+                const roleBadgeText = isWhite ? 'YOU: WHITE' : 'YOU: BLACK';
 
                 const resultStr = String(game.result || '').toUpperCase();
                 const statusStr = String((game as any).status || '').toUpperCase();
@@ -143,14 +157,15 @@ const MatchHistory = forwardRef(({ userId: propUserId, limit }: MatchHistoryProp
                   } else if (winnerColor.includes('WHITE')) {
                     userWon = isWhite;
                   } else if (winnerColor.includes('BLACK')) {
-                    userWon = isBlack;
+                    userWon = !isWhite;
                   } else if (isWhiteVictory && isWhite) {
                     userWon = true;
-                  } else if (isBlackVictory && isBlack) {
+                  } else if (isBlackVictory && !isWhite) {
                     userWon = true;
                   }
                 }
 
+                const outcomeText = userWon ? 'Victory' : isDraw ? 'Draw' : 'Defeat';
                 const isAlternate = index % 2 === 1;
 
                 return (
@@ -167,7 +182,7 @@ const MatchHistory = forwardRef(({ userId: propUserId, limit }: MatchHistoryProp
                     } hover:bg-indigo-500/10 dark:hover:bg-indigo-500/10`}
                   >
                     <td className="py-3 px-3 sm:px-5">
-                      <div className="flex items-center gap-2.5 sm:gap-3">
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                         {isBot ? (
                           <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-purple-400 flex items-center justify-center shrink-0 shadow-2xs">
                             <Bot size={16} />
@@ -176,7 +191,7 @@ const MatchHistory = forwardRef(({ userId: propUserId, limit }: MatchHistoryProp
                           <div className="relative w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black shrink-0 overflow-hidden shadow-2xs">
                             {!isGuestOpponent && (
                               <img 
-                                src={`/api/users/${opponentDisplay}/avatar`} 
+                                src={getUsernameAvatarUrl(opponentDisplay)} 
                                 alt={opponentDisplay} 
                                 className="w-full h-full object-cover z-10"
                                 onError={(e) => {
@@ -188,24 +203,26 @@ const MatchHistory = forwardRef(({ userId: propUserId, limit }: MatchHistoryProp
                           </div>
                         )}
                         <div className="flex flex-col min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-slate-950 dark:text-white font-black truncate max-w-28 sm:max-w-36">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-slate-950 dark:text-white font-black truncate max-w-24 sm:max-w-36 text-xs sm:text-sm">
                               {opponentDisplay}
                             </span>
                             {isBot && (
-                              <span className="text-[9px] font-black uppercase px-1.5 py-0.2 rounded-md bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                              <span className="text-[9px] font-black uppercase px-1.5 py-0.2 rounded-md bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800 shrink-0">
                                 AI
                               </span>
                             )}
                           </div>
-                          <span className="text-[10px] text-slate-800 dark:text-slate-400 uppercase font-black truncate">
-                            {opponentRole}
+                          <span className={`text-[10px] uppercase font-black tracking-wider truncate ${
+                            isWhite ? 'text-blue-600 dark:text-blue-400' : 'text-rose-600 dark:text-rose-400'
+                          }`}>
+                            {roleBadgeText}
                           </span>
                         </div>
                       </div>
                     </td>
                     <td className="py-3 px-2 sm:px-4 text-center">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider whitespace-nowrap ${
+                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] font-black uppercase tracking-wider whitespace-nowrap ${
                         userWon 
                           ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/50' 
                           : isDraw 
@@ -213,7 +230,7 @@ const MatchHistory = forwardRef(({ userId: propUserId, limit }: MatchHistoryProp
                             : 'bg-rose-100 dark:bg-rose-950/40 text-rose-800 dark:text-rose-400 border border-rose-300 dark:border-rose-800/50'
                       }`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${userWon ? 'bg-emerald-600' : isDraw ? 'bg-slate-600' : 'bg-rose-600'}`} />
-                        {userWon ? 'Victory' : isDraw ? 'Draw' : 'Defeat'}
+                        {outcomeText}
                       </span>
                     </td>
                     <td className="hidden md:table-cell py-3 px-4 text-slate-900 dark:text-slate-300 font-bold">
@@ -222,18 +239,34 @@ const MatchHistory = forwardRef(({ userId: propUserId, limit }: MatchHistoryProp
                     <td className="hidden sm:table-cell py-3 px-4 sm:px-5 text-right font-mono text-slate-900 dark:text-slate-400 text-[11px] font-bold">
                       {formatDate(game.playedAt)}
                     </td>
+                    <td className="py-3 px-2 sm:px-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedReplayGame({
+                          id: game.id,
+                          opponent: opponentDisplay,
+                          result: outcomeText,
+                          playerColor: userColor
+                        })}
+                        className="p-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-600 text-indigo-600 hover:text-white dark:bg-indigo-950/40 dark:text-indigo-400 dark:hover:bg-indigo-600 dark:hover:text-white transition-colors cursor-pointer inline-flex items-center justify-center shadow-2xs"
+                        title="Replay PGN Match"
+                        aria-label="Replay match"
+                      >
+                        <Play size={13} fill="currentColor" />
+                      </button>
+                    </td>
                   </tr>
                 );
               })
             ) : isLoading ? (
               <tr>
-                <td colSpan={4} className="py-16 text-center">
+                <td colSpan={5} className="py-16 text-center">
                   <div className="inline-block w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
                 </td>
               </tr>
             ) : (
               <tr>
-                <td colSpan={4} className="py-16 text-center text-slate-700 dark:text-slate-400">
+                <td colSpan={5} className="py-16 text-center text-slate-700 dark:text-slate-400">
                   <div className="flex flex-col items-center gap-2">
                     <Sword size={32} className="opacity-40" />
                     <span className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-slate-400">
@@ -251,6 +284,15 @@ const MatchHistory = forwardRef(({ userId: propUserId, limit }: MatchHistoryProp
         <Bot size={13} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
         <span>AI practice matches do not impact your ELO rating.</span>
       </div>
+
+      <MatchReplayModal
+        isOpen={Boolean(selectedReplayGame)}
+        onClose={() => setSelectedReplayGame(null)}
+        gameId={selectedReplayGame?.id ?? null}
+        opponentName={selectedReplayGame?.opponent}
+        result={selectedReplayGame?.result}
+        playerColor={selectedReplayGame?.playerColor}
+      />
     </div>
   );
 });

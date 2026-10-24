@@ -1,7 +1,7 @@
-import { createLogger } from 'vite'
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { createLogger } from 'vite';
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import path from 'path';
 
 const logger = createLogger();
 const originalError = logger.error;
@@ -14,8 +14,8 @@ logger.error = (msg, options) => {
 
 const suppressProxyError = (proxy: any) => {
   proxy.on('error', (err: any, _req: any, res: any) => {
-    const isConnRefused = 
-      err.code === 'ECONNREFUSED' || 
+    const isConnRefused =
+      err.code === 'ECONNREFUSED' ||
       (err.errors && err.errors.some((e: any) => e.code === 'ECONNREFUSED')) ||
       err.message?.includes('ECONNREFUSED');
 
@@ -37,7 +37,7 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8080', 
+        target: 'http://127.0.0.1:8080',
         changeOrigin: true,
         secure: false,
         configure: suppressProxyError,
@@ -58,12 +58,26 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": path.resolve(import.meta.dirname, "./src"),
+      '@': path.resolve(import.meta.dirname, './src'),
     },
+  },
+  build: {
+    chunkSizeWarningLimit: 1000,
+  },
+  ssr: {
+    noExternal: ['react-router', 'react-router-dom'],
   },
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: ['./src/setupTests.ts'],
+    setupFiles: ['./src/test/setup.ts'],
+    exclude: ['e2e/**', 'node_modules/**'],
+    pool: 'forks',
+    isolate: true,
+    server: {
+      deps: {
+        inline: ['react-router', 'react-router-dom'],
+      },
+    },
   },
-})
+});

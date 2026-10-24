@@ -36,10 +36,17 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
-## [2.6.0] - 2026-10-22
+## [2.6.0] - 2026-10-24
 
-### 💎 Phase v2.6.0: Final Polish, Strict Typing, Admin Control & Player Identity 🚀
+### 💎 Phase v2.6.0: Core Stabilization, RBAC Governance & Player Experience 🚀
 > **Note:** Finalizing production readiness by enforcing compile-time type contracts, isolating AI engine state lifecycles, refining authentication and role-based access, polishing player identity systems, and delivering administrative control capabilities.
+
+- **2026-10-24:**
+    - **Interactive PGN Match Replay Modal & Universal Sound Effects Engine (PR #202 | Issue #201):**
+        - **Interactive Match Replay Modal (`MatchReplayModal.tsx`):** Added an "Inspect / Replay" action button to each match entry in the match history table and user dashboard. Consumes the existing `GET /api/games/{gameId}/export/pgn` endpoint to load completed game logs with a read-only board stepper equipped with navigation controls: First Move (`<<`), Previous (`<`), Next (`>`), and Final Position (`>>`). Integrated keyboard arrow key listeners (Left/Right) for fluid move-by-move stepping and active move notation highlighting on the sidebar panel.
+        - **Universal Sound Effects Engine (`useChessAudio.ts`):** Integrated lightweight audio clips via Web Audio API / static sound assets covering standard moves, captures, check alerts, victory jingles, and defeat/resignation tones. Added a global Mute/Unmute audio toggle button in the HUD/Header with user preference persisted in `localStorage`.
+        - **Path Resolution & Orchestration:** Resolved relative avatar paths using centralized environment base URL helpers across user profile dashboards and leaderboard tables; integrated audio triggers directly into live game actions and state updates within `useChessGameLogic.ts`.
+        - **Testing Fortification:** Expanded unit tests covering PGN parser state transitions, audio hook states, and local storage persistence; added Playwright E2E test suites verifying replay modal opening and move navigation behavior.
 
 - **2026-10-22:**
     - **Auth Visual Redesign, Plain Terminology, Avatar Media CRUD, Tabbed History & Sliding Pagination (PR #199 | Issue #198):**

@@ -14,10 +14,14 @@ import {
     Activity, 
     Flag, 
     Wifi, 
-    LayoutDashboard 
+    LayoutDashboard,
+    Volume2,
+    VolumeX
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
+import { useChessAudio } from '../../features/chess/hooks/useChessAudio';
+import { getUsernameAvatarUrl } from '../../utils/avatarUtils';
 
 interface HeaderProps {
     onBackToMenu?: () => void;
@@ -28,6 +32,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame, activeGameId }) => {
     const { user, logout } = useAuth(); 
     const { colorMode, toggleTheme } = useTheme();
+    const { isMuted, toggleMute, playDefeatSound } = useChessAudio();
     const location = useLocation();
     const navigate = useNavigate();
     const isDark = colorMode === 'dark';
@@ -65,7 +70,7 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame, activeGa
     }, []);
 
     const avatarSrc = currentUsername && !isGuest 
-        ? `/api/users/${currentUsername}/avatar?t=${avatarTimestamp}` 
+        ? getUsernameAvatarUrl(currentUsername, avatarTimestamp) 
         : null;
 
     const isSignInActive = location.pathname === '/sign-in' || location.pathname === '/login';
@@ -105,6 +110,8 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame, activeGa
         setConfirmResign(false);
         localStorage.setItem('just_resigned', 'true');
 
+        playDefeatSound();
+
         const resolvedGameId = activeGameId || localStorage.getItem('activeGameId') || localStorage.getItem('currentGameId');
         if (resolvedGameId) {
             const dismissedGames: string[] = JSON.parse(localStorage.getItem('dismissed_games') || '[]');
@@ -121,8 +128,10 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame, activeGa
             onBackToMenu();
         }
 
-        navigate('/');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setTimeout(() => {
+            navigate('/');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 350);
     };
 
     const handleMenuClick = (path: string) => {
@@ -257,6 +266,20 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame, activeGa
                                 <span>Menu</span>
                             </button>
 
+                            {/* Sound Toggle */}
+                            <button
+                                onClick={toggleMute} 
+                                className={`min-h-9 p-2 rounded-xl border transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+                                    isMuted 
+                                        ? 'text-slate-400 bg-slate-100 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700' 
+                                        : 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800/60'
+                                }`}
+                                title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
+                                aria-label="Toggle sound"
+                            >
+                                {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                            </button>
+
                             <button
                                 onClick={handleResignGame}
                                 className={`min-h-9 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-xs ${
@@ -369,7 +392,7 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame, activeGa
 
                     {/* Mobile Drawer Toggle */}
                     {!isGamePage && (
-                        <button
+                        <button 
                             onClick={() => setMobileMenuOpen(prev => !prev)}
                             className="flex md:hidden p-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
                             aria-label="Toggle navigation menu"
@@ -431,8 +454,8 @@ export const Header: React.FC<HeaderProps> = ({ onBackToMenu, isInGame, activeGa
                                     </div>
                                 </Link>
                             )}
-                            <button
-                                onClick={logout}
+                            <button 
+                                onClick={logout} 
                                 className="p-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg cursor-pointer"
                                 title="Sign Out"
                             >

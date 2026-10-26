@@ -44,3 +44,6 @@ build/
 # Linting and Formatting Cache
 .eslintcache
 .prettiercache
+
+# SonarQube Scanner local working directory
+.scannerwork/

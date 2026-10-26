@@ -170,33 +170,4 @@ class AuthServiceTest {
             verify(userRepository, never()).save(any());
         }
     }
-
-    @Nested
-    @DisplayName("Rate Limiting Fallback Handling")
-    class RateLimiterFallbackTests {
-
-        @Test
-        @DisplayName("Should throw GameOperationException with rate limit message on login fallback")
-        void shouldThrowRateLimitExceptionOnLoginFallback() {
-            // Arrange
-            Throwable cause = new RuntimeException("Rate limit triggered");
-
-            // Act & Assert
-            assertThatThrownBy(() -> authService.loginFallback(loginRequest, cause))
-                .isInstanceOf(GameOperationException.class)
-                .hasMessage("Too many login attempts. Please try again later.");
-        }
-
-        @Test
-        @DisplayName("Should throw GameOperationException with rate limit message on guest fallback")
-        void shouldThrowRateLimitExceptionOnGuestFallback() {
-            // Arrange
-            Throwable cause = new RuntimeException("Rate limit triggered");
-
-            // Act & Assert
-            assertThatThrownBy(() -> authService.guestFallback(cause))
-                .isInstanceOf(GameOperationException.class)
-                .hasMessage("Too many guest login attempts. Please try again later.");
-        }
-    }
 }

@@ -9,7 +9,6 @@ import com.batuhan.chess.api.exception.UserAlreadyExistsException;
 import com.batuhan.chess.domain.model.user.UserEntity;
 import com.batuhan.chess.domain.repository.FileStoragePort;
 import com.batuhan.chess.domain.repository.UserRepository;
-import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.Keycloak;
@@ -317,7 +316,6 @@ public class UserService {
 
     @Transactional
     @CacheEvict(value = "users", allEntries = true)
-    @RateLimiter(name = "profileUpdateLimiter")
     public void updateProfile(UpdateProfileRequest request) {
         UserEntity user = getCurrentUserEntity();
 

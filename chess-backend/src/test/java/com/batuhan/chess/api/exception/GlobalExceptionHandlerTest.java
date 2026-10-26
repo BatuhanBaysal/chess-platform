@@ -1,6 +1,7 @@
 package com.batuhan.chess.api.exception;
 
 import com.batuhan.chess.api.dto.error.ErrorResponse;
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -164,6 +165,25 @@ class GlobalExceptionHandlerTest {
     @Nested
     @DisplayName("System and Generic Fallbacks")
     class GeneralExceptionTests {
+
+        @Test
+        @DisplayName("Should map RequestNotPermitted to 429 Too Many Requests with Retry-After header")
+        void shouldHandleRateLimitException() {
+            // Arrange
+            RequestNotPermitted ex = mock(RequestNotPermitted.class);
+
+            // Act
+            ResponseEntity<ErrorResponse> response = handler.handleRateLimit(ex, requestMock);
+
+            // Assert
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+            assertThat(response.getHeaders().getFirst("Retry-After")).isEqualTo("60");
+            assertThat(response.getBody()).isNotNull().satisfies(body -> {
+                assertThat(body.status()).isEqualTo(429);
+                assertThat(body.message()).isEqualTo("Too many requests. Please wait a moment.");
+                assertThat(body.path()).isEqualTo("/api/test-uri");
+            });
+        }
 
         @Test
         @DisplayName("Should map any unhandled Exception to 500 Internal Server Error")

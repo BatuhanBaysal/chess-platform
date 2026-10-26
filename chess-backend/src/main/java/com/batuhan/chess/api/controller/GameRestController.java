@@ -8,10 +8,10 @@ import com.batuhan.chess.api.dto.storage.FileDownloadDTO;
 import com.batuhan.chess.api.exception.ResourceNotFoundException;
 import com.batuhan.chess.application.service.game.GameArtifactService;
 import com.batuhan.chess.application.service.game.GameService;
-import com.batuhan.chess.application.service.game.GameTimerService;
 import com.batuhan.chess.domain.model.chess.Game;
 import com.batuhan.chess.domain.model.chess.Position;
 import com.batuhan.chess.domain.model.history.GameEntity;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,7 +23,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @RestController
@@ -33,7 +35,6 @@ import java.util.List;
 public class GameRestController {
 
     private final GameService gameService;
-    private final GameTimerService timerService;
     private final GameArtifactService artifactService;
 
     @Operation(
@@ -44,11 +45,9 @@ public class GameRestController {
     @GetMapping("/{gameId}")
     public ResponseEntity<GameResponse> getGame(@PathVariable String gameId) {
         log.info("GAME_ACTION: Fetching game with ID: {}", gameId);
-        Game game = gameService.getGame(gameId);
-        if (game == null) {
-            throw new ResourceNotFoundException("Game session not found with id: " + gameId);
-        }
-        return ResponseEntity.ok(gameService.convertToResponse(gameId, game));
+        return Optional.ofNullable(gameService.getGame(gameId))
+            .map(game -> ResponseEntity.ok(gameService.convertToResponse(gameId, game)))
+            .orElseThrow(() -> new ResourceNotFoundException("Game session not found with id: " + gameId));
     }
 
     @Operation(
@@ -61,12 +60,10 @@ public class GameRestController {
     public ResponseEntity<GameResponse> getActiveGame(@PathVariable Long userId) {
         log.info("GAME_ACTION: Checking active game for user ID: {}", userId);
         String gameId = gameService.getActiveGameIdByUserId(userId);
-        Game game = gameService.getGame(gameId);
-
-        if (game == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(gameService.convertToResponse(gameId, game));
+        return Optional.ofNullable(gameId)
+            .map(gameService::getGame)
+            .map(game -> ResponseEntity.ok(gameService.convertToResponse(gameId, game)))
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @Operation(
@@ -75,15 +72,16 @@ public class GameRestController {
     )
     @ApiResponse(responseCode = "200", description = "Game created successfully")
     @PostMapping
+    @RateLimiter(name = "gameCreationLimiter")
     public ResponseEntity<GameResponse> createGame(
         @RequestParam(value = "whiteId", required = false) Long whiteId,
         @RequestParam(value = "blackId", required = false) Long blackId) {
 
         log.info("GAME_ACTION: Creating new game - whiteId: {}, blackId: {}", whiteId, blackId);
         String gameId = gameService.createGame(whiteId, blackId);
-        Game game = gameService.getGame(gameId);
-        if (game == null) throw new ResourceNotFoundException("Failed to initialize game.");
-        return ResponseEntity.ok(gameService.convertToResponse(gameId, game));
+        return Optional.ofNullable(gameService.getGame(gameId))
+            .map(game -> ResponseEntity.ok(gameService.convertToResponse(gameId, game)))
+            .orElseThrow(() -> new ResourceNotFoundException("Failed to initialize game."));
     }
 
     @Operation(
@@ -92,6 +90,7 @@ public class GameRestController {
     )
     @ApiResponse(responseCode = "200", description = "AI game created successfully")
     @PostMapping("/vs-ai")
+    @RateLimiter(name = "gameCreationLimiter")
     public ResponseEntity<GameResponse> createAiGame(
         @RequestParam("userId") Long userId,
         @RequestParam(value = "playAsWhite", defaultValue = "true") boolean playAsWhite,
@@ -100,11 +99,9 @@ public class GameRestController {
 
         log.info("GAME_ACTION: Creating AI game for userId: {}, difficulty: {}", userId, difficulty);
         String gameId = gameService.createAiGame(userId, playAsWhite, difficulty, timeLimit);
-        Game game = gameService.getGame(gameId);
-        if (game == null) {
-            throw new ResourceNotFoundException("Failed to initialize AI game.");
-        }
-        return ResponseEntity.ok(gameService.convertToResponse(gameId, game));
+        return Optional.ofNullable(gameService.getGame(gameId))
+            .map(game -> ResponseEntity.ok(gameService.convertToResponse(gameId, game)))
+            .orElseThrow(() -> new ResourceNotFoundException("Failed to initialize AI game."));
     }
 
     @Operation(
@@ -115,22 +112,8 @@ public class GameRestController {
     @PostMapping("/{gameId}/finish")
     public ResponseEntity<Void> finishGame(@PathVariable String gameId) {
         log.info("GAME_ACTION: End-of-game request received for: {}", gameId);
-        Game game = gameService.getGame(gameId);
-
-        if (game == null) {
-            log.warn("GAME_ACTION: Game not found for finish request: {}", gameId);
-            return ResponseEntity.notFound().build();
-        }
-        if (!game.getStatus().isFinished()) {
-            gameService.processGameFinish(
-                gameId,
-                timerService.determineResult(game, game.getStatus()),
-                game.getStatus()
-            );
-            log.info("GAME_ACTION: Game successfully saved to database: {}", gameId);
-        }
-
-        return ResponseEntity.ok().build();
+        boolean finished = gameService.finishGameIfActive(gameId);
+        return finished ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
 
     @Operation(
@@ -145,16 +128,14 @@ public class GameRestController {
         @RequestParam int rank) {
 
         log.info("GAME_ACTION: Fetching legal moves for gameId: {} at file: {}, rank: {}", gameId, file, rank);
-        Game game = gameService.getGame(gameId);
-        if (game == null) {
-            throw new ResourceNotFoundException("Game not found: " + gameId);
-        }
+        Game game = Optional.ofNullable(gameService.getGame(gameId))
+            .orElseThrow(() -> new ResourceNotFoundException("Game not found: " + gameId));
+
         if (!gameService.isGameStarted(gameId)) {
-            return ResponseEntity.ok(List.of());
+            return ResponseEntity.ok(Collections.emptyList());
         }
 
-        Position startPos = new Position(file, rank);
-        return ResponseEntity.ok(game.getLegalMovesForSquare(startPos));
+        return ResponseEntity.ok(game.getLegalMovesForSquare(new Position(file, rank)));
     }
 
     @Operation(
@@ -168,8 +149,7 @@ public class GameRestController {
         @RequestParam(value = "depth", defaultValue = "10") int depth) {
 
         log.info("GAME_ACTION: Requesting engine hint for gameId: {} with depth: {}", gameId, depth);
-        HintResponse response = gameService.getEngineHint(gameId, depth);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(gameService.getEngineHint(gameId, depth));
     }
 
     @Operation(

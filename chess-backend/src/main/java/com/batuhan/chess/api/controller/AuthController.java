@@ -4,6 +4,7 @@ import com.batuhan.chess.api.dto.auth.AuthResponse;
 import com.batuhan.chess.api.dto.auth.LoginRequest;
 import com.batuhan.chess.api.dto.auth.RegisterRequest;
 import com.batuhan.chess.application.service.auth.AuthService;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,6 +32,7 @@ public class AuthController {
     )
     @ApiResponse(responseCode = "200", description = "User registered successfully")
     @PostMapping("/register")
+    @RateLimiter(name = "authRegisterLimiter")
     public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
         log.info("AUTH_ACTION: Registration request received for identifier/email");
         authService.register(request);
@@ -44,6 +46,7 @@ public class AuthController {
     )
     @ApiResponse(responseCode = "200", description = "Authentication successful")
     @PostMapping("/login")
+    @RateLimiter(name = "authLoginLimiter")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         log.info("AUTH_ACTION: Login attempt received");
         AuthResponse response = authService.login(request);
@@ -57,6 +60,7 @@ public class AuthController {
     )
     @ApiResponse(responseCode = "200", description = "Guest session initialized successfully")
     @PostMapping("/guest")
+    @RateLimiter(name = "authRegisterLimiter")
     public ResponseEntity<AuthResponse> loginAsGuest() {
         log.info("AUTH_ACTION: Guest session login requested");
         AuthResponse response = authService.loginAsGuest();

@@ -170,7 +170,9 @@ public class GlobalExceptionHandler {
             getNow(),
             null
         );
-        return new ResponseEntity<>(error, HttpStatus.TOO_MANY_REQUESTS);
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+            .header("Retry-After", "60")
+            .body(error);
     }
 
     @ExceptionHandler(IllegalStateException.class)

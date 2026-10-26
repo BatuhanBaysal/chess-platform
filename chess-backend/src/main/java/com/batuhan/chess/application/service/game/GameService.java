@@ -4,6 +4,7 @@ import com.batuhan.chess.api.dto.game.GameAnalysisMessage;
 import com.batuhan.chess.api.dto.game.GameResponse;
 import com.batuhan.chess.api.dto.game.HintResponse;
 import com.batuhan.chess.api.dto.lobby.GameRoomResponse;
+import com.batuhan.chess.api.exception.ResourceNotFoundException;
 import com.batuhan.chess.domain.model.chess.*;
 import com.batuhan.chess.domain.model.history.GameEntity;
 import com.batuhan.chess.domain.model.history.GameResult;
@@ -129,7 +130,7 @@ public class GameService {
     public boolean finishGameIfActive(String gameId) {
         Game game = sessionManager.getGame(gameId);
         if (game == null) {
-            return false;
+            throw new ResourceNotFoundException("Game not found for finish request: " + gameId);
         }
 
         if (!game.getStatus().isFinished()) {

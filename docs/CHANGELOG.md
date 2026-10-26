@@ -36,10 +36,17 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
-## [2.6.0] - 2026-10-24
+## [2.6.0] - 2026-10-26
 
 ### 💎 Phase v2.6.0: Core Stabilization, RBAC Governance & Player Experience 🚀
 > **Note:** Finalizing production readiness by enforcing compile-time type contracts, isolating AI engine state lifecycles, refining authentication and role-based access, polishing player identity systems, and delivering administrative control capabilities.
+
+- **2026-10-26:**
+    - **Resilience4j Public Endpoint Rate Limiting & Actuator Route Lockdown (PR #204 | Issue #203):**
+        - **Controller-Level Rate Limiting (`@RateLimiter`):** Enforced request throttling directly at the Controller layer across unauthenticated onboarding and game creation endpoints using native Resilience4j modules. Configured granular rate limiter instances in `application.yaml`: Registration & Guest access (3 req/min), Authentication (5 req/min), Match & Lobby Room creation (2 req/min), Profile updates (5 req/min), and Account actions (3 req/min). Standardized threshold breach handling via `GlobalExceptionHandler` returning `HTTP 429 Too Many Requests` with a consistent JSON payload (`"Too many requests. Please wait a moment."`).
+        - **Actuator Route Lockdown & Container Healthcheck Openness (`SecurityConfig.java`):** Restricted diagnostic Actuator routes (such as `/actuator/metrics`, `/actuator/prometheus`) strictly to the `ADMIN` role. Maintained open public access to `/actuator/health`, `/actuator/health/**`, and `/actuator/info` to ensure Docker container and orchestrator health probes pass cleanly without authentication hurdles.
+        - **Architectural Decoupling & Clean Layer Separation:** Eliminated redundant rate limiter annotations and HTTP-specific decision logic from service classes (`UserService`, `AuthService`, `GameService`, `LobbyService`), ensuring services exclusively manage pure business operations, distributed locks (`RLock`), Keycloak identity sync, and database persistence.
+        - **AAA Integration Testing Fortification:** Refactored controller web slice tests (`AuthControllerTest`, `UserControllerTest`, `LobbyControllerTest`, `GameRestControllerTest`) and introduced `GameRateLimiterIntegrationTest` adhering strictly to Arrange-Act-Assert (AAA) standards; implemented rate limiter registry reset hooks in `@BeforeEach` to guarantee test isolation across sequential executions.
 
 - **2026-10-24:**
     - **Interactive PGN Match Replay Modal & Universal Sound Effects Engine (PR #202 | Issue #201):**

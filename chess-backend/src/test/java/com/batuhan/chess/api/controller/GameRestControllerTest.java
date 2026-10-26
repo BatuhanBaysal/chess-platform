@@ -4,11 +4,14 @@ import com.batuhan.chess.api.dto.game.GameExportResponse;
 import com.batuhan.chess.api.dto.game.GameResponse;
 import com.batuhan.chess.api.dto.game.HintResponse;
 import com.batuhan.chess.api.dto.storage.FileDownloadDTO;
+import com.batuhan.chess.api.exception.GlobalExceptionHandler;
 import com.batuhan.chess.application.service.game.GameArtifactService;
 import com.batuhan.chess.application.service.game.GameService;
-import com.batuhan.chess.application.service.game.GameTimerService;
-import com.batuhan.chess.application.service.game.StockfishService;
-import com.batuhan.chess.domain.model.chess.*;
+import com.batuhan.chess.domain.model.chess.Board;
+import com.batuhan.chess.domain.model.chess.Color;
+import com.batuhan.chess.domain.model.chess.Game;
+import com.batuhan.chess.domain.model.chess.GameStatus;
+import com.batuhan.chess.domain.model.chess.Position;
 import com.batuhan.chess.domain.model.history.GameEntity;
 import com.batuhan.chess.domain.model.history.GameResult;
 import com.batuhan.chess.domain.model.user.UserEntity;
@@ -18,9 +21,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -32,6 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(GameRestController.class)
 @AutoConfigureMockMvc(addFilters = false)
+@Import(GlobalExceptionHandler.class)
 @DisplayName("Game REST Controller Web Layer Tests")
 class GameRestControllerTest {
 
@@ -40,12 +48,6 @@ class GameRestControllerTest {
 
     @MockitoBean
     private GameService gameService;
-
-    @MockitoBean
-    private GameTimerService timerService;
-
-    @MockitoBean
-    private StockfishService stockfishService;
 
     @MockitoBean
     private GameArtifactService artifactService;
@@ -67,9 +69,11 @@ class GameRestControllerTest {
             when(gameService.getGame(gameId)).thenReturn(game);
             when(gameService.convertToResponse(gameId, game)).thenReturn(response);
 
-            // Act & Assert
-            mockMvc.perform(get("/api/games/{gameId}", gameId))
-                .andExpect(status().isOk())
+            // Act
+            ResultActions result = mockMvc.perform(get("/api/games/{gameId}", gameId));
+
+            // Assert
+            result.andExpect(status().isOk())
                 .andExpect(jsonPath("$.gameId").value(gameId))
                 .andExpect(jsonPath("$.whiteId").value(1))
                 .andExpect(jsonPath("$.blackId").value(2))
@@ -90,11 +94,13 @@ class GameRestControllerTest {
             when(gameService.getGame(gameId)).thenReturn(game);
             when(gameService.convertToResponse(gameId, game)).thenReturn(response);
 
-            // Act & Assert
-            mockMvc.perform(post("/api/games")
-                    .param("whiteId", "1")
-                    .param("blackId", "2"))
-                .andExpect(status().isOk())
+            // Act
+            ResultActions result = mockMvc.perform(post("/api/games")
+                .param("whiteId", "1")
+                .param("blackId", "2"));
+
+            // Assert
+            result.andExpect(status().isOk())
                 .andExpect(jsonPath("$.gameId").value(gameId))
                 .andExpect(jsonPath("$.whiteId").value(1))
                 .andExpect(jsonPath("$.blackId").value(2));
@@ -114,11 +120,41 @@ class GameRestControllerTest {
             when(gameService.getGame(gameId)).thenReturn(game);
             when(gameService.convertToResponse(gameId, game)).thenReturn(response);
 
-            // Act & Assert
-            mockMvc.perform(post("/api/games"))
-                .andExpect(status().isOk())
+            // Act
+            ResultActions result = mockMvc.perform(post("/api/games"));
+
+            // Assert
+            result.andExpect(status().isOk())
                 .andExpect(jsonPath("$.gameId").value(gameId))
                 .andExpect(jsonPath("$.isStarted").value(false));
+        }
+
+        @Test
+        @DisplayName("Should finish active game successfully and return 200 OK")
+        void shouldFinishActiveGameSuccessfully() throws Exception {
+            // Arrange
+            String gameId = "active-game";
+            when(gameService.finishGameIfActive(gameId)).thenReturn(true);
+
+            // Act
+            ResultActions result = mockMvc.perform(post("/api/games/{gameId}/finish", gameId));
+
+            // Assert
+            result.andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("Should return 404 Not Found when finishing a non-existent game")
+        void shouldReturnNotFoundWhenFinishingNonExistentGame() throws Exception {
+            // Arrange
+            String gameId = "non-existent";
+            when(gameService.finishGameIfActive(gameId)).thenReturn(false);
+
+            // Act
+            ResultActions result = mockMvc.perform(post("/api/games/{gameId}/finish", gameId));
+
+            // Assert
+            result.andExpect(status().isNotFound());
         }
     }
 
@@ -137,11 +173,13 @@ class GameRestControllerTest {
             when(gameService.getGame(gameId)).thenReturn(mockedGame);
             when(mockedGame.getLegalMovesForSquare(any(Position.class))).thenReturn(expectedMoves);
 
-            // Act & Assert
-            mockMvc.perform(get("/api/games/{gameId}/legal-moves", gameId)
-                    .param("file", "4")
-                    .param("rank", "1"))
-                .andExpect(status().isOk())
+            // Act
+            ResultActions result = mockMvc.perform(get("/api/games/{gameId}/legal-moves", gameId)
+                .param("file", "4")
+                .param("rank", "1"));
+
+            // Assert
+            result.andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].file").value(4))
                 .andExpect(jsonPath("$[0].rank").value(2));
@@ -155,11 +193,13 @@ class GameRestControllerTest {
             when(gameService.getGame(gameId)).thenReturn(new Game(new Board()));
             when(gameService.isGameStarted(gameId)).thenReturn(false);
 
-            // Act & Assert
-            mockMvc.perform(get("/api/games/{gameId}/legal-moves", gameId)
-                    .param("file", "4")
-                    .param("rank", "4"))
-                .andExpect(status().isOk())
+            // Act
+            ResultActions result = mockMvc.perform(get("/api/games/{gameId}/legal-moves", gameId)
+                .param("file", "4")
+                .param("rank", "4"));
+
+            // Assert
+            result.andExpect(status().isOk())
                 .andExpect(jsonPath("$").isEmpty());
         }
     }
@@ -183,9 +223,11 @@ class GameRestControllerTest {
                 .build();
             when(gameService.getGameHistory(userId)).thenReturn(List.of(history));
 
-            // Act & Assert
-            mockMvc.perform(get("/api/games/history/{userId}", userId))
-                .andExpect(status().isOk())
+            // Act
+            ResultActions result = mockMvc.perform(get("/api/games/history/{userId}", userId));
+
+            // Assert
+            result.andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].whitePlayerName").value("batuhan"))
                 .andExpect(jsonPath("$[0].blackPlayerName").value("opponent"))
                 .andExpect(jsonPath("$[0].result").value("WHITE_WIN"));
@@ -204,9 +246,11 @@ class GameRestControllerTest {
                 .build();
             when(gameService.getGameHistory(userId)).thenReturn(List.of(history));
 
-            // Act & Assert
-            mockMvc.perform(get("/api/games/history/{userId}", userId))
-                .andExpect(status().isOk())
+            // Act
+            ResultActions result = mockMvc.perform(get("/api/games/history/{userId}", userId));
+
+            // Assert
+            result.andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].whitePlayerName").value("Guest"))
                 .andExpect(jsonPath("$[0].blackPlayerName").value("Guest"));
         }
@@ -217,9 +261,11 @@ class GameRestControllerTest {
             // Arrange
             when(gameService.getGameHistory(anyLong())).thenReturn(List.of());
 
-            // Act & Assert
-            mockMvc.perform(get("/api/games/history/{userId}", 99L))
-                .andExpect(status().isOk())
+            // Act
+            ResultActions result = mockMvc.perform(get("/api/games/history/{userId}", 99L));
+
+            // Assert
+            result.andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
         }
     }
@@ -242,11 +288,13 @@ class GameRestControllerTest {
             when(gameService.getGame(gameId)).thenReturn(game);
             when(gameService.convertToResponse(gameId, game)).thenReturn(response);
 
-            // Act & Assert
-            mockMvc.perform(post("/api/games/vs-ai")
-                    .param("userId", "1")
-                    .param("playAsWhite", "true"))
-                .andExpect(status().isOk())
+            // Act
+            ResultActions result = mockMvc.perform(post("/api/games/vs-ai")
+                .param("userId", "1")
+                .param("playAsWhite", "true"));
+
+            // Assert
+            result.andExpect(status().isOk())
                 .andExpect(jsonPath("$.gameId").value(gameId))
                 .andExpect(jsonPath("$.whiteId").value(1))
                 .andExpect(jsonPath("$.blackId").value(-1));
@@ -266,11 +314,13 @@ class GameRestControllerTest {
             when(gameService.getGame(gameId)).thenReturn(game);
             when(gameService.convertToResponse(gameId, game)).thenReturn(response);
 
-            // Act & Assert
-            mockMvc.perform(post("/api/games/vs-ai")
-                    .param("userId", "2")
-                    .param("playAsWhite", "false"))
-                .andExpect(status().isOk())
+            // Act
+            ResultActions result = mockMvc.perform(post("/api/games/vs-ai")
+                .param("userId", "2")
+                .param("playAsWhite", "false"));
+
+            // Assert
+            result.andExpect(status().isOk())
                 .andExpect(jsonPath("$.gameId").value(gameId))
                 .andExpect(jsonPath("$.whiteId").value(-1))
                 .andExpect(jsonPath("$.blackId").value(2));
@@ -289,10 +339,12 @@ class GameRestControllerTest {
             HintResponse hintResponse = new HintResponse("e2e4", 35, "Engine calculated best move.");
             when(gameService.getEngineHint(gameId, 10)).thenReturn(hintResponse);
 
-            // Act & Assert
-            mockMvc.perform(get("/api/games/{gameId}/hint", gameId)
-                    .param("depth", "10"))
-                .andExpect(status().isOk())
+            // Act
+            ResultActions result = mockMvc.perform(get("/api/games/{gameId}/hint", gameId)
+                .param("depth", "10"));
+
+            // Assert
+            result.andExpect(status().isOk())
                 .andExpect(jsonPath("$.bestMoveUci").value("e2e4"))
                 .andExpect(jsonPath("$.evaluationScore").value(35))
                 .andExpect(jsonPath("$.message").value("Engine calculated best move."));
@@ -312,10 +364,12 @@ class GameRestControllerTest {
             FileDownloadDTO downloadDTO = new FileDownloadDTO(pgnBytes, "application/x-chess-pgn", gameId + ".pgn");
             when(artifactService.exportGamePgn(gameId)).thenReturn(downloadDTO);
 
-            // Act & Assert
-            mockMvc.perform(get("/api/games/{gameId}/export/pgn", gameId))
-                .andExpect(status().isOk())
-                .andExpect(header().string(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"game-123.pgn\""))
+            // Act
+            ResultActions result = mockMvc.perform(get("/api/games/{gameId}/export/pgn", gameId));
+
+            // Assert
+            result.andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"game-123.pgn\""))
                 .andExpect(content().contentType("application/x-chess-pgn"))
                 .andExpect(content().bytes(pgnBytes));
 
@@ -327,7 +381,7 @@ class GameRestControllerTest {
         void shouldUploadMatchArtifactSuccessfully() throws Exception {
             // Arrange
             String gameId = "game-123";
-            org.springframework.mock.web.MockMultipartFile file = new org.springframework.mock.web.MockMultipartFile(
+            MockMultipartFile file = new MockMultipartFile(
                 "file", "engine-telemetry.log", MediaType.TEXT_PLAIN_VALUE, "sample log content".getBytes()
             );
             GameExportResponse exportResponse = new GameExportResponse(
@@ -335,10 +389,12 @@ class GameRestControllerTest {
             );
             when(artifactService.uploadMatchArtifact(eq(gameId), any(MultipartFile.class))).thenReturn(exportResponse);
 
-            // Act & Assert
-            mockMvc.perform(multipart("/api/games/{gameId}/artifacts", gameId)
-                    .file(file))
-                .andExpect(status().isOk())
+            // Act
+            ResultActions result = mockMvc.perform(multipart("/api/games/{gameId}/artifacts", gameId)
+                .file(file));
+
+            // Assert
+            result.andExpect(status().isOk())
                 .andExpect(jsonPath("$.gameId").value(gameId))
                 .andExpect(jsonPath("$.fileName").value("engine-telemetry.log"))
                 .andExpect(jsonPath("$.storageKey").value("matches/artifacts/game-123/engine-telemetry.log"))

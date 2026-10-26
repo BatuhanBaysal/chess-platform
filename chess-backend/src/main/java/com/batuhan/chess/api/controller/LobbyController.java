@@ -4,6 +4,7 @@ import com.batuhan.chess.api.dto.lobby.CreateRoomRequest;
 import com.batuhan.chess.api.dto.lobby.GameRoomResponse;
 import com.batuhan.chess.api.dto.lobby.JoinRoomRequest;
 import com.batuhan.chess.application.service.game.LobbyService;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,6 +31,7 @@ public class LobbyController {
     )
     @ApiResponse(responseCode = "200", description = "Room created successfully, returns room ID")
     @PostMapping("/create")
+    @RateLimiter(name = "gameCreationLimiter")
     public ResponseEntity<String> createRoom(@Valid @RequestBody CreateRoomRequest request) {
         log.info("LOBBY_ACTION: Room creation requested - userId: {}, username: {}, time: {}, theme: {}",
             request.userId(), request.username(), request.time(), request.theme());
@@ -45,6 +47,7 @@ public class LobbyController {
     @ApiResponse(responseCode = "200", description = "Successfully joined room")
     @ApiResponse(responseCode = "400", description = "Failed to join room (room full, started, or active game exists)")
     @PostMapping("/join")
+    @RateLimiter(name = "gameCreationLimiter")
     public ResponseEntity<Void> joinRoom(@Valid @RequestBody JoinRoomRequest request) {
         log.info("LOBBY_ACTION: Join request received - Room: {}, userId: {}, username: {}",
             request.roomId(), request.userId(), request.username());
@@ -75,15 +78,7 @@ public class LobbyController {
     @GetMapping("/status/{roomId}")
     public ResponseEntity<GameRoomResponse> getLobbyStatus(@PathVariable String roomId) {
         log.info("LOBBY_ACTION: Fetching status for room ID: {}", roomId);
-        return lobbyService.getRoom(roomId)
-            .map(room -> {
-                log.info("LOBBY_ACTION: Room found with ID: {}", roomId);
-                return ResponseEntity.ok(room);
-            })
-            .orElseGet(() -> {
-                log.warn("LOBBY_ACTION: Room not found with ID: {}", roomId);
-                return ResponseEntity.notFound().build();
-            });
+        return ResponseEntity.ok(lobbyService.getRoomOrThrow(roomId));
     }
 
     @Operation(

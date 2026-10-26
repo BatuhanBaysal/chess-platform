@@ -3,8 +3,9 @@ package com.batuhan.chess.api.controller;
 import com.batuhan.chess.api.dto.lobby.CreateRoomRequest;
 import com.batuhan.chess.api.dto.lobby.GameRoomResponse;
 import com.batuhan.chess.api.dto.lobby.JoinRoomRequest;
-import com.batuhan.chess.application.service.game.LobbyService;
+import com.batuhan.chess.api.exception.GlobalExceptionHandler;
 import com.batuhan.chess.api.exception.ResourceNotFoundException;
+import com.batuhan.chess.application.service.game.LobbyService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -12,12 +13,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doThrow;
@@ -27,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(LobbyController.class)
 @AutoConfigureMockMvc(addFilters = false)
+@Import(GlobalExceptionHandler.class)
 @DisplayName("Lobby Controller Web Layer Tests")
 class LobbyControllerTest {
 
@@ -51,11 +54,13 @@ class LobbyControllerTest {
             CreateRoomRequest request = new CreateRoomRequest(1L, "batuhan", 10, "classic");
             when(lobbyService.createRoom(anyLong(), anyString(), anyInt(), anyString())).thenReturn(mockRoomId);
 
-            // Act & Assert
-            mockMvc.perform(post("/api/lobby/create")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
+            // Act
+            ResultActions result = mockMvc.perform(post("/api/lobby/create")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)));
+
+            // Assert
+            result.andExpect(status().isOk())
                 .andExpect(content().string(mockRoomId));
         }
 
@@ -65,11 +70,13 @@ class LobbyControllerTest {
             // Arrange
             JoinRoomRequest request = new JoinRoomRequest("room1234", 2L, "opponent", "classic");
 
-            // Act & Assert
-            mockMvc.perform(post("/api/lobby/join")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk());
+            // Act
+            ResultActions result = mockMvc.perform(post("/api/lobby/join")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)));
+
+            // Assert
+            result.andExpect(status().isOk());
         }
 
         @Test
@@ -77,15 +84,16 @@ class LobbyControllerTest {
         void shouldReturnBadRequestWhenJoinFails() throws Exception {
             // Arrange
             JoinRoomRequest request = new JoinRoomRequest("full-room", 3L, "tester", "classic");
-
             doThrow(new IllegalStateException("Room is invalid, expired, or already in progress."))
                 .when(lobbyService).joinRoom(anyString(), anyLong(), anyString());
 
-            // Act & Assert
-            mockMvc.perform(post("/api/lobby/join")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
+            // Act
+            ResultActions result = mockMvc.perform(post("/api/lobby/join")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)));
+
+            // Assert
+            result.andExpect(status().isBadRequest());
         }
     }
 
@@ -102,12 +110,13 @@ class LobbyControllerTest {
                 .status("WAITING")
                 .theme("classic")
                 .build();
-
             when(lobbyService.getAllActiveRooms()).thenReturn(List.of(room));
 
-            // Act & Assert
-            mockMvc.perform(get("/api/lobby/rooms"))
-                .andExpect(status().isOk())
+            // Act
+            ResultActions result = mockMvc.perform(get("/api/lobby/rooms"));
+
+            // Assert
+            result.andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].roomId").value("room1"))
                 .andExpect(jsonPath("$[0].status").value("WAITING"));
         }
@@ -121,12 +130,13 @@ class LobbyControllerTest {
                 .status("WAITING")
                 .theme("classic")
                 .build();
+            when(lobbyService.getRoomOrThrow("test-room")).thenReturn(room);
 
-            when(lobbyService.getRoom("test-room")).thenReturn(Optional.of(room));
+            // Act
+            ResultActions result = mockMvc.perform(get("/api/lobby/status/test-room"));
 
-            // Act & Assert
-            mockMvc.perform(get("/api/lobby/status/test-room"))
-                .andExpect(status().isOk())
+            // Assert
+            result.andExpect(status().isOk())
                 .andExpect(jsonPath("$.roomId").value("test-room"));
         }
 
@@ -134,11 +144,14 @@ class LobbyControllerTest {
         @DisplayName("Should return 404 Not Found when requesting status of a non-existent room")
         void shouldReturnNotFoundForInvalidRoom() throws Exception {
             // Arrange
-            when(lobbyService.getRoom("invalid-id")).thenReturn(Optional.empty());
+            when(lobbyService.getRoomOrThrow("invalid-id"))
+                .thenThrow(new ResourceNotFoundException("Room not found with ID: invalid-id"));
 
-            // Act & Assert
-            mockMvc.perform(get("/api/lobby/status/invalid-id"))
-                .andExpect(status().isNotFound());
+            // Act
+            ResultActions result = mockMvc.perform(get("/api/lobby/status/invalid-id"));
+
+            // Assert
+            result.andExpect(status().isNotFound());
         }
     }
 
@@ -149,25 +162,33 @@ class LobbyControllerTest {
         @Test
         @DisplayName("Should return 204 No Content when a room is cancelled successfully by host")
         void shouldCancelRoomSuccessfully() throws Exception {
-            // Act & Assert
-            mockMvc.perform(delete("/api/lobby/cancel/room1234")
-                    .param("userId", "1")
-                    .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNoContent());
+            // Arrange
+            String roomId = "room1234";
+
+            // Act
+            ResultActions result = mockMvc.perform(delete("/api/lobby/cancel/" + roomId)
+                .param("userId", "1")
+                .contentType(MediaType.APPLICATION_JSON));
+
+            // Assert
+            result.andExpect(status().isNoContent());
         }
 
         @Test
         @DisplayName("Should return 404 Not Found when cancelling a non-existent room")
         void shouldReturnNotFoundWhenCancelRoomNotFound() throws Exception {
             // Arrange
+            String roomId = "room1234";
             doThrow(new ResourceNotFoundException("Room not found"))
-                .when(lobbyService).cancelRoom(eq("room1234"), anyLong());
+                .when(lobbyService).cancelRoom(eq(roomId), anyLong());
 
-            // Act & Assert
-            mockMvc.perform(delete("/api/lobby/cancel/room1234")
-                    .param("userId", "1")
-                    .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound());
+            // Act
+            ResultActions result = mockMvc.perform(delete("/api/lobby/cancel/" + roomId)
+                .param("userId", "1")
+                .contentType(MediaType.APPLICATION_JSON));
+
+            // Assert
+            result.andExpect(status().isNotFound());
         }
     }
 }

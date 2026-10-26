@@ -19,9 +19,11 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -76,9 +78,11 @@ class UserControllerTest {
             UserResponseDTO mockResponse = UserResponseDTO.builder().username("batuhan").build();
             when(userService.getProfile()).thenReturn(mockResponse);
 
-            // Act & Assert
-            mockMvc.perform(get("/api/users/me"))
-                .andExpect(status().isOk())
+            // Act
+            ResultActions result = mockMvc.perform(get("/api/users/me"));
+
+            // Assert
+            result.andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("batuhan"));
         }
     }
@@ -101,11 +105,13 @@ class UserControllerTest {
 
             when(userService.getPagedLeaderboard(0, 10)).thenReturn(page);
 
-            // Act & Assert
-            mockMvc.perform(get("/api/users/leaderboard/all")
-                    .param("page", "0")
-                    .param("size", "10"))
-                .andExpect(status().isOk())
+            // Act
+            ResultActions result = mockMvc.perform(get("/api/users/leaderboard/all")
+                .param("page", "0")
+                .param("size", "10"));
+
+            // Assert
+            result.andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].username").value("batuhan"))
                 .andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.totalPages").value(1));
@@ -126,13 +132,14 @@ class UserControllerTest {
             UpdateProfileRequest request = new UpdateProfileRequest("new_batuhan", "new@mail.com");
             doNothing().when(userService).updateProfile(any(UpdateProfileRequest.class));
 
-            // Act & Assert
-            mockMvc.perform(put("/api/users/me")
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isNoContent());
+            // Act
+            ResultActions result = mockMvc.perform(put("/api/users/me")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)));
 
+            // Assert
+            result.andExpect(status().isNoContent());
             verify(userService, times(1)).updateProfile(any(UpdateProfileRequest.class));
         }
 
@@ -143,12 +150,14 @@ class UserControllerTest {
             // Arrange
             UpdateProfileRequest request = new UpdateProfileRequest("hi", "invalid-email");
 
-            // Act & Assert
-            mockMvc.perform(put("/api/users/me")
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
+            // Act
+            ResultActions result = mockMvc.perform(put("/api/users/me")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)));
+
+            // Assert
+            result.andExpect(status().isBadRequest());
         }
 
         @Test
@@ -160,12 +169,14 @@ class UserControllerTest {
             doThrow(new UserAlreadyExistsException("Already exists"))
                 .when(userService).updateProfile(any(UpdateProfileRequest.class));
 
-            // Act & Assert
-            mockMvc.perform(put("/api/users/me")
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isConflict());
+            // Act
+            ResultActions result = mockMvc.perform(put("/api/users/me")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)));
+
+            // Assert
+            result.andExpect(status().isConflict());
         }
     }
 
@@ -180,13 +191,14 @@ class UserControllerTest {
             // Arrange
             ChangePasswordRequest request = new ChangePasswordRequest("oldPass123", "newPass123");
 
-            // Act & Assert
-            mockMvc.perform(put("/api/users/me/password")
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isNoContent());
+            // Act
+            ResultActions result = mockMvc.perform(put("/api/users/me/password")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)));
 
+            // Assert
+            result.andExpect(status().isNoContent());
             verify(userService, times(1)).changePassword(any(ChangePasswordRequest.class));
         }
 
@@ -197,12 +209,14 @@ class UserControllerTest {
             // Arrange
             ChangePasswordRequest request = new ChangePasswordRequest("oldPass123", "123");
 
-            // Act & Assert
-            mockMvc.perform(put("/api/users/me/password")
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
+            // Act
+            ResultActions result = mockMvc.perform(put("/api/users/me/password")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)));
+
+            // Assert
+            result.andExpect(status().isBadRequest());
         }
     }
 
@@ -215,17 +229,19 @@ class UserControllerTest {
         @DisplayName("Should return 200 OK when avatar is uploaded successfully")
         void uploadAvatar_ValidFile_ReturnsOk() throws Exception {
             // Arrange
-            org.springframework.mock.web.MockMultipartFile file = new org.springframework.mock.web.MockMultipartFile(
+            MockMultipartFile file = new MockMultipartFile(
                 "file", "avatar.png", MediaType.IMAGE_PNG_VALUE, "dummy image bytes".getBytes()
             );
             AvatarUploadResponse mockResponse = new AvatarUploadResponse("/api/users/batuhan/avatar", "Avatar uploaded successfully");
             when(userService.uploadAvatar(any(MultipartFile.class))).thenReturn(mockResponse);
 
-            // Act & Assert
-            mockMvc.perform(multipart("/api/users/me/avatar")
-                    .file(file)
-                    .with(csrf()))
-                .andExpect(status().isOk())
+            // Act
+            ResultActions result = mockMvc.perform(multipart("/api/users/me/avatar")
+                .file(file)
+                .with(csrf()));
+
+            // Assert
+            result.andExpect(status().isOk())
                 .andExpect(jsonPath("$.avatarUrl").value("/api/users/batuhan/avatar"))
                 .andExpect(jsonPath("$.message").value("Avatar uploaded successfully"));
 
@@ -241,9 +257,11 @@ class UserControllerTest {
             FileDownloadDTO downloadDTO = new FileDownloadDTO(imageBytes, MediaType.IMAGE_PNG_VALUE, "batuhan.png");
             when(userService.getAvatar("batuhan")).thenReturn(downloadDTO);
 
-            // Act & Assert
-            mockMvc.perform(get("/api/users/{username}/avatar", "batuhan"))
-                .andExpect(status().isOk())
+            // Act
+            ResultActions result = mockMvc.perform(get("/api/users/{username}/avatar", "batuhan"));
+
+            // Assert
+            result.andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.IMAGE_PNG_VALUE))
                 .andExpect(content().bytes(imageBytes));
 
@@ -262,13 +280,14 @@ class UserControllerTest {
             // Arrange
             DeleteAccountRequest request = new DeleteAccountRequest("password123");
 
-            // Act & Assert
-            mockMvc.perform(delete("/api/users/me")
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isNoContent());
+            // Act
+            ResultActions result = mockMvc.perform(delete("/api/users/me")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)));
 
+            // Assert
+            result.andExpect(status().isNoContent());
             verify(userService, times(1)).deleteAccount(any(DeleteAccountRequest.class));
         }
 
@@ -279,12 +298,14 @@ class UserControllerTest {
             // Arrange
             DeleteAccountRequest request = new DeleteAccountRequest("");
 
-            // Act & Assert
-            mockMvc.perform(delete("/api/users/me")
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
+            // Act
+            ResultActions result = mockMvc.perform(delete("/api/users/me")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)));
+
+            // Assert
+            result.andExpect(status().isBadRequest());
         }
     }
 }

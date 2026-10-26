@@ -9,7 +9,6 @@ import com.batuhan.chess.api.exception.UserAlreadyExistsException;
 import com.batuhan.chess.domain.model.user.UserEntity;
 import com.batuhan.chess.domain.model.user.UserRole;
 import com.batuhan.chess.domain.repository.UserRepository;
-import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -82,7 +81,6 @@ public class AuthService {
         log.info("AUTH_ACTION: Successfully registered new user to Keycloak and DB: {}", request.username());
     }
 
-    @RateLimiter(name = "authService", fallbackMethod = "loginFallback")
     public AuthResponse login(LoginRequest request) {
         var user = userRepository.findByUsernameAndActiveTrue(request.usernameOrEmail())
             .or(() -> userRepository.findByEmailAndActiveTrue(request.usernameOrEmail()))
@@ -102,7 +100,6 @@ public class AuthService {
     }
 
     @Transactional
-    @RateLimiter(name = "authService", fallbackMethod = "guestFallback")
     public AuthResponse loginAsGuest() {
         String guestUsername = "guest_" + UUID.randomUUID().toString().substring(0, 8);
         String guestPassword = UUID.randomUUID().toString();
@@ -256,17 +253,5 @@ public class AuthService {
             log.error("KEYCLOAK_ERROR: Authentication failed for user {}: {}", username, e.getMessage());
             throw new GameOperationException("Failed to authenticate session with identity provider.");
         }
-    }
-
-    @SuppressWarnings("unused")
-    public AuthResponse loginFallback(LoginRequest request, Throwable t) {
-        log.warn("RATE_LIMIT: Login rate limit exceeded for user {}: {}", request.usernameOrEmail(), t.getMessage());
-        throw new GameOperationException("Too many login attempts. Please try again later.");
-    }
-
-    @SuppressWarnings("unused")
-    public AuthResponse guestFallback(Throwable t) {
-        log.warn("RATE_LIMIT: Guest login rate limit exceeded: {}", t.getMessage());
-        throw new GameOperationException("Too many guest login attempts. Please try again later.");
     }
 }

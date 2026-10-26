@@ -197,4 +197,9 @@ public class LobbyService {
         GameRoomInternal room = activeRooms.get(roomId);
         return Optional.ofNullable(room).map(GameRoomInternal::toResponse);
     }
+
+    public GameRoomResponse getRoomOrThrow(String roomId) {
+        return getRoom(roomId)
+            .orElseThrow(() -> new ResourceNotFoundException("Room not found with ID: " + roomId));
+    }
 }

@@ -129,11 +129,23 @@ resilience4j:
             default:
                 registerHealthIndicator: true
                 limitForPeriod: 5
-                limitRefreshPeriod: 1s
+                limitRefreshPeriod: 1m
                 timeoutDuration: 0
         instances:
-            authService:
-                baseConfig: default
+            authRegisterLimiter:
+                limitForPeriod: 3
+                limitRefreshPeriod: 1m
+                timeoutDuration: 0
+
+            authLoginLimiter:
+                limitForPeriod: 5
+                limitRefreshPeriod: 1m
+                timeoutDuration: 0
+
+            gameCreationLimiter:
+                limitForPeriod: 2
+                limitRefreshPeriod: 1m
+                timeoutDuration: 0
 
             profileUpdateLimiter:
                 limitForPeriod: 5

@@ -25,6 +25,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 import java.util.Collection;
 import java.util.List;
@@ -94,91 +95,180 @@ class SecurityConfigTest extends AbstractIntegrationTest {
                 .build();
             doReturn(mockResponse).when(authService).login(any(LoginRequest.class));
 
-            // Act & Assert
-            mockMvc.perform(post("/api/auth/login")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(loginRequest)))
-                .andExpect(status().isOk());
+            // Act
+            ResultActions result = mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(loginRequest)));
+
+            // Assert
+            result.andExpect(status().isOk());
         }
 
         @Test
         @DisplayName("Should permit access to Swagger OpenAPI documentation endpoints")
         void shouldPermitAccessToSwaggerDocumentation() throws Exception {
-            // Act & Assert
-            mockMvc.perform(get("/v3/api-docs"))
-                .andExpect(status().is(not(401)))
+            // Arrange
+            String swaggerEndpoint = "/v3/api-docs";
+
+            // Act
+            ResultActions result = mockMvc.perform(get(swaggerEndpoint));
+
+            // Assert
+            result.andExpect(status().is(not(401)))
                 .andExpect(status().is(not(403)));
         }
 
         @Test
         @DisplayName("Should return 401 Unauthorized when accessing /api/users/me without token")
         void shouldDenyUnauthenticatedAccessToUsersMe() throws Exception {
-            // Act & Assert
-            mockMvc.perform(get("/api/users/me"))
-                .andExpect(status().isUnauthorized());
+            // Arrange
+            String profileEndpoint = "/api/users/me";
+
+            // Act
+            ResultActions result = mockMvc.perform(get(profileEndpoint));
+
+            // Assert
+            result.andExpect(status().isUnauthorized());
         }
 
         @Test
         @DisplayName("Should return 401 Unauthorized when accessing /api/games without token")
         void shouldDenyUnauthenticatedAccessToGames() throws Exception {
-            // Act & Assert
-            mockMvc.perform(get("/api/games/game-123"))
-                .andExpect(status().isUnauthorized());
+            // Arrange
+            String gameEndpoint = "/api/games/game-123";
+
+            // Act
+            ResultActions result = mockMvc.perform(get(gameEndpoint));
+
+            // Assert
+            result.andExpect(status().isUnauthorized());
         }
 
         @Test
         @DisplayName("Should allow USER role to pass authorization check on /api/games endpoint")
         void shouldAllowUserRoleToPassGamesAuthorization() throws Exception {
-            // Act & Assert
-            mockMvc.perform(get("/api/games/game-123")
-                    .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
-                .andExpect(status().is(not(401)))
+            // Arrange
+            String gameEndpoint = "/api/games/game-123";
+            var userJwtAuthority = jwt().authorities(new SimpleGrantedAuthority("ROLE_USER"));
+
+            // Act
+            ResultActions result = mockMvc.perform(get(gameEndpoint).with(userJwtAuthority));
+
+            // Assert
+            result.andExpect(status().is(not(401)))
                 .andExpect(status().is(not(403)));
         }
 
         @Test
         @DisplayName("Should allow GUEST role to pass authorization check on /api/users/me endpoint")
         void shouldAllowGuestRoleToPassUsersMeAuthorization() throws Exception {
-            // Act & Assert
-            mockMvc.perform(get("/api/users/me")
-                    .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_GUEST"))))
-                .andExpect(status().is(not(401)))
+            // Arrange
+            String profileEndpoint = "/api/users/me";
+            var guestJwtAuthority = jwt().authorities(new SimpleGrantedAuthority("ROLE_GUEST"));
+
+            // Act
+            ResultActions result = mockMvc.perform(get(profileEndpoint).with(guestJwtAuthority));
+
+            // Assert
+            result.andExpect(status().is(not(401)))
                 .andExpect(status().is(not(403)));
         }
 
         @Test
         @DisplayName("Should return 403 Forbidden when GUEST tries to access ADMIN endpoint")
         void shouldDenyGuestFromAccessingAdminEndpoint() throws Exception {
-            // Act & Assert
-            mockMvc.perform(get("/api/admin/dashboard")
-                    .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_GUEST"))))
-                .andExpect(status().isForbidden());
+            // Arrange
+            String adminEndpoint = "/api/admin/dashboard";
+            var guestJwtAuthority = jwt().authorities(new SimpleGrantedAuthority("ROLE_GUEST"));
+
+            // Act
+            ResultActions result = mockMvc.perform(get(adminEndpoint).with(guestJwtAuthority));
+
+            // Assert
+            result.andExpect(status().isForbidden());
         }
 
         @Test
         @DisplayName("Should return 403 Forbidden when USER tries to access ADMIN endpoint")
         void shouldDenyUserFromAccessingAdminEndpoint() throws Exception {
-            // Act & Assert
-            mockMvc.perform(get("/api/admin/dashboard")
-                    .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
-                .andExpect(status().isForbidden());
+            // Arrange
+            String adminEndpoint = "/api/admin/dashboard";
+            var userJwtAuthority = jwt().authorities(new SimpleGrantedAuthority("ROLE_USER"));
+
+            // Act
+            ResultActions result = mockMvc.perform(get(adminEndpoint).with(userJwtAuthority));
+
+            // Assert
+            result.andExpect(status().isForbidden());
         }
 
         @Test
         @DisplayName("Should allow ADMIN role to pass authorization check on ADMIN endpoint")
         void shouldAllowAdminRoleToPassAuthorization() throws Exception {
-            // Act & Assert
-            mockMvc.perform(get("/api/admin/dashboard")
-                    .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
-                .andExpect(status().is(not(403)));
+            // Arrange
+            String adminEndpoint = "/api/admin/dashboard";
+            var adminJwtAuthority = jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
+
+            // Act
+            ResultActions result = mockMvc.perform(get(adminEndpoint).with(adminJwtAuthority));
+
+            // Assert
+            result.andExpect(status().is(not(403)));
         }
 
         @Test
         @DisplayName("Should permit anonymous access to Actuator health checks")
         void shouldPermitAccessToActuatorEndpoints() throws Exception {
-            // Act & Assert
-            mockMvc.perform(get("/actuator/health"))
-                .andExpect(status().is(not(401)))
+            // Arrange
+            String healthEndpoint = "/actuator/health";
+
+            // Act
+            ResultActions result = mockMvc.perform(get(healthEndpoint));
+
+            // Assert
+            result.andExpect(status().is(not(401)))
+                .andExpect(status().is(not(403)));
+        }
+
+        @Test
+        @DisplayName("Should return 401 Unauthorized when anonymous accesses sensitive Actuator endpoints")
+        void shouldDenyAnonymousAccessToActuatorMetrics() throws Exception {
+            // Arrange
+            String metricsEndpoint = "/actuator/metrics";
+
+            // Act
+            ResultActions result = mockMvc.perform(get(metricsEndpoint));
+
+            // Assert
+            result.andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("Should return 403 Forbidden when regular USER accesses sensitive Actuator endpoints")
+        void shouldDenyUserAccessToActuatorMetrics() throws Exception {
+            // Arrange
+            String metricsEndpoint = "/actuator/metrics";
+            var userJwtAuthority = jwt().authorities(new SimpleGrantedAuthority("ROLE_USER"));
+
+            // Act
+            ResultActions result = mockMvc.perform(get(metricsEndpoint).with(userJwtAuthority));
+
+            // Assert
+            result.andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("Should allow ADMIN role to access sensitive Actuator endpoints")
+        void shouldAllowAdminAccessToActuatorMetrics() throws Exception {
+            // Arrange
+            String metricsEndpoint = "/actuator/metrics";
+            var adminJwtAuthority = jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
+
+            // Act
+            ResultActions result = mockMvc.perform(get(metricsEndpoint).with(adminJwtAuthority));
+
+            // Assert
+            result.andExpect(status().is(not(401)))
                 .andExpect(status().is(not(403)));
         }
     }
@@ -228,12 +318,14 @@ class SecurityConfigTest extends AbstractIntegrationTest {
             // Arrange
             String origin = "http://localhost:5173";
 
-            // Act & Assert
-            mockMvc.perform(options("/api/auth/login")
-                    .header("Origin", origin)
-                    .header("Access-Control-Request-Method", "POST")
-                    .header("Access-Control-Request-Headers", "Authorization"))
-                .andExpect(status().isOk())
+            // Act
+            ResultActions result = mockMvc.perform(options("/api/auth/login")
+                .header("Origin", origin)
+                .header("Access-Control-Request-Method", "POST")
+                .header("Access-Control-Request-Headers", "Authorization"));
+
+            // Assert
+            result.andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", origin))
                 .andExpect(header().string("Access-Control-Allow-Credentials", "true"));
         }

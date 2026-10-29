@@ -13,6 +13,14 @@ describe('Avatar Utility Functions', () => {
       expect(resultUndefined).toBeUndefined();
     });
 
+    it('returns undefined for dangerous javascript: or data: protocols', () => {
+      // Arrange & Act & Assert
+      expect(getFullAvatarUrl('javascript:alert(1)')).toBeUndefined();
+      expect(getFullAvatarUrl('JAVASCRIPT:alert(1)')).toBeUndefined();
+      expect(getFullAvatarUrl('data:text/html,<script>alert(1)</script>')).toBeUndefined();
+      expect(getFullAvatarUrl('vbscript:msgbox(1)')).toBeUndefined();
+    });
+
     it('returns original url if it starts with http, https or blob', () => {
       // Arrange
       const httpUrl = 'http://example.com/avatar.png';

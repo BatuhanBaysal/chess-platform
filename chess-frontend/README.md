@@ -1,190 +1,237 @@
-# ♟️ Chess Platform - Frontend
+# ♟️ Chess Platform — Frontend Client & UI Engine
 
-![React 19](https://img.shields.io/badge/React-19-20232A?style=flat-square&logo=react&logoColor=61DAFB)
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)
+![React 19](https://img.shields.io/badge/React-19.0-20232A?style=flat-square&logo=react&logoColor=61DAFB)
+![TypeScript 5.9](https://img.shields.io/badge/TypeScript-5.9-007ACC?style=flat-square&logo=typescript&logoColor=white)
+![Vite 8](https://img.shields.io/badge/Vite-8.0-646CFF?style=flat-square&logo=vite&logoColor=white)
+![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC?style=flat-square&logo=tailwindcss&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-E2E_Testing-2EAD33?style=flat-square&logo=playwright&logoColor=white)
+![Vitest](https://img.shields.io/badge/Vitest-Unit_Testing-FCC72B?style=flat-square&logo=vitest&logoColor=black)
 
-The frontend module of the Chess Platform, built with **React 19**, **TypeScript**, and **Tailwind CSS**. It is designed for high-performance, real-time chess gameplay using a decoupled architecture.
-
----
-
-## 🖼️ Visuals
-
-![Chess Platform Demo](../docs/assets/screenshots/02-gameplay-features/03-chess-board/01.c-white-hint.png)
-*Initial state of the chessboard, showcasing the responsive UI and piece positioning.*
-
-
-### 🖼️ Feature Gallery
-For a detailed visual breakdown of the application features (Authentication, Menu, Gameplay, and Edge Cases), you can browse the full collection of screenshots:
-
-* [**View Detailed Gameplay Screenshots**](../docs/assets/screenshots/02-gameplay-features/)
-
-*Note: The documentation includes detailed visual proofs for core features like white/black check states, pawn promotions, and login validation flows.*
+The reactive web client for the Chess Platform, engineered using **React 19**, **TypeScript 5.9**, **Vite 8**, and **Tailwind CSS v4**. It features a **Feature-Sliced Design (FSD)** architecture, an external asset-free **Web Audio API** sound synthesis engine, server-authoritative real-time STOMP synchronization, sub-second move throttling with `requestAnimationFrame`, and an automated multi-layer test pyramid.
 
 ---
 
-## 📝 Project Overview
-I built this platform to create a seamless, real-time chess experience. My goal was to move beyond just "making it work" and focus on creating a professional-grade application that feels fast and reliable.
+## 🏗️ Architecture & Core Engineering Decisions
 
-**What I actually built and my contributions:**
-* **Real-time Chess Engine:** I personally developed the core engine refactoring and UX optimization to ensure smooth gameplay.
-* **User-Centric Features:** I implemented a secure authentication system and notification modules, ensuring users have a safe and connected experience.
-* **Professional Standards:** I moved beyond basic functional code by structuring the project for long-term scalability, making it easy to maintain and expand.
-* **Production-Ready:** I designed the entire deployment workflow so that the project can be shipped to a server with a single command.
+### 1. Feature-Sliced Modularity & Domain Isolation
+* **Feature-Sliced Architecture (FSD):** Codebase is structured by business capability (`features/admin`, `features/auth`, `features/chess`, `features/menu`, `features/user`) rather than technical file types, eliminating circular dependencies and decoupling board mechanics from identity and administrative workflows.
+* **Composite Hook Facade Pattern (`useChess`):** Rather than implementing a monolithic "God Hook", the main game loop delegates responsibilities across 4 specialized custom hooks:
+    * `useChessSocket`: STOMP lifecycle, `/app/game/heartbeat` ping routines (10s intervals), and private `/user/queue/errors` handling.
+    * `useChessActions`: Move dispatching, AI game initialization, Stockfish hints, and surrender commands.
+    * `useChessTimer`: Millisecond-accurate turn clocks compensating for network jitter via `lastUpdateRef`.
+    * `useChessGameLogic`: 64-square grid state, legal move validation targets, and session-scoped persistence (`chess_game_logs_{gameId}`).
+
+### 2. High-Frequency Rendering & Network Throttling
+* **Frame-Rate Throttling (`requestAnimationFrame`):** Rapid server broadcasts (sub-second clocks, move updates, engine centipawn scores) are aggregated into a `pendingGameStateRef` buffer and synced to the browser's refresh rate (60/120 Hz) via `requestAnimationFrame`, completely eliminating virtual DOM layout thrashing and UI freezes.
+* **Component Render Boundary Optimization:** Drag-and-drop piece components are wrapped with `React.memo` to isolate coordinate updates to actively moving squares, preventing full-board (64-square) re-render cycles.
+
+### 3. Zero-Asset Audio Engine (Web Audio API)
+* **Hardware-Synthesized Sound Effects (`useChessAudio`):** Eliminates external `.mp3`/`.wav` media asset requests by synthesizing sound waves at runtime using the browser's native `AudioContext` and `OscillatorNode`:
+    * *Move:* Triangle wave ramping from 320 Hz down to 80 Hz ($50\text{ ms}$).
+    * *Capture:* Sine wave ramping from 450 Hz down to 110 Hz ($80\text{ ms}$).
+    * *Check:* Dual-frequency chord sequence ($587.33\text{ Hz}$ and $880\text{ Hz}$).
+    * *Victory / Defeat:* Major ascending arpeggio vs. low-frequency decaying sawtooth wave.
+* **Cross-Tab Synchronization:** Audio toggle preferences are synchronized reactively across open browser tabs via custom `window.dispatchEvent` events and `localStorage`.
+
+### 4. Interactive Match Replay & PGN Stepper
+* **In-Memory State Simulation (`MatchReplayModal`):** Parses raw PGN algebraic strings and reconstructs move-by-move board states in memory, providing play/pause auto-replay ($850\text{ ms}$ step interval), perspective board flipping, and one-click `.pgn` file blob downloads.
+* **Real-Time Engine Evaluation Bar (`EvaluationBar`):** Visualizes Centipawn (CP) and Mate-in-N scores calculated by Stockfish with dynamic smooth transitions and inaccuracy badges (`??`, `?`, `?!`).
+
+### 5. Client Security, Token Eviction & ADR-001 Enforcement
+* **Automatic Session Eviction (ADR-001):** Global Axios response interceptors listen for `ACCOUNT_DEACTIVATED` or `401 Unauthorized` payloads. Upon reception, all `localStorage` and `sessionStorage` tokens are instantly evicted, forcefully redirecting the client to `/sign-up`.
+* **Type-Safe Domain Contracts:** TypeScript domain models strictly mirror backend Java records and OpenAPI contracts, preventing silent runtime serialization bugs.
 
 ---
 
-## 🏗️ Architecture & Philosophy
-This frontend follows a **"Type-Safe Domain Mirroring"** approach to maintain perfect synchronization with our core engine.
+## 🔄 Real-Time Client Move & Frame Lifecycle
 
-* **Domain Mirroring:** TypeScript interfaces are strictly synchronized with Backend Java Records. This ensures compile-time safety and total data consistency across the stack.
-* **Server-Side Authority (SSOT):** The backend is the single source of truth. The frontend acts solely as a reactive view layer; it does not independently validate move rules but synchronizes its visual state based on authorized server updates.
-* **Reactive Orchestration:** The `useChess.ts` custom hook acts as the brain, managing WebSocket (STOMP) connections, optimistic UI updates, and synchronization with the server-side authority.
-* **Hexagonal UI Layers:** We decouple view components (`Square`, `Piece`, `MoveLog`) from state management logic, allowing us to swap UI frameworks without touching the core game orchestration.
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Player (@dnd-kit)
+    participant Logic as useChessGameLogic
+    participant Facade as useChess (Actions)
+    participant RAF as requestAnimationFrame Buffer
+    participant Socket as useChessSocket (STOMP)
+    participant Audio as useChessAudio (Web Audio API)
+    participant UI as BoardGrid (React 19)
+
+    User->>Logic: Drag piece or click target square
+    Logic->>Logic: Validate pseudo-legal target (fetchLegalMoves cache)
+    Logic->>Facade: executeMove(from, to, promotion)
+    Facade->>Socket: SEND /app/move (MoveRequest)
+    Note over Facade,Socket: Network Transit to Backend
+    Socket-->>Facade: RECEIVE /topic/game/{id} (GameStateDTO)
+    Facade->>RAF: Push latest state to pendingGameStateRef
+    RAF->>UI: Flush batched state on next animation frame (60/120 Hz)
+    Facade->>Audio: playMoveSound() or playCaptureSound()
+    Note over Audio: Dynamic frequency ramp (0ms latency, zero asset downloads)
+    UI-->>User: Seamless 60 FPS board transition & updated clocks
+```
 
 ---
 
-## 🚀 Engineering Pillars & Core Modules
+## ⚖️ Key Architectural Trade-offs
 
-* **Modular UI Component Architecture & State Management:**
-    * The core `ChessBoard` component integrates `BoardGrid`, `MatchInfoPanel`, `TelemetrySidebar`, `NotationSidebar`, and modals (`PromotionModal`, `GameOverModal`) into a cohesive, modular hierarchy.
-    * `useChessGameLogic` reactively manages selected squares, legal moves, pawn promotion states, and end-of-game workflows.
-    * Tab management (`activeTab`) dynamically controls `TelemetrySidebar` and `NotationSidebar` within a unified panel space.
-    * `EvaluationBar` calculates advantage percentages using `useMemo`, optimizing high-frequency centipawn (CP) or mate evaluation metrics while preventing unnecessary re-renders via `React.memo`.
-    * `GameOverModal` implements robust focus management (`buttonRef`) and keyboard event listeners (`Escape`/`Enter`) for seamless navigation.
+* **HTML5 Web Audio API vs. Pre-rendered Audio Assets:** Used browser hardware oscillators instead of pre-rendered `.mp3` audio files. *Trade-off:* Requires explicit mathematical wave synthesis, but guarantees **0 ms network latency**, zero CDN asset requests, and is immune to 404/CORS media download failures.
+* **`requestAnimationFrame` Buffering vs. Direct React State Dispatch:** Incoming WebSocket messages are queued in a reference buffer rather than triggering immediate `useState` setters. *Trade-off:* Slight internal buffering logic complexity in exchange for preventing DOM freezes during simultaneous sub-second clock ticks and rapid bullet chess moves.
+* **Server-Authoritative State vs. Client-Side Move Prediction:** The client does not definitively mutate the board locally; it awaits the authenticated STOMP broadcast from the backend. *Trade-off:* Network latency is noticeable on poor connections, but completely prevents board state desynchronization, illegal pawn promotions, and race condition exploits.
 
-* **Real-Time Networking & Session Recovery:**
-    * `ActiveGameView` provides modern loading and connection recovery screens featuring an "Abort Deployment" button when WebSocket connectivity (`isConnected`) or game data is missing.
-    * `showSyncing` layers deliver instant network status alerts during synchronization drops, while `dismissGame` and `onDismissGame` ensure safe termination of orphaned or abandoned sessions.
-    * Robust fallback handling for user dropouts and automated session cleanup mechanisms.
+---
 
-* **Interactive Board Customization & Accessibility:**
-    * `@dnd-kit/core` powers the `BoardGrid`, `DraggablePiece`, and `DroppableSquare` components, providing fluid drag-and-drop and click-to-move interactions.
-    * Dynamic theme engines (`CHESS_THEMES`) allow comprehensive board color and style personalization.
-    * Coordinate indicators, check danger animations (`isKingInDanger`), legal target indicators (`isLegalTarget`), and shortcut key bindings (`Q`, `R`, `B`, `N` in `PromotionModal`) elevate accessibility and user experience.
+## 🔌 Communication & API Gateway
 
-* **Performance & Observability:**
-    * Stockfish telemetry data (`evaluationScore`, `hintData`) is monitored in real-time through `AnalyticsSidebar` and `MatchInfoPanel`.
-    * `sessionStorage` and `matchFingerprint` integrations cache game logs and move histories securely without performance degradation.
-    * `requestAnimationFrame` and optimized re-render cycles maintain fluidity during heavy matrix updates.
-    * `TelemetrySidebar` uses memoized unique log calculations to filter duplicates and tracks user scroll states (`isUserScrolledUp`) for smooth auto-scrolling.
+| Channel / Route | Protocol / Target | Specifications & Security |
+| :--- | :--- | :--- |
+| **`/ws-chess`** | `WebSocket / SockJS` | STOMP transport handshake with fallback polyfill (`global = window`). |
+| **`/topic/game/{gameId}`** | `STOMP Subscription` | Sub-second board states, millisecond timers, and game-over events. |
+| **`/app/move`** | `STOMP Publication` | Dispatches validated coordinates and promotion pieces. |
+| **`/api/auth/**`** | `REST API (Axios)` | Keycloak user login, registration, and anonymous guest sessions. |
+| **`/api/games/**`** | `REST API (Axios)` | AI match creation, legal moves calculation, and PGN export streaming. |
+| **`/api/users/me/avatar`** | `REST API (Multipart)` | S3-backed avatar uploads with cache-busting timestamping (`?t=`). |
+| **`/api/admin/**`** | `REST API (Axios)` | Administrative governance, audit log queries, and active match termination. |
 
 ---
 
 ## 🛠️ Technology Stack
-The project leverages industry-standard libraries to provide a type-safe, performant, and consistent experience.
 
-| Category | Technology | Purpose |
+| Layer | Tools & Libraries | Architectural Purpose |
 | :--- | :--- | :--- |
-| **Core** | React 19, TypeScript | Type-safe UI logic and component architecture. |
-| **Styling** | Tailwind CSS | Fluid layouts and responsive styling. |
-| **Communication** | Stomp.js, SockJS, Axios | Real-time WebSocket synchronization and REST API client. |
-| **Routing & UI** | React Router, Lucide React, Recharts | Client-side navigation, iconography, and performance analytics charts. |
-| **Interactions** | @dnd-kit | Fluid drag-and-drop piece movement interactions. |
-| **Architecture** | Custom Hooks | Domain logic isolation and reactive state management. |
-| **Tooling** | Vite, ESLint, Prettier | Optimized bundling and strict code quality. |
+| **Core Framework** | **React 19, TypeScript 5.9, Vite 8** | Concurrent rendering, strict compile-time types, ultra-fast HMR bundling. |
+| **Styling & Theme** | **Tailwind CSS v4, PostCSS, Lucide React** | High-performance CSS engine, class-based dark/light dynamic theme switching. |
+| **Networking & Sockets** | **Axios, @stomp/stompjs, SockJS-Client** | REST client with 401 token eviction interceptor, reliable STOMP WebSocket duplex. |
+| **Interactivity & Board** | **@dnd-kit/core, @dnd-kit/utilities** | Fluid, accessible drag-and-drop piece movements with pointer/keyboard sensors. |
+| **Audio Synthesis** | **HTML5 Web Audio API (Native Browser API)** | Dynamic hardware oscillator sound synthesis (0 ms file loading delay). |
+| **Visualizations** | **Recharts** | Interactive ELO distribution, rating curves, and performance analytics charts. |
+| **Routing & Routing Guards**| **React Router v6** | Client-side routing with `ProtectedRoute` RBAC guards and SPA rewrite fallback. |
+| **Testing Suite** | **Vitest, Testing Library, Playwright, jsdom** | Fast unit/component testing with `forks` pool isolation and cross-browser E2E. |
+| **DevOps & Containers** | **Docker, Nginx Alpine, Vercel** | Multi-stage production containerization and edge hosting configurations. |
 
 ---
 
-## 🚀 Getting Started
+## 📁 Source Code Directory Hierarchy
 
-> **Note:** This frontend is part of a monorepo. For full-stack environment setup, including backend configuration, database requirements, and CI/CD pipelines, please refer to the [**Development & Setup Guide**](../docs/DEVELOPMENT.md).
-
-### Prerequisites
-- Node.js (v20+ recommended)
-- npm or yarn
-- A running instance of the backend on `localhost:8080`
-
-### Installation
-```bash
-# Install dependencies
-npm install
+```text
+chess-frontend/
+├── e2e/                        # Playwright end-to-end multi-browser test specs
+├── public/                     # Static assets, brand SVGs
+├── src/                        # Feature-Sliced Design core application source
+│   ├── api/                    # Centralized Axios client & domain REST services
+│   ├── components/             # Reusable design system atoms, molecules & chart widgets
+│   ├── constants/              # Board themes, audio configs, and game constants
+│   ├── features/               # Feature-sliced domain modules (admin, auth, chess, menu, user)
+│   ├── hooks/                  # Global lifecycle, theme & orchestration hooks
+│   ├── routes/                 # Central routing configuration with RBAC route protection
+│   ├── test/                   # Vitest setup, custom matchers, and DOM mocks
+│   ├── types/                  # Strict TypeScript domain interfaces mirroring backend DTOs
+│   └── utils/                  # Avatar CDN resolution and image cache-busting helpers
+├── Dockerfile                  # Multi-stage production container configuration
+└── nginx.conf                  # SPA routing fallback and compression server config
 ```
 
-### Running the Application
+---
+
+## 🧪 Testing Strategy & Quality Assurance
+
+The frontend client enforces a multi-tier testing strategy combining fast in-memory component/hook execution via **Vitest** and comprehensive browser automation via **Playwright**. All code passes strict **SonarQube Quality Gate** standards with **Rating A** across all maintainability and security metrics.
+
+### 📊 Quality Gate & Test Summary
+
+* **Unit & Component Tests (Vitest & RTL):** 350 tests across 54 test suites verifying custom hooks (`useChessAudio`, `useChessTimer`), modal focus traps, and `@dnd-kit` board interactions with isolated process pools.
+* **End-to-End Automation (Playwright):** 108 tests across 10 test suites running against Chromium, Firefox, and WebKit to validate onboarding, guest access, live piece moves, and responsive viewports.
+* **Quality Gate (SonarQube):** 0 Bugs, 0 Vulnerabilities, 0 Code Smells, and strict coverage baselines.
+
+| Metric | Target / Gate | Result | Status |
+| :--------------------------------- | :------------ | :------------------------------------- | :----- |
+| **Unit & Component Tests** | 100% Pass | **350 Passed (54 Suites)** | ![Passed](https://img.shields.io/badge/Vitest-350%20Passed-brightgreen?style=flat-square) |
+| **End-to-End (E2E) Tests** | 100% Pass | **108 Passed (10 Suites)** | ![Passed](https://img.shields.io/badge/Playwright-108%20Passed-brightgreen?style=flat-square) |
+| **Code Coverage (SonarQube / V8)** | $\ge$ 80% | **85.5%** (Overall) / **80.7%** (New Code) | ![Coverage](https://img.shields.io/badge/Coverage-85.5%25-brightgreen?style=flat-square) |
+| **Code Duplication** | $\le$ 3.0% | **1.91%** (New Code) / 3.8% (Overall) | ![Duplication](https://img.shields.io/badge/Duplication-1.91%25-brightgreen?style=flat-square) |
+| **Security & Vulnerabilities** | 0 Open Issues | **0 (Rating A)** | ![Security](https://img.shields.io/badge/Security-A-brightgreen?style=flat-square) |
+| **Reliability & Maintainability** | 0 Open Issues | **0 Bugs, 0 Code Smells (Rating A)** | ![Reliability](https://img.shields.io/badge/Reliability-A-brightgreen?style=flat-square) |
+
+<details>
+  <summary><b>📸 Preview: SonarQube Frontend Quality Gate Report</b></summary>
+  <br>
+  <p align="center">
+    <img src="../docs/assets/screenshots/04-testing/05-sonarqube-frontend-overview.png" alt="SonarQube Frontend Quality Gate Overview" style="max-width: 100%; height: auto;" />
+    <br>
+    <em>SonarQube Quality Gate Passed: 85.5% Overall Coverage, 0 Bugs, 0 Vulnerabilities, 1.91% New Code Duplication across 11k LOC</em>
+  </p>
+</details>
+
 ```bash
-# Start development server
+# Run Vitest unit & component test suite
+npm run test
+
+# Run tests with V8 coverage matrix generation
+npx vitest run --coverage --no-cache
+
+# Execute Playwright cross-browser E2E suite (Chromium, Firefox, WebKit)
+npx playwright test
+```
+
+> [!TIP]
+> For the complete testing architecture, custom hook verification flows, mobile responsiveness validations, and full screenshot galleries, see the [**Comprehensive Testing Guide (`docs/TESTING.md`)**](../docs/TESTING.md).
+
+---
+
+## 🚀 Local Setup & Development
+
+### 1. Prerequisites
+- **Node.js:** `v20.x` or higher
+- **Package Manager:** `npm` (v10+)
+- **Backend Service:** Running instance on `http://localhost:8080` (or running via Docker Compose)
+
+### 2. Environment Configuration
+Create a `.env` file in the `chess-frontend/` directory (see root `.env.example` for reference):
+```env
+# Backend API Base URL
+VITE_API_URL=http://localhost:8080
+
+# Show LGTM Monitoring links in navigation (optional)
+VITE_SHOW_MONITORING=true
+```
+
+### 3. Installation & Run
+```bash
+# Navigate to the frontend directory
+cd chess-frontend
+
+# Clean install dependencies
+npm ci
+
+# Start the Vite development server with HMR
 npm run dev
 ```
+The application will be accessible at `http://localhost:5173`.
 
 ---
 
-## 🛠️ Available Scripts
-In the project directory, you can run:
+## 🐳 Containerization & Production Deployment
 
-* `npm run dev` - Starts the development server.
-* `npm run build` - Builds the app for production to the `dist` folder.
-* `npm run lint` - Runs ESLint to check for code quality issues.
+The frontend utilizes a multi-stage Dockerfile designed for minimal production image footprint and zero Node.js runtime overhead:
 
----
-
-## ⚙️ Environment Variables
-To configure the application, create a `.env` file in the root directory. You can leverage Vite's `import.meta.env` mechanism to inject these variables during the Docker build process or local development.
-
-```env
-VITE_API_URL=http://localhost:8080
-```
-
----
-
-## 🐳 Docker Deployment
-The application uses a multi-stage Docker build process to ensure high performance and a lightweight production image.
-
-1. **Build Stage:** Uses `node:20-alpine` to compile the TypeScript code and generate static assets.
-2. **Serve Stage:** Uses `nginx:stable-alpine` to serve the static files. It includes a `try_files` configuration to handle client-side routing (Single Page Application support), preventing 404 errors on page refresh.
+1. **Build Stage (`node:20-alpine`):** Compiles TypeScript modules and bundles static HTML, CSS, and JS assets via Vite.
+2. **Runtime Stage (`nginx:stable-alpine`):** Serves optimized static assets using lightweight Nginx with gzip compression, security headers, and an internal `try_files $uri $uri/ /index.html =404;` directive to support client-side Single Page Application (SPA) routing.
 
 ```bash
-# Build the image
-docker build -t chess-frontend .
+# Build the production Docker image
+docker build -t chess-ui ./chess-frontend
 
-# Run the container using orchestration
-docker-compose up -d frontend
+# Run container locally on port 8082
+docker run -d -p 8082:80 --name chess-ui chess-ui
 ```
 
 ---
 
-## 🛠️ Technical Best Practices
-To maintain high performance and code quality, please follow these guidelines:
+## 🧭 Navigation & Related Modules
 
-* **Rendering Performance:** Use `React.memo` within `DraggablePiece` to ensure only specific squares re-render during moves, preventing unnecessary full-board updates.
-* **Accessibility:** When using `@dnd-kit`, remember to configure keyboard sensors within `DndContext` to ensure inclusive navigation.
-* **State Synchronization:** Always maintain strict synchronization between `useChess` and the server-side authority to prevent lag-induced state mismatches.
-* **Rendering Performance:** Use `React.memo` within `DraggablePiece` and lightweight state update strategies to ensure smooth rendering under heavy WebSocket data streams and real-time engine evaluations.
-
----
-
-## 📁 Folder Structure (High-Level)
-```
-src/
-├── api/                # Infrastructure: API clients
-├── components/         # Atomic UI components and reusable layout units
-│   ├── charts/         # Data visualization components
-│   └── common/         # Shared UI elements
-├── constants/          # Global application constants and themes
-├── features/           # Modular business logic
-│   ├── admin/          # Administrator control panels and management features
-│   ├── auth/           # Authentication and user session features
-│   ├── chess/          # Real-time chess game engine, components, hooks, and types
-│   ├── menu/           # Navigation, dashboards, landing pages, and views
-│   └── user/           # User profile and settings management features
-├── hooks/              # Global custom React hooks
-├── routes/             # Route configurations and protection wrappers
-├── App.tsx             # Global routing and context orchestration
-├── index.css           # Global Tailwind CSS and theme variables
-└── main.tsx            # Application entry point and DOM initialization
-```
-
----
-
-## ⚠️ Troubleshooting
-* **Backend Connection:** Ensure the backend is active on port `8080`, as API services are configured to connect to this base URL.
-* **WebSocket Errors:** If connection fails, verify the STOMP/SockJS endpoint configuration in your environment variables.
-
----
-
-## 📝 Credits
-* **Icons:** Powered by [Lucide React](https://lucide.dev/).
-
----
-*For global project guidelines, contributing policies, and licensing, please refer to the [root README](../README.md).*
+| Module / Document | Purpose & Direct Link |
+| :--- | :--- |
+| **Platform Root** | Global monorepo architecture, Docker Compose orchestration, and profiles.<br>👉 [**Root README (`README.md`)**](../README.md) |
+| **Backend Engine** | Java 17 core engine, Spring Boot 3 API, Redis distributed locks, and RabbitMQ.<br>👉 [**Backend README (`chess-backend`)**](../chess-backend/README.md) |
+| **System Architecture** | Domain boundaries, hexagonal ports/adapters, and full-stack topology.<br>👉 [**Architecture Guide (`docs/ARCHITECTURE.md`)**](../docs/ARCHITECTURE.md) |
+| **Engineering Decisions** | Architectural Decision Records (ADRs) and technical trade-offs.<br>👉 [**Engineering Decisions (`docs/ENGINEERING_DECISIONS.md`)**](../docs/ENGINEERING_DECISIONS.md) |
+| **Testing Strategy** | Comprehensive testing guide, Vitest configurations, and Playwright suites.<br>👉 [**Testing Guide (`docs/TESTING.md`)**](../docs/TESTING.md) |
+| **Infrastructure & Deploy** | Multi-stage Docker packaging, LGTM observability stack, and OCI deployment.<br>👉 [**Infrastructure Docs (`docs/INFRASTRUCTURE.md`)**](../docs/INFRASTRUCTURE.md) |

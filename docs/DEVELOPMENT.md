@@ -1,213 +1,166 @@
-# 🚀 Development & Setup Guide
+# 🚀 Developer Onboarding & Local Environment Guide
 
-This guide provides the necessary steps to set up the Chess Platform from scratch or by cloning, ensuring a consistent development environment.
+This guide details the prerequisites, local service orchestration, and execution workflows required to build and debug the **Chess Platform** monorepo (`chess-backend` and `chess-frontend`).
 
 ---
 
-## 📂 Project Structure
-Based on the current monorepo architecture:
+## 📂 Monorepo Structure
 
 ```text
 chess-platform/
-├── .github/                # GitHub workflows and project standards (GIT_GUIDE.md)
-├── .idea/                  # Shared IntelliJ IDEA configuration
-├── chess-backend/          # Spring Boot 3.4.6 (Java 17) Backend
-├── chess-frontend/         # React 19 (Vite + TS) Frontend
-├── deploy/                 # Deployment & Infrastructure
-│   ├── keycloak/           # Keycloak realm import (chess-realm)
-│   └── monitoring/         # LGTM Stack (Loki, Prometheus, Promtail, Tempo)
-├── docs/                   # Documentation & Technical Assets
-│   └── assets/             # Project images and diagrams
-├── .editorconfig           # Consistent coding styles across IDEs
-├── .env.example            # Root environment variables template
-├── .gitattributes          # Git path and text attributes
-├── .gitignore              # Monorepo-wide ignore rules
-├── docker-compose.yml      # Infrastructure & Monitoring orchestration
-├── LICENSE                 # Project license
-└── README.md               # Main project overview and entry point
+├── .github/                # CI/CD workflows (ci.yml)
+├── .idea/                  # Shared IntelliJ IDEA configurations
+├── chess-backend/          # Spring Boot 3.4.6 (Java 17) Backend Engine
+├── chess-frontend/         # React 19 (TypeScript + Vite) Client
+├── deploy/                 # Production & local infrastructure configs
+│   ├── keycloak/           # Keycloak realm import template (realm-export.json)
+│   └── monitoring/         # LGTM stack configs (Loki, Tempo, Prometheus, Promtail, Grafana)
+├── docs/                   # System documentation & technical specifications
+│   └── assets/             # Screenshots, sequence diagrams, and benchmarks
+├── .editorconfig           # Monorepo code style formatting standards
+├── .env.example            # Environment variables template
+├── .gitattributes          # Git line endings and Git LFS binary rules
+├── .gitignore              # Global exclusion filters
+├── docker-compose.yml      # Multi-profile container orchestration
+├── LICENSE                 # Open-source license
+└── README.md               # Root repository entry point
 ```
 
 ---
 
-## 🛠 Prerequisites
+## 🛠 Prerequisites & Tooling
 
-Before starting, ensure the following are installed and configured on your system to maintain a consistent development environment:
+Ensure the following runtimes and tools are installed:
 
-* **Container Engine:** [Docker Desktop](https://www.docker.com/) or Docker Engine with Docker Compose (Required for local Keycloak, Redis, RabbitMQ, MinIO, and PostgreSQL orchestration, and for the PostgreSQL test container).
-* **Java Development Kit:** [Amazon Corretto 17](https://aws.amazon.com/corretto/) (Required for Backend)
-* **Build Tool:** [Apache Maven 3.9+](https://maven.apache.org/)
-* **Runtime:** [Node.js (LTS v20+)](https://nodejs.org/) - *Required for React 19 and Vite compatibility.*
-* **Package Manager:** `npm` (comes with Node.js)
-* **IDE:** IntelliJ IDEA (Recommended for Backend) and VS Code (Recommended for Frontend)
+* **Container Runtime:** [Docker Desktop](https://www.docker.com/) or Docker Engine with Docker Compose v2.
+* **Java Development Kit:** [Amazon Corretto 17](https://aws.amazon.com/corretto/) or Eclipse Temurin 17 JDK.
+* **Build Tool:** Apache Maven 3.9+ (or use the bundled `./mvnw` wrapper).
+* **Node.js Ecosystem:** [Node.js LTS (v20+)](https://nodejs.org/) & `npm` (required for React 19 and Vite).
+* **Git & Git LFS:** [Git LFS](https://git-lfs.github.com/) is **mandatory** to pull executable Stockfish binaries.
+* **Recommended IDEs:** IntelliJ IDEA (Backend) and VS Code / WebStorm (Frontend).
 
-### 🗄️ Local Service URLs & Tooling
-**DBeaver / pgAdmin 4** can be used for PostgreSQL schema visualization and manual query execution. Once the relevant Docker profiles are running, services are available at:
+### 🗄️ Local Infrastructure & Dashboard Ports
 
-| Service | URL | Profile | Local default credentials |
+When running dependent services via Docker Compose, the following endpoints are exposed locally:
+
+| Service | Port / URL | Profile | Default Local Credentials |
 | :--- | :--- | :--- | :--- |
-| Backend API | `http://localhost:8080` | `core` | — |
-| Frontend (Vite dev server) | `http://localhost:5173` | — | — |
-| Frontend (container) | `http://localhost:8082` | `core` | — |
-| Keycloak Admin Console | `http://localhost:8081` | `core` | `admin` / `admin` |
-| RabbitMQ Management | `http://localhost:15672` | `core` | `guest` / `guest` |
-| MinIO Console | `http://localhost:9001` | `storage-local` | `minioadmin` / `minioadmin` |
-| Grafana | `http://localhost:3000` | `monitoring` | `admin` / `admin` |
-| Prometheus | `http://localhost:9090` | `monitoring` | — |
-| SonarQube | `http://localhost:9002` | `quality` | set on first login |
-
-> Default credentials are for local development only. Override them in `.env` for any deployed environment.
+| **Backend API** | `http://localhost:8080` | `core` | Secured via Keycloak JWT |
+| **Swagger UI** | `http://localhost:8080/swagger-ui.html` | `core` | Public OpenAPI documentation |
+| **Actuator Health** | `http://localhost:8080/actuator/health` | `core` | Public health verification |
+| **Frontend (Vite Dev)** | `http://localhost:5173` | Local Dev | Single-Page Application UI |
+| **Keycloak IAM** | `http://localhost:8081` | `core` | `admin` / `admin` |
+| **RabbitMQ Management** | `http://localhost:15672` | `core` | `guest` / `guest` |
+| **MinIO Storage Console** | `http://localhost:9001` | `storage-local` | `minioadmin` / `minioadmin` |
+| **Grafana Dashboards** | `http://localhost:3000` | `monitoring` | `admin` / `admin` |
+| **Prometheus Metrics** | `http://localhost:9090` | `monitoring` | Raw scraped Prometheus metrics |
+| **SonarQube Quality** | `http://localhost:9002` | `quality` | Configure password on initial login |
 
 ---
 
-## 📥 Getting Started
+## 📥 Initial Setup Workflow
 
-### 1. Project Initialization
-Clone the repository and prepare your environment:
-
+### 1. Clone & Git LFS Initialization
+Stockfish binaries are tracked with Git LFS. Initialize LFS before cloning:
 ```bash
+git lfs install
 git clone https://github.com/BatuhanBaysal/chess-platform.git
 cd chess-platform
+git lfs pull
 ```
 
-Create your local `.env` configuration from the provided template:
+### 2. Environment Configuration
+Generate your local `.env` file from the root template:
 ```bash
 cp .env.example .env
 ```
+Ensure database credentials, Keycloak secrets, and local storage values match your local development environment.
 
 ---
 
-### 2. Backend Setup & IDE Configuration
-The backend is built with Spring Boot 3.4.6 and Java 17.
+## ⚙️ Running the Backend (`chess-backend`)
 
-#### A. IDE Settings (IntelliJ IDEA)
-1. **Project SDK:** Set to **Amazon Corretto 17** in `Project Structure (Ctrl+Alt+Shift+S)`.
-2. **Language Level:** Set to **"17 - Sealed types, always-strict floating point semantics"**.
-3. **Maven Home:** Set to **"Bundled (Maven 3)"** in `Settings -> Build Tools -> Maven`.
-4. **EnvFile Plugin:** Install the IntelliJ `EnvFile` plugin and load the root `.env` file into your Spring Boot run configuration to supply database and Keycloak credentials seamlessly.
-
-#### B. Running Dependent Services via Docker
-Before starting the backend in your IDE, start the dependent infrastructure services:
-
+### 1. Start Dependent Infrastructure
+The Spring Boot backend requires PostgreSQL, Redis, RabbitMQ, and Keycloak to be healthy:
 ```bash
-docker compose --profile core up -d db redis rabbitmq keycloak
+# Starts core backing services in the background
+docker compose up -d db redis rabbitmq keycloak
 ```
 
-To test avatar uploads and PGN exports locally, also start object storage:
-
+*(Optional) Start local MinIO object storage if testing avatar uploads:*
 ```bash
 docker compose --profile storage-local up -d minio
 ```
 
-#### C. Build & Test Command
-Integration tests need the PostgreSQL test container running first (see the [Testing Guide](TESTING.md)).
+### 2. IDE Configuration (IntelliJ IDEA)
+1. **SDK:** Set Project SDK to **17 (Amazon Corretto or Temurin)**.
+2. **Language Level:** Set to **17 - Sealed types, records**.
+3. **Environment Injection:** Enable the `EnvFile` plugin or load `.env` variables into the Spring Boot Run Configuration.
+4. **Active Profile:** Set `spring.profiles.active=local`.
 
+### 3. Build & Run via Terminal
 ```bash
 cd chess-backend
-./mvnw clean install
+
+# Execute complete test suite (Docker Daemon must be running for Testcontainers)
+./mvnw clean test
+
+# Boot the application using the local profile
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
 ---
 
-### 3. Frontend Setup
-The frontend is built with React 19, Vite, and TypeScript.
+## 🎨 Running the Frontend (`chess-frontend`)
 
+### 1. Install Dependencies
 ```bash
 cd chess-frontend
 npm install
 ```
 
----
-
-## 🚦 Running the Application Locally
-
-### Execution Order
-Always ensure infrastructure services are healthy before starting the services.
-
-1. **Start Core Infrastructure:**
+### 2. Start Vite Development Server
 ```bash
-   docker compose --profile core up -d db redis rabbitmq keycloak
+npm run dev
+# The client is available at http://localhost:5173
 ```
 
-2. **Start Backend:**
+### 3. Run Component & E2E Tests
 ```bash
-   cd chess-backend
-   ./mvnw spring-boot:run
-```
-* **API Base URL:** `http://localhost:8080`
-* **Swagger UI:** `http://localhost:8080/swagger-ui.html`
-* **Actuator Health:** `http://localhost:8080/actuator/health`
+# Run Vitest component and hook test suites
+npm test
 
-3. **Start Frontend:**
-```bash
-   cd chess-frontend
-   npm run dev
+# Run Playwright end-to-end browser tests
+npm run test:e2e
 ```
-* **Web Client:** `http://localhost:5173`
 
 ---
 
-## 🐳 Docker Orchestration
+## 🐳 Full Containerized Deployment (Docker Compose)
 
-We utilize `docker-compose.yml` with segmented profiles to manage local dependencies and parity with production.
+For testing the production-identical ecosystem without running local IDEs:
 
-### 🚀 Running with Docker Compose
-
-#### 1. Core Development Mode (Recommended)
-Starts all essential services: the backend, the frontend, PostgreSQL, Redis, RabbitMQ, and Keycloak:
 ```bash
-docker compose --profile core up -d
-```
+# 1. Run core application (Backend, Frontend, DB, Redis, RabbitMQ, Keycloak):
+docker compose --profile core up -d --build
 
-#### 2. Full Ecosystem Mode (Local Storage + Quality + Monitoring)
-Starts the core stack alongside local MinIO object storage, SonarQube, and the entire LGTM monitoring stack (Loki, Grafana, Tempo, Prometheus, Promtail):
-```bash
-docker compose --profile core --profile storage-local --profile quality --profile monitoring up -d
-```
+# 2. Run full platform including local MinIO and LGTM monitoring:
+docker compose --profile core --profile storage-local --profile monitoring up -d --build
 
-> SonarQube alone can use up to 2 GB of memory. Start only the profiles you need.
-
-### 🛠 Docker Management
-
-* **Check System Status:**
-```bash
-docker compose ps
-```
-
-* **View Service Logs:**
-```bash
-# Follow logs for the backend service
+# 3. View live logs:
 docker compose logs -f backend
-```
 
-* **Stop and Clean Up:**
-```bash
+# 4. Stop and clean up containers:
 docker compose down
 ```
 
 ---
 
-## 🤖 CI/CD Pipeline & Automated Testing
+## 🧪 Testing Guidelines
 
-This project utilizes **GitHub Actions** defined in [**ci.yml**](../.github/workflows/ci.yml) to maintain high code quality and prevent regressions:
-
-1. **Backend Integrity Check:**
-    * Sets up **Amazon Corretto 17** with Maven dependency caching.
-    * Starts PostgreSQL 15 and Redis 7 as service containers.
-    * Executes `mvn clean install` to compile the code and run all unit and integration tests.
-
-2. **Frontend Integrity Check:**
-    * Sets up **Node.js v20**.
-    * Runs `npm ci` for lockfile consistency and `npm run build` to verify the React production bundle.
-    * Runs the **Vitest** unit/component suite (`npm test`).
-    * Runs the **Playwright** end-to-end suite on Chromium.
-
----
-
-## 🧪 Quality & Standards
-
-* **Testing Strategy:** Run `./mvnw test` for the backend (start the PostgreSQL test container first) and `npm test` for the frontend. See the [**Testing Guide**](TESTING.md) for details, including the Playwright end-to-end suite.
-* **Java Standards:** Sealed classes are strictly enforced for the chess piece hierarchy and records for immutable DTOs and state snapshots.
-* **Workflow:** Refer to the [**Git Guide**](GIT_GUIDE.md) for branching standards and conventional commit formats.
-
----
-*Maintained with a focus on Engineering Discipline and Scalable Design.*
+* **Backend Testcontainers:** Unit and integration tests automatically spawn a disposable PostgreSQL container. Ensure Docker Desktop is active.
+* **Windows Troubleshooting:** If Testcontainers fails to clean up containers on Windows, set the following environment variable:
+  ```text
+  TESTCONTAINERS_RYUK_DISABLED=true
+  ```
+* **Detailed Specifications:** For complete test suite breakdowns, mock boundaries, and concurrency matrices, see [**TESTING.md**](TESTING.md).

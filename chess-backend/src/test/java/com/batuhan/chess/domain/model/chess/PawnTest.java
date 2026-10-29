@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("Pawn Domain Model Unit Tests")
@@ -172,6 +174,51 @@ class PawnTest {
 
             // Assert
             assertThat(isLegal).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("Batch Move Generation (getPseudoLegalMoves)")
+    class MoveGenerationTests {
+
+        @Test
+        @DisplayName("Should generate standard forward steps and diagonal en-passant candidate squares on empty board")
+        void shouldGenerateForwardMoves_WhenOnStartingRank() {
+            // Arrange
+            Position start = new Position(4, 1);
+            Pawn pawn = new Pawn(Color.WHITE, start);
+            board.setPieceAt(start, pawn);
+
+            Position forwardOne = new Position(4, 2);
+            Position forwardTwo = new Position(4, 3);
+            Position leftDiagonal = new Position(3, 2);
+            Position rightDiagonal = new Position(5, 2);
+
+            // Act
+            List<Position> moves = pawn.getPseudoLegalMoves(board);
+
+            // Assert
+            assertThat(moves)
+                .hasSize(4)
+                .containsExactlyInAnyOrder(forwardOne, forwardTwo, leftDiagonal, rightDiagonal);
+        }
+
+        @Test
+        @DisplayName("Should include diagonal capture square when enemy piece is present")
+        void shouldIncludeDiagonalCapture_WhenEnemyIsPresent() {
+            // Arrange
+            Position start = new Position(4, 1);
+            Position enemyPos = new Position(5, 2);
+            Pawn pawn = new Pawn(Color.WHITE, start);
+            board.setPieceAt(start, pawn);
+            board.setPieceAt(enemyPos, new Pawn(Color.BLACK, enemyPos));
+
+            // Act
+            List<Position> moves = pawn.getPseudoLegalMoves(board);
+
+            // Assert
+            assertThat(moves)
+                .contains(enemyPos);
         }
     }
 }

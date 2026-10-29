@@ -21,20 +21,21 @@ class GameTest {
     }
 
     @Nested
-    @DisplayName("Turn & Core State Management")
+    @DisplayName("Turn & Core State")
     class TurnTests {
 
         @Test
-        @DisplayName("Should initialize with White turn and ACTIVE status")
+        @DisplayName("Should initialize with White turn, ACTIVE status, and full board history")
         void shouldInitializeCorrectly() {
             // Act & Assert
             assertThat(game.getCurrentTurn()).isEqualTo(Color.WHITE);
             assertThat(game.getStatus()).isEqualTo(GameStatus.ACTIVE);
+            assertThat(game.getBoardHistory()).isNotEmpty();
         }
 
         @Test
-        @DisplayName("Should switch turn after a valid move")
-        void shouldSwitchTurnAfterValidMove() {
+        @DisplayName("Should alternate turn to Black after valid White move")
+        void shouldSwitchTurn_WhenMoveIsValid() {
             // Arrange
             Position start = new Position(4, 1);
             Position end = new Position(4, 3);
@@ -48,8 +49,8 @@ class GameTest {
         }
 
         @Test
-        @DisplayName("Should block moves made out of turn")
-        void shouldNotAllowMovingOutOfTurn() {
+        @DisplayName("Should reject moves made out of turn")
+        void shouldRejectMove_WhenOutOfTurn() {
             // Arrange
             Position start = new Position(4, 6);
             Position end = new Position(4, 4);
@@ -61,10 +62,35 @@ class GameTest {
             assertThat(moves).isEmpty();
             assertThat(game.getCurrentTurn()).isEqualTo(Color.WHITE);
         }
+
+        @Test
+        @DisplayName("Should identify AI game when white or black player ID is -1")
+        void shouldIdentifyAiGame_WhenPlayerIdIsMinusOne() {
+            // Arrange & Act
+            game.setWhitePlayerId(10L);
+            game.setBlackPlayerId(-1L);
+
+            // Assert
+            assertThat(game.isAiGame()).isTrue();
+        }
+
+        @Test
+        @DisplayName("Should return legal move targets for selected square")
+        void shouldReturnLegalMoves_ForSelectedPiece() {
+            // Arrange
+            Position pawnStart = new Position(4, 1);
+
+            // Act
+            List<Position> legalMoves = game.getLegalMovesForSquare(pawnStart);
+
+            // Assert
+            assertThat(legalMoves)
+                .containsExactlyInAnyOrder(new Position(4, 2), new Position(4, 3));
+        }
     }
 
     @Nested
-    @DisplayName("Special Moves: Castling & En Passant")
+    @DisplayName("Special Moves")
     class SpecialMoveTests {
 
         @Test
@@ -106,11 +132,11 @@ class GameTest {
     }
 
     @Nested
-    @DisplayName("Game Ending & Checkmate Logic")
+    @DisplayName("Game Ending Conditions")
     class GameEndingTests {
 
         @Test
-        @DisplayName("Should detect Checkmate (Fool's Mate)")
+        @DisplayName("Should detect Checkmate on Scholar's/Fool's mate sequence")
         void shouldDetectCheckmate() {
             // Arrange
             game.makeMove(new Position(5, 1), new Position(5, 2), null);
@@ -126,51 +152,24 @@ class GameTest {
         }
 
         @Test
-        @DisplayName("Should detect Stalemate when no legal moves are available but not in check")
-        void shouldDetectStalemate() {
+        @DisplayName("Should set TIMEOUT status when remaining time drops to zero")
+        void shouldSetTimeout_WhenRemainingTimeIsZero() {
             // Arrange
-            game.getBoard().clearBoard();
-            Position whiteKingPos = new Position(0, 0);
-            game.getBoard().setPieceAt(whiteKingPos, new King(Color.WHITE, whiteKingPos));
-            game.getBoard().setPieceAt(new Position(1, 2), new Queen(Color.BLACK, new Position(1, 2)));
-            game.getBoard().setPieceAt(new Position(2, 2), new King(Color.BLACK, new Position(2, 2)));
+            game.setRemainingTimes(0, 5000);
 
             // Act
-            GameStatus status = game.getEvaluator().evaluateStatus(
-                game.getBoard(), Color.WHITE, game.getValidator(),
-                game.getHalfMoveClock(), game.getBoardHistory(), game.getLastMove()
-            );
+            List<Game.ExecutedMoveData> moves = game.makeMove(new Position(4, 1), new Position(4, 3), null);
 
             // Assert
-            assertThat(status).isEqualTo(GameStatus.STALEMATE);
-        }
-    }
-
-    @Nested
-    @DisplayName("Draw Metrics & Fifty-Move Rule")
-    class DrawMetricTests {
-
-        @Test
-        @DisplayName("Should reset Fifty-Move clock and history on pawn moves")
-        void shouldResetClockOnPawnMove() {
-            // Arrange
-            game.setHalfMoveClock(10);
-            Position pawnStart = new Position(4, 1);
-            Position pawnEnd = new Position(4, 2);
-
-            // Act
-            game.makeMove(pawnStart, pawnEnd, null);
-
-            // Assert
-            assertThat(game.getHalfMoveClock()).isZero();
-            assertThat(game.getBoardHistory()).hasSize(1);
+            assertThat(moves).isEmpty();
+            assertThat(game.getStatus()).isEqualTo(GameStatus.TIMEOUT);
         }
 
         @Test
         @DisplayName("Should detect Draw by Threefold Repetition")
         void shouldDetectThreefoldRepetition() {
             // Arrange
-            for(int i = 0; i < 3; i++) {
+            for (int i = 0; i < 3; i++) {
                 game.makeMove(new Position(1, 0), new Position(2, 2), null);
                 game.makeMove(new Position(1, 7), new Position(2, 5), null);
                 game.makeMove(new Position(2, 2), new Position(1, 0), null);

@@ -9,11 +9,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("Move Executor Professional Test Suite")
+@DisplayName("MoveExecutor Domain Tests")
 class MoveExecutorTest {
 
     private MoveExecutor executor;
@@ -29,39 +28,39 @@ class MoveExecutorTest {
     }
 
     @Nested
-    @DisplayName("Standard Movement")
+    @DisplayName("Standard Execution")
     class StandardMoveTests {
 
         @Test
-        @DisplayName("Should update board state and piece flags for a standard move")
-        void shouldExecuteStandardMoveSuccessfully() {
+        @DisplayName("Should update piece position and set hasMoved flag when standard move executes")
+        void shouldUpdatePositionAndFlag_WhenStandardMoveOccurs() {
             // Arrange
             Position start = new Position(4, 1);
             Position end = new Position(4, 2);
             Piece pawn = new Pawn(Color.WHITE, start);
             board.setPieceAt(start, pawn);
 
-            lenient().when(validator.isCastlingAttempt(any(), any(), any())).thenReturn(false);
-            lenient().when(validator.isEnPassantAttempt(any(), any(), any())).thenReturn(false);
-            lenient().when(validator.isPromotionSituation(any(), any())).thenReturn(false);
+            lenient().when(validator.isCastlingAttempt(pawn, start, end)).thenReturn(false);
+            lenient().when(validator.isEnPassantAttempt(pawn, end, board)).thenReturn(false);
+            lenient().when(validator.isPromotionSituation(pawn, end)).thenReturn(false);
 
             // Act
             executor.execute(start, end, pawn, null, board, validator);
 
             // Assert
             assertThat(board.getPiece(start)).isEmpty();
-            assertThat(board.getPiece(end)).isPresent().contains(pawn);
-            assertThat(pawn.hasMoved()).as("Piece's internal moved flag must be true").isTrue();
+            assertThat(board.getPiece(end)).contains(pawn);
+            assertThat(pawn.hasMoved()).isTrue();
         }
     }
 
     @Nested
-    @DisplayName("Special Move Scenarios")
+    @DisplayName("Special Moves Execution")
     class SpecialMoveTests {
 
         @Test
-        @DisplayName("Should execute Kingside Castling and move the Rook correctly")
-        void shouldExecuteKingsideCastling() {
+        @DisplayName("Should reposition both King and Rook when castling executes")
+        void shouldMoveKingAndRook_WhenCastlingOccurs() {
             // Arrange
             Position kingStart = new Position(4, 0);
             Position kingEnd = new Position(6, 0);
@@ -74,19 +73,21 @@ class MoveExecutorTest {
             board.setPieceAt(kingStart, king);
             board.setPieceAt(rookStart, rook);
 
-            when(validator.isCastlingAttempt(eq(king), any(), eq(kingEnd))).thenReturn(true);
+            when(validator.isCastlingAttempt(king, kingStart, kingEnd)).thenReturn(true);
 
             // Act
             executor.execute(kingStart, kingEnd, king, null, board, validator);
 
             // Assert
-            assertThat(board.getPiece(kingEnd)).isPresent().contains(king);
-            assertThat(board.getPiece(rookEnd)).isPresent().contains(rook);
+            assertThat(board.getPiece(kingEnd)).contains(king);
+            assertThat(board.getPiece(rookEnd)).contains(rook);
+            assertThat(board.getPiece(kingStart)).isEmpty();
+            assertThat(board.getPiece(rookStart)).isEmpty();
         }
 
         @Test
-        @DisplayName("Should execute En Passant and remove the captured pawn")
-        void shouldExecuteEnPassantCapture() {
+        @DisplayName("Should clear captured pawn from board when en passant executes")
+        void shouldClearEnemyPawn_WhenEnPassantOccurs() {
             // Arrange
             Position whiteStart = new Position(4, 4);
             Position blackPos = new Position(5, 4);
@@ -98,14 +99,39 @@ class MoveExecutorTest {
             board.setPieceAt(whiteStart, whitePawn);
             board.setPieceAt(blackPos, blackPawn);
 
-            when(validator.isEnPassantAttempt(eq(whitePawn), any(), eq(board))).thenReturn(true);
+            when(validator.isEnPassantAttempt(whitePawn, target, board)).thenReturn(true);
 
             // Act
             executor.execute(whiteStart, target, whitePawn, null, board, validator);
 
             // Assert
-            assertThat(board.getPiece(blackPos)).as("Captured pawn must be removed").isEmpty();
-            assertThat(board.getPiece(target)).isPresent().contains(whitePawn);
+            assertThat(board.getPiece(blackPos)).isEmpty();
+            assertThat(board.getPiece(target)).contains(whitePawn);
+        }
+
+        @Test
+        @DisplayName("Should replace pawn with promoted piece on target square when promotion executes")
+        void shouldPromotePawn_WhenPromotionSituationOccurs() {
+            // Arrange
+            Position start = new Position(0, 6);
+            Position end = new Position(0, 7);
+            Pawn pawn = new Pawn(Color.WHITE, start);
+            board.setPieceAt(start, pawn);
+
+            when(validator.isPromotionSituation(pawn, end)).thenReturn(true);
+
+            // Act
+            executor.execute(start, end, pawn, "QUEEN", board, validator);
+
+            // Assert
+            assertThat(board.getPiece(start)).isEmpty();
+            assertThat(board.getPiece(end))
+                .isPresent()
+                .hasValueSatisfying(promoted -> {
+                    assertThat(promoted.getType()).isEqualTo(PieceType.QUEEN);
+                    assertThat(promoted.getColor()).isEqualTo(Color.WHITE);
+                    assertThat(promoted.hasMoved()).isTrue();
+                });
         }
     }
 }

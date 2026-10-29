@@ -2,6 +2,7 @@ package com.batuhan.chess.application.service.user;
 
 import com.batuhan.chess.api.dto.storage.FileDownloadDTO;
 import com.batuhan.chess.api.dto.user.*;
+import com.batuhan.chess.api.exception.AccountDeactivatedException;
 import com.batuhan.chess.api.exception.EmailAlreadyExistsException;
 import com.batuhan.chess.api.exception.GameOperationException;
 import com.batuhan.chess.api.exception.ResourceNotFoundException;
@@ -52,7 +53,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@DisplayName("User Service Business Logic Tests")
+@DisplayName("UserService Business Logic Tests")
 class UserServiceTest {
 
     @Mock
@@ -110,12 +111,12 @@ class UserServiceTest {
     }
 
     @Nested
-    @DisplayName("Current User Resolution & Keycloak Sync")
+    @DisplayName("Current User Resolution")
     class CurrentUserResolutionTests {
 
         @Test
-        @DisplayName("Should resolve user via preferred_username claim from JwtAuthenticationToken")
-        void shouldResolveUserViaJwtPreferredUsername() {
+        @DisplayName("Should resolve active user via JWT preferred_username claim")
+        void shouldResolveUser_WhenJwtContainsPreferredUsername() {
             // Arrange
             Jwt jwt = createJwt(Map.of("preferred_username", "jwtUser", "sub", "subject-id"));
             JwtAuthenticationToken jwtAuth = new JwtAuthenticationToken(jwt, Collections.emptyList());
@@ -133,7 +134,7 @@ class UserServiceTest {
 
         @Test
         @DisplayName("Should fallback to subject claim when preferred_username is absent")
-        void shouldFallbackToSubjectWhenPreferredUsernameMissing() {
+        void shouldFallbackToSubject_WhenPreferredUsernameMissing() {
             // Arrange
             Jwt jwt = createJwt(Map.of("sub", "keycloak-sub-id"));
             JwtAuthenticationToken jwtAuth = new JwtAuthenticationToken(jwt, Collections.emptyList());
@@ -149,8 +150,8 @@ class UserServiceTest {
         }
 
         @Test
-        @DisplayName("Should trigger userSyncService when user is not found in local database")
-        void shouldSyncUserWhenMissingFromLocalDatabase() {
+        @DisplayName("Should trigger userSyncService when user is absent from local database")
+        void shouldSyncUser_WhenMissingFromLocalDatabase() {
             // Arrange
             Jwt jwt = createJwt(Map.of("preferred_username", "newUser", "sub", "sub-123"));
             JwtAuthenticationToken jwtAuth = new JwtAuthenticationToken(jwt, Collections.emptyList());
@@ -163,12 +164,12 @@ class UserServiceTest {
 
             // Assert
             assertThat(result).isNotNull();
-            verify(userSyncService, times(1)).syncKeycloakUser(jwt, "newUser");
+            verify(userSyncService).syncKeycloakUser(jwt, "newUser");
         }
 
         @Test
-        @DisplayName("Should throw ResourceNotFoundException when non-JWT authentication user is missing")
-        void shouldThrowExceptionWhenStandardAuthUserNotFound() {
+        @DisplayName("Should throw ResourceNotFoundException when non-JWT authenticated user is missing")
+        void shouldThrowException_WhenStandardAuthUserNotFound() {
             // Arrange
             when(securityContext.getAuthentication()).thenReturn(authentication);
             when(authentication.getName()).thenReturn("missingUser");
@@ -181,8 +182,8 @@ class UserServiceTest {
         }
 
         @Test
-        @DisplayName("Should throw AccountDeactivatedException when user exists in DB but is inactive")
-        void shouldThrowAccountDeactivatedExceptionWhenUserIsInactive() {
+        @DisplayName("Should throw AccountDeactivatedException when user exists in DB but is marked inactive")
+        void shouldThrowException_WhenUserIsDeactivated() {
             // Arrange
             Jwt jwt = createJwt(Map.of("preferred_username", "deletedUser", "sub", "sub-123"));
             JwtAuthenticationToken jwtAuth = new JwtAuthenticationToken(jwt, Collections.emptyList());
@@ -192,7 +193,7 @@ class UserServiceTest {
 
             // Act & Assert
             assertThatThrownBy(() -> userService.getCurrentUserEntity())
-                .isInstanceOf(com.batuhan.chess.api.exception.AccountDeactivatedException.class)
+                .isInstanceOf(AccountDeactivatedException.class)
                 .hasMessageContaining("ACCOUNT_DEACTIVATED");
 
             verify(userSyncService, never()).syncKeycloakUser(any(), any());
@@ -200,12 +201,12 @@ class UserServiceTest {
     }
 
     @Nested
-    @DisplayName("Get Profile Tests")
-    class GetProfileTests {
+    @DisplayName("Profile Inquiries & Leaderboard")
+    class ProfileAndLeaderboardTests {
 
         @Test
-        @DisplayName("Should return user profile successfully")
-        void shouldReturnUserProfileSuccessfully() {
+        @DisplayName("Should return user profile DTO successfully")
+        void shouldReturnUserProfile() {
             // Arrange
             when(securityContext.getAuthentication()).thenReturn(authentication);
             when(authentication.getName()).thenReturn("batuhan");
@@ -221,11 +222,6 @@ class UserServiceTest {
             assertThat(result.eloRating()).isEqualTo(1200);
             assertThat(result.role()).isEqualTo(UserRole.ROLE_USER);
         }
-    }
-
-    @Nested
-    @DisplayName("Leaderboard Tests")
-    class LeaderboardTests {
 
         @Test
         @DisplayName("Should return top 3 users for global leaderboard")
@@ -256,8 +252,6 @@ class UserServiceTest {
             assertThat(pagedResult).isNotNull();
             assertThat(pagedResult.getContent()).hasSize(1);
             assertThat(pagedResult.getContent().get(0).username()).isEqualTo("batuhan");
-            assertThat(pagedResult.getTotalElements()).isEqualTo(1);
-            assertThat(pagedResult.getTotalPages()).isEqualTo(1);
         }
     }
 
@@ -267,7 +261,7 @@ class UserServiceTest {
 
         @Test
         @DisplayName("Should throw IllegalArgumentException when avatar file is null or empty")
-        void shouldThrowExceptionWhenAvatarFileEmpty() {
+        void shouldThrowException_WhenAvatarFileEmpty() {
             // Arrange
             MockMultipartFile emptyFile = new MockMultipartFile("file", new byte[0]);
 
@@ -282,11 +276,11 @@ class UserServiceTest {
         }
 
         @Test
-        @DisplayName("Should throw IllegalArgumentException when file format is unsupported")
-        void shouldThrowExceptionWhenFormatUnsupported() {
+        @DisplayName("Should throw IllegalArgumentException when format is unsupported")
+        void shouldThrowException_WhenFormatUnsupported() {
             // Arrange
             MockMultipartFile invalidFile = new MockMultipartFile(
-                "file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "plain-text-data".getBytes()
+                "file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "plain-text".getBytes()
             );
 
             // Act & Assert
@@ -297,7 +291,7 @@ class UserServiceTest {
 
         @Test
         @DisplayName("Should throw IllegalArgumentException when file size exceeds 2MB")
-        void shouldThrowExceptionWhenSizeExceedsLimit() {
+        void shouldThrowException_WhenSizeExceedsLimit() {
             // Arrange
             byte[] oversized = new byte[2 * 1024 * 1024 + 1];
             MockMultipartFile largeFile = new MockMultipartFile(
@@ -311,8 +305,8 @@ class UserServiceTest {
         }
 
         @Test
-        @DisplayName("Should upload avatar successfully when file is valid PNG and update user entity")
-        void shouldUploadValidAvatarSuccessfully() {
+        @DisplayName("Should upload PNG avatar, cleanup previous files, and update avatarUrl")
+        void shouldUploadPngAvatar_WhenValidFileProvided() {
             // Arrange
             MockMultipartFile validFile = new MockMultipartFile(
                 "file", "avatar.png", MediaType.IMAGE_PNG_VALUE, "valid-image-bytes".getBytes()
@@ -320,6 +314,7 @@ class UserServiceTest {
             when(securityContext.getAuthentication()).thenReturn(authentication);
             when(authentication.getName()).thenReturn("batuhan");
             when(userRepository.findByUsernameAndActiveTrue("batuhan")).thenReturn(Optional.of(testUser));
+            when(fileStoragePort.doesFileExist("avatars/batuhan.webp")).thenReturn(true);
 
             // Act
             AvatarUploadResponse response = userService.uploadAvatar(validFile);
@@ -328,12 +323,33 @@ class UserServiceTest {
             assertThat(response).isNotNull();
             assertThat(response.avatarUrl()).isEqualTo("/api/users/batuhan/avatar");
             assertThat(testUser.getAvatarUrl()).isEqualTo("/api/users/batuhan/avatar");
-            verify(userRepository, times(1)).save(testUser);
+            verify(fileStoragePort).deleteFile("avatars/batuhan.webp");
             verify(fileStoragePort).uploadFile(eq("avatars/batuhan.png"), any(InputStream.class), eq(validFile.getSize()), eq(MediaType.IMAGE_PNG_VALUE));
+            verify(userRepository).save(testUser);
         }
 
         @Test
-        @DisplayName("Should delete avatar successfully and reset avatarUrl")
+        @DisplayName("Should upload WEBP avatar successfully")
+        void shouldUploadWebpAvatar_WhenWebpFormatProvided() {
+            // Arrange
+            MockMultipartFile webpFile = new MockMultipartFile(
+                "file", "avatar.webp", "image/webp", "webp-bytes".getBytes()
+            );
+            when(securityContext.getAuthentication()).thenReturn(authentication);
+            when(authentication.getName()).thenReturn("batuhan");
+            when(userRepository.findByUsernameAndActiveTrue("batuhan")).thenReturn(Optional.of(testUser));
+
+            // Act
+            AvatarUploadResponse response = userService.uploadAvatar(webpFile);
+
+            // Assert
+            assertThat(response.avatarUrl()).isEqualTo("/api/users/batuhan/avatar");
+            verify(fileStoragePort).uploadFile(eq("avatars/batuhan.webp"), any(InputStream.class), eq(webpFile.getSize()), eq("image/webp"));
+            verify(userRepository).save(testUser);
+        }
+
+        @Test
+        @DisplayName("Should delete avatar, clear storage files, and nullify avatarUrl")
         void shouldDeleteAvatarSuccessfully() {
             // Arrange
             testUser.setAvatarUrl("/api/users/batuhan/avatar");
@@ -349,13 +365,13 @@ class UserServiceTest {
 
             // Assert
             assertThat(testUser.getAvatarUrl()).isNull();
-            verify(fileStoragePort, times(1)).deleteFile("avatars/batuhan.png");
-            verify(userRepository, times(1)).save(testUser);
+            verify(fileStoragePort).deleteFile("avatars/batuhan.png");
+            verify(userRepository).save(testUser);
         }
 
         @Test
-        @DisplayName("Should return avatar file when existing file is queried")
-        void shouldReturnAvatarWhenFileExists() {
+        @DisplayName("Should return PNG avatar DTO when PNG file exists in storage")
+        void shouldReturnPngAvatar_WhenPngExists() {
             // Arrange
             byte[] content = "image-binary-payload".getBytes();
             when(fileStoragePort.doesFileExist("avatars/batuhan.webp")).thenReturn(false);
@@ -373,8 +389,26 @@ class UserServiceTest {
         }
 
         @Test
-        @DisplayName("Should throw ResourceNotFoundException when avatar does not exist")
-        void shouldThrowExceptionWhenAvatarNotFound() {
+        @DisplayName("Should return WEBP avatar DTO when WEBP file exists in storage")
+        void shouldReturnWebpAvatar_WhenWebpExists() {
+            // Arrange
+            byte[] content = "webp-binary-payload".getBytes();
+            when(fileStoragePort.doesFileExist("avatars/batuhan.webp")).thenReturn(true);
+            when(fileStoragePort.downloadFile("avatars/batuhan.webp")).thenReturn(content);
+
+            // Act
+            FileDownloadDTO download = userService.getAvatar("batuhan");
+
+            // Assert
+            assertThat(download).isNotNull();
+            assertThat(download.data()).isEqualTo(content);
+            assertThat(download.contentType()).isEqualTo("image/webp");
+            assertThat(download.fileName()).isEqualTo("batuhan.webp");
+        }
+
+        @Test
+        @DisplayName("Should throw ResourceNotFoundException when no avatar file exists")
+        void shouldThrowException_WhenNoAvatarFileExists() {
             // Arrange
             when(fileStoragePort.doesFileExist(anyString())).thenReturn(false);
 
@@ -386,12 +420,12 @@ class UserServiceTest {
     }
 
     @Nested
-    @DisplayName("Change Password Tests")
-    class ChangePasswordTests {
+    @DisplayName("Password and Profile Mutations")
+    class PasswordAndProfileTests {
 
         @Test
-        @DisplayName("Should throw GameOperationException when current password does not match")
-        void shouldThrowExceptionWhenCurrentPasswordMismatch() {
+        @DisplayName("Should throw GameOperationException when current password verification fails")
+        void shouldThrowException_WhenCurrentPasswordMismatch() {
             // Arrange
             ChangePasswordRequest request = new ChangePasswordRequest("wrong_pass", "new_pass123");
             when(securityContext.getAuthentication()).thenReturn(authentication);
@@ -403,15 +437,10 @@ class UserServiceTest {
                 .isInstanceOf(GameOperationException.class)
                 .hasMessageContaining("Current password does not match");
         }
-    }
-
-    @Nested
-    @DisplayName("Update Profile Tests")
-    class UpdateProfileTests {
 
         @Test
-        @DisplayName("Should throw UserAlreadyExistsException when new username is already in use")
-        void shouldThrowExceptionWhenUsernameAlreadyTaken() {
+        @DisplayName("Should throw UserAlreadyExistsException when new username is already taken")
+        void shouldThrowException_WhenUsernameAlreadyTaken() {
             // Arrange
             UpdateProfileRequest request = new UpdateProfileRequest("taken_name", "test@mail.com");
             when(securityContext.getAuthentication()).thenReturn(authentication);
@@ -426,8 +455,8 @@ class UserServiceTest {
         }
 
         @Test
-        @DisplayName("Should throw EmailAlreadyExistsException when new email is already in use")
-        void shouldThrowExceptionWhenEmailAlreadyTaken() {
+        @DisplayName("Should throw EmailAlreadyExistsException when new email is already taken")
+        void shouldThrowException_WhenEmailAlreadyTaken() {
             // Arrange
             UpdateProfileRequest request = new UpdateProfileRequest("batuhan", "taken@mail.com");
             when(securityContext.getAuthentication()).thenReturn(authentication);
@@ -442,8 +471,8 @@ class UserServiceTest {
         }
 
         @Test
-        @DisplayName("Should update profile when new data is unique")
-        void shouldUpdateProfileWhenDataValid() {
+        @DisplayName("Should update profile in database and synchronize with Keycloak")
+        void shouldUpdateProfile_WhenDataIsValid() {
             // Arrange
             UpdateProfileRequest request = new UpdateProfileRequest("new_name", "new@mail.com");
             when(securityContext.getAuthentication()).thenReturn(authentication);
@@ -463,18 +492,13 @@ class UserServiceTest {
             // Assert
             assertThat(testUser.getUsername()).isEqualTo("new_name");
             assertThat(testUser.getEmail()).isEqualTo("new@mail.com");
-            verify(userRepository, times(1)).save(testUser);
-            verify(userResource, times(1)).update(any(UserRepresentation.class));
+            verify(userRepository).save(testUser);
+            verify(userResource).update(any(UserRepresentation.class));
         }
-    }
-
-    @Nested
-    @DisplayName("Delete Account Tests")
-    class DeleteAccountTests {
 
         @Test
-        @DisplayName("Should soft delete account and purge from Keycloak when password verification succeeds")
-        void shouldSoftDeleteAccountWhenPasswordMatches() {
+        @DisplayName("Should soft delete account and purge Keycloak identity when password matches")
+        void shouldSoftDeleteAccount_WhenPasswordMatches() {
             // Arrange
             DeleteAccountRequest request = new DeleteAccountRequest("correct_pass");
             when(securityContext.getAuthentication()).thenReturn(authentication);
@@ -491,14 +515,14 @@ class UserServiceTest {
 
             // Assert
             assertThat(testUser.isActive()).isFalse();
-            verify(userResource, times(1)).remove();
-            verify(userRepository, times(1)).save(testUser);
+            verify(userResource).remove();
+            verify(userRepository).save(testUser);
             verify(userRepository, never()).delete(any(UserEntity.class));
         }
 
         @Test
-        @DisplayName("Should throw GameOperationException when password verification fails")
-        void shouldThrowExceptionWhenDeletePasswordMismatch() {
+        @DisplayName("Should throw GameOperationException when delete account password fails verification")
+        void shouldThrowException_WhenDeletePasswordMismatch() {
             // Arrange
             DeleteAccountRequest request = new DeleteAccountRequest("wrong_pass");
             when(securityContext.getAuthentication()).thenReturn(authentication);

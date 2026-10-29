@@ -21,11 +21,13 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.util.Collection;
 import java.util.List;
@@ -328,6 +330,37 @@ class SecurityConfigTest extends AbstractIntegrationTest {
             result.andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", origin))
                 .andExpect(header().string("Access-Control-Allow-Credentials", "true"));
+        }
+    }
+
+    @Nested
+    @DisplayName("Security Beans & Converters")
+    class BeanConfigurationTests {
+
+        @Test
+        @DisplayName("Should create JwtAuthenticationConverter bean with Keycloak converter")
+        void shouldCreateJwtAuthenticationConverter() {
+            // Arrange
+            SecurityConfig securityConfig = new SecurityConfig();
+
+            // Act
+            JwtAuthenticationConverter converter = securityConfig.jwtAuthenticationConverter();
+
+            // Assert
+            assertThat(converter).isNotNull();
+        }
+
+        @Test
+        @DisplayName("Should build CorsConfigurationSource with registered endpoints and methods")
+        void shouldBuildCorsConfigurationSource() {
+            // Arrange
+            SecurityConfig securityConfig = new SecurityConfig();
+
+            // Act
+            CorsConfigurationSource corsSource = securityConfig.corsConfigurationSource();
+
+            // Assert
+            assertThat(corsSource).isNotNull();
         }
     }
 }

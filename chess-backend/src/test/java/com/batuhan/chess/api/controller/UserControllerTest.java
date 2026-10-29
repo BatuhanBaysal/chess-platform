@@ -42,6 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         OAuth2ResourceServerAutoConfiguration.class
     }
 )
+@DisplayName("User Controller Web Layer Tests")
 class UserControllerTest {
 
     @Autowired
@@ -67,7 +68,7 @@ class UserControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/users/me Tests")
+    @DisplayName("Profile Retrieval Tests")
     class GetProfileTests {
 
         @Test
@@ -88,8 +89,29 @@ class UserControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/users/leaderboard/all Tests")
-    class GetPagedLeaderboardTests {
+    @DisplayName("Leaderboard Tests")
+    class LeaderboardTests {
+
+        @Test
+        @WithMockUser
+        @DisplayName("Should return 200 OK with top 3 leaderboard users")
+        void getLeaderboard_ReturnsTopThreeUsers() throws Exception {
+            // Arrange
+            UserResponseDTO user1 = UserResponseDTO.builder().username("player1").eloRating(2000).build();
+            UserResponseDTO user2 = UserResponseDTO.builder().username("player2").eloRating(1900).build();
+            when(userService.getLeaderboard()).thenReturn(List.of(user1, user2));
+
+            // Act
+            ResultActions result = mockMvc.perform(get("/api/users/leaderboard"));
+
+            // Assert
+            result.andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].username").value("player1"))
+                .andExpect(jsonPath("$[1].username").value("player2"));
+
+            verify(userService, times(1)).getLeaderboard();
+        }
 
         @Test
         @WithMockUser
@@ -121,7 +143,7 @@ class UserControllerTest {
     }
 
     @Nested
-    @DisplayName("PUT /api/users/me Tests")
+    @DisplayName("Profile Update Tests")
     class UpdateProfileTests {
 
         @Test
@@ -181,7 +203,7 @@ class UserControllerTest {
     }
 
     @Nested
-    @DisplayName("PUT /api/users/me/password Tests")
+    @DisplayName("Password Change Tests")
     class ChangePasswordTests {
 
         @Test
@@ -250,6 +272,21 @@ class UserControllerTest {
 
         @Test
         @WithMockUser
+        @DisplayName("Should return 204 No Content when avatar is deleted successfully")
+        void deleteAvatar_ReturnsNoContent() throws Exception {
+            // Arrange
+            doNothing().when(userService).deleteAvatar();
+
+            // Act
+            ResultActions result = mockMvc.perform(delete("/api/users/me/avatar").with(csrf()));
+
+            // Assert
+            result.andExpect(status().isNoContent());
+            verify(userService, times(1)).deleteAvatar();
+        }
+
+        @Test
+        @WithMockUser
         @DisplayName("Should return 200 OK and image bytes when avatar exists")
         void getAvatar_UserExists_ReturnsImageBytes() throws Exception {
             // Arrange
@@ -270,7 +307,7 @@ class UserControllerTest {
     }
 
     @Nested
-    @DisplayName("DELETE /api/users/me Tests")
+    @DisplayName("Account Deletion Tests")
     class DeleteAccountTests {
 
         @Test

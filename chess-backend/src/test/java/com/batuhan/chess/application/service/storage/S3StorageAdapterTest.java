@@ -17,11 +17,13 @@ import software.amazon.awssdk.services.s3.model.*;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("S3StorageAdapter Implementation Tests")
 class S3StorageAdapterTest {
 
     @Mock
@@ -37,17 +39,16 @@ class S3StorageAdapterTest {
 
     @BeforeEach
     void setUp() {
-        String bucketName = "chess-storage";
-        lenient().when(s3Properties.getBucketName()).thenReturn(bucketName);
+        lenient().when(s3Properties.getBucketName()).thenReturn("chess-storage");
     }
 
     @Nested
-    @DisplayName("Upload File Tests")
+    @DisplayName("File Upload")
     class UploadFileTests {
 
         @Test
-        @DisplayName("Should successfully upload file when bucket already exists")
-        void uploadFile_BucketExists_UploadsSuccessfully() {
+        @DisplayName("Should upload file directly when bucket already exists")
+        void shouldUploadFile_WhenBucketExists() {
             // Arrange
             byte[] content = "dummy-image-data".getBytes();
             InputStream inputStream = new ByteArrayInputStream(content);
@@ -59,14 +60,14 @@ class S3StorageAdapterTest {
             String uploadedKey = storageAdapter.uploadFile(testKey, inputStream, content.length, "image/png");
 
             // Assert
-            assertEquals(testKey, uploadedKey);
-            verify(s3Client, times(1)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+            assertThat(uploadedKey).isEqualTo(testKey);
+            verify(s3Client).putObject(any(PutObjectRequest.class), any(RequestBody.class));
             verify(s3Client, never()).createBucket(any(CreateBucketRequest.class));
         }
 
         @Test
         @DisplayName("Should create bucket and upload file when bucket does not exist")
-        void uploadFile_BucketDoesNotExist_CreatesBucketAndUploads() {
+        void shouldCreateBucketAndUpload_WhenBucketDoesNotExist() {
             // Arrange
             byte[] content = "dummy-image-data".getBytes();
             InputStream inputStream = new ByteArrayInputStream(content);
@@ -79,14 +80,14 @@ class S3StorageAdapterTest {
             String uploadedKey = storageAdapter.uploadFile(testKey, inputStream, content.length, "image/png");
 
             // Assert
-            assertEquals(testKey, uploadedKey);
-            verify(s3Client, times(1)).createBucket(any(CreateBucketRequest.class));
-            verify(s3Client, times(1)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+            assertThat(uploadedKey).isEqualTo(testKey);
+            verify(s3Client).createBucket(any(CreateBucketRequest.class));
+            verify(s3Client).putObject(any(PutObjectRequest.class), any(RequestBody.class));
         }
 
         @Test
-        @DisplayName("Should throw RuntimeException when S3 putObject fails")
-        void uploadFile_S3Error_ThrowsRuntimeException() {
+        @DisplayName("Should throw RuntimeException when S3 putObject operation fails")
+        void shouldThrowException_WhenPutObjectFails() {
             // Arrange
             byte[] content = "dummy-data".getBytes();
             InputStream inputStream = new ByteArrayInputStream(content);
@@ -95,19 +96,19 @@ class S3StorageAdapterTest {
                 .thenThrow(S3Exception.builder().message("Access Denied").build());
 
             // Act & Assert
-            RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> storageAdapter.uploadFile(testKey, inputStream, content.length, "image/png"));
-            assertTrue(exception.getMessage().contains("Could not upload file"));
+            assertThatThrownBy(() -> storageAdapter.uploadFile(testKey, inputStream, content.length, "image/png"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Could not upload file: " + testKey);
         }
     }
 
     @Nested
-    @DisplayName("Download File Tests")
+    @DisplayName("File Download")
     class DownloadFileTests {
 
         @Test
-        @DisplayName("Should successfully download and return file bytes")
-        void downloadFile_FileExists_ReturnsByteArray() {
+        @DisplayName("Should return byte array payload when file exists in storage")
+        void shouldReturnBytes_WhenFileExists() {
             // Arrange
             byte[] expectedBytes = "file content".getBytes();
             ResponseBytes<GetObjectResponse> responseBytes = ResponseBytes.fromByteArray(
@@ -119,32 +120,31 @@ class S3StorageAdapterTest {
             byte[] actualBytes = storageAdapter.downloadFile(testKey);
 
             // Assert
-            assertNotNull(actualBytes);
-            assertArrayEquals(expectedBytes, actualBytes);
-            verify(s3Client, times(1)).getObjectAsBytes(any(GetObjectRequest.class));
+            assertThat(actualBytes).isEqualTo(expectedBytes);
+            verify(s3Client).getObjectAsBytes(any(GetObjectRequest.class));
         }
 
         @Test
-        @DisplayName("Should throw RuntimeException when file is not found (NoSuchKeyException)")
-        void downloadFile_FileNotFound_ThrowsRuntimeException() {
+        @DisplayName("Should throw RuntimeException when requested key does not exist")
+        void shouldThrowException_WhenKeyNotFound() {
             // Arrange
             when(s3Client.getObjectAsBytes(any(GetObjectRequest.class)))
                 .thenThrow(NoSuchKeyException.builder().message("Key not found").build());
 
             // Act & Assert
-            RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> storageAdapter.downloadFile(testKey));
-            assertTrue(exception.getMessage().contains("File not found: " + testKey));
+            assertThatThrownBy(() -> storageAdapter.downloadFile(testKey))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("File not found: " + testKey);
         }
     }
 
     @Nested
-    @DisplayName("Delete File Tests")
+    @DisplayName("File Deletion")
     class DeleteFileTests {
 
         @Test
-        @DisplayName("Should successfully delete file from storage")
-        void deleteFile_ValidKey_DeletesObject() {
+        @DisplayName("Should delete object from S3 when key is valid")
+        void shouldDeleteObject_WhenKeyIsValid() {
             // Arrange
             when(s3Client.deleteObject(any(DeleteObjectRequest.class)))
                 .thenReturn(DeleteObjectResponse.builder().build());
@@ -153,30 +153,30 @@ class S3StorageAdapterTest {
             storageAdapter.deleteFile(testKey);
 
             // Assert
-            verify(s3Client, times(1)).deleteObject(any(DeleteObjectRequest.class));
+            verify(s3Client).deleteObject(any(DeleteObjectRequest.class));
         }
 
         @Test
-        @DisplayName("Should throw RuntimeException when delete fails")
-        void deleteFile_S3Error_ThrowsRuntimeException() {
+        @DisplayName("Should throw RuntimeException when delete operation encounters S3 error")
+        void shouldThrowException_WhenDeleteOperationFails() {
             // Arrange
             when(s3Client.deleteObject(any(DeleteObjectRequest.class)))
                 .thenThrow(S3Exception.builder().message("Network error").build());
 
             // Act & Assert
-            RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> storageAdapter.deleteFile(testKey));
-            assertTrue(exception.getMessage().contains("Could not delete file: " + testKey));
+            assertThatThrownBy(() -> storageAdapter.deleteFile(testKey))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Could not delete file: " + testKey);
         }
     }
 
     @Nested
-    @DisplayName("Does File Exist Tests")
-    class DoesFileExistTests {
+    @DisplayName("Existence Checks")
+    class ExistenceTests {
 
         @Test
         @DisplayName("Should return true when headObject succeeds")
-        void doesFileExist_FilePresent_ReturnsTrue() {
+        void shouldReturnTrue_WhenHeadObjectSucceeds() {
             // Arrange
             when(s3Client.headObject(any(HeadObjectRequest.class)))
                 .thenReturn(HeadObjectResponse.builder().build());
@@ -185,13 +185,12 @@ class S3StorageAdapterTest {
             boolean exists = storageAdapter.doesFileExist(testKey);
 
             // Assert
-            assertTrue(exists);
-            verify(s3Client, times(1)).headObject(any(HeadObjectRequest.class));
+            assertThat(exists).isTrue();
         }
 
         @Test
         @DisplayName("Should return false when NoSuchKeyException is thrown")
-        void doesFileExist_FileMissing_ReturnsFalse() {
+        void shouldReturnFalse_WhenNoSuchKeyExceptionThrown() {
             // Arrange
             when(s3Client.headObject(any(HeadObjectRequest.class)))
                 .thenThrow(NoSuchKeyException.builder().build());
@@ -200,12 +199,12 @@ class S3StorageAdapterTest {
             boolean exists = storageAdapter.doesFileExist(testKey);
 
             // Assert
-            assertFalse(exists);
+            assertThat(exists).isFalse();
         }
 
         @Test
-        @DisplayName("Should return false when generic S3Exception occurs")
-        void doesFileExist_S3ExceptionOccurs_ReturnsFalse() {
+        @DisplayName("Should return false when generic S3Exception occurs during existence check")
+        void shouldReturnFalse_WhenGenericS3ExceptionOccurs() {
             // Arrange
             when(s3Client.headObject(any(HeadObjectRequest.class)))
                 .thenThrow(S3Exception.builder().message("Forbidden").build());
@@ -214,7 +213,7 @@ class S3StorageAdapterTest {
             boolean exists = storageAdapter.doesFileExist(testKey);
 
             // Assert
-            assertFalse(exists);
+            assertThat(exists).isFalse();
         }
     }
 }

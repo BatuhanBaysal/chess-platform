@@ -4,6 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,12 +24,26 @@ class MoveValidatorTest {
     }
 
     @Nested
-    @DisplayName("Safety & Pinning Logic")
-    class SafetyTests {
+    @DisplayName("Move Legality & King Safety")
+    class LegalityAndSafetyTests {
+
+        @Test
+        @DisplayName("Should reject move when starting square does not contain a piece")
+        void shouldRejectMove_WhenStartSquareIsEmpty() {
+            // Arrange
+            Position emptyStart = new Position(4, 1);
+            Position target = new Position(4, 2);
+
+            // Act
+            boolean result = validator.isMoveLegal(emptyStart, target, board, white, null);
+
+            // Assert
+            assertThat(result).isFalse();
+        }
 
         @Test
         @DisplayName("Should prohibit moving a piece pinned to the King")
-        void isMoveLegal_PinnedPiece_ReturnsFalse() {
+        void shouldProhibitMove_WhenPieceIsPinnedToKing() {
             // Arrange
             Position kingPos = new Position(4, 0);
             Position pinnedPawnPos = new Position(4, 1);
@@ -41,12 +57,12 @@ class MoveValidatorTest {
             boolean result = validator.isMoveLegal(pinnedPawnPos, new Position(3, 1), board, white, null);
 
             // Assert
-            assertThat(result).as("Move must be illegal as it exposes the King to vertical check").isFalse();
+            assertThat(result).isFalse();
         }
 
         @Test
-        @DisplayName("isMoveSafe: should prevent en passant if it results in a discovered check")
-        void isMoveSafe_EnPassantExposesKing_ReturnsFalse() {
+        @DisplayName("Should prevent en passant capture if it exposes King to discovered check")
+        void shouldPreventEnPassant_WhenExposesKingToDiscoveredCheck() {
             // Arrange
             Position kingPos = new Position(0, 4);
             Position myPawnPos = new Position(4, 4);
@@ -62,7 +78,7 @@ class MoveValidatorTest {
             boolean result = validator.isMoveSafe(myPawnPos, new Position(3, 5), new Pawn(white, myPawnPos), board, white);
 
             // Assert
-            assertThat(result).as("En passant should be unsafe if rank h5-a5 becomes clear for the rook").isFalse();
+            assertThat(result).isFalse();
         }
     }
 
@@ -71,8 +87,8 @@ class MoveValidatorTest {
     class CastlingTests {
 
         @Test
-        @DisplayName("Should allow castling when path is clear, safe, and pieces haven't moved")
-        void canCastle_ValidKingside_ReturnsTrue() {
+        @DisplayName("Should permit castling when trajectory is clear, safe, and pieces have not moved")
+        void shouldPermitCastling_WhenConditionsAreMet() {
             // Arrange
             Position kingPos = new Position(4, 0);
             Position rookPos = new Position(7, 0);
@@ -87,8 +103,27 @@ class MoveValidatorTest {
         }
 
         @Test
-        @DisplayName("Should deny castling if King must pass through an attacked square")
-        void canCastle_PathUnderAttack_ReturnsFalse() {
+        @DisplayName("Should deny castling when King is currently in check")
+        void shouldDenyCastling_WhenKingIsInCheck() {
+            // Arrange
+            Position kingPos = new Position(4, 0);
+            Position rookPos = new Position(7, 0);
+            Position enemyRookPos = new Position(4, 7);
+
+            board.setPieceAt(kingPos, new King(white, kingPos));
+            board.setPieceAt(rookPos, new Rook(white, rookPos));
+            board.setPieceAt(enemyRookPos, new Rook(black, enemyRookPos));
+
+            // Act
+            boolean result = validator.canCastle(kingPos, new Position(6, 0), board, white);
+
+            // Assert
+            assertThat(result).isFalse();
+        }
+
+        @Test
+        @DisplayName("Should deny castling if King passes through an attacked square")
+        void shouldDenyCastling_WhenKingTransitSquareIsUnderAttack() {
             // Arrange
             Position kingPos = new Position(4, 0);
             board.setPieceAt(kingPos, new King(white, kingPos));
@@ -99,12 +134,31 @@ class MoveValidatorTest {
             boolean result = validator.canCastle(kingPos, new Position(6, 0), board, white);
 
             // Assert
-            assertThat(result).as("King cannot castle through the f1 square which is under attack").isFalse();
+            assertThat(result).isFalse();
         }
 
         @Test
-        @DisplayName("Should deny castling if the Rook has already moved")
-        void canCastle_RookHasMoved_ReturnsFalse() {
+        @DisplayName("Should deny queenside castling if Knight square (b1/b8) is occupied")
+        void shouldDenyQueensideCastling_WhenKnightSquareIsOccupied() {
+            // Arrange
+            Position kingPos = new Position(4, 0);
+            Position rookPos = new Position(0, 0);
+            Position b1Pos = new Position(1, 0);
+
+            board.setPieceAt(kingPos, new King(white, kingPos));
+            board.setPieceAt(rookPos, new Rook(white, rookPos));
+            board.setPieceAt(b1Pos, new Knight(white, b1Pos));
+
+            // Act
+            boolean result = validator.canCastle(kingPos, new Position(2, 0), board, white);
+
+            // Assert
+            assertThat(result).isFalse();
+        }
+
+        @Test
+        @DisplayName("Should deny castling when Rook has already moved")
+        void shouldDenyCastling_WhenRookHasMoved() {
             // Arrange
             Position kingPos = new Position(4, 0);
             Position rookPos = new Position(7, 0);
@@ -123,12 +177,12 @@ class MoveValidatorTest {
     }
 
     @Nested
-    @DisplayName("En Passant Detection")
+    @DisplayName("En Passant Validation")
     class EnPassantTests {
 
         @Test
-        @DisplayName("Should validate En Passant after opponent's two-square pawn jump")
-        void canEnPassant_ValidScenario_ReturnsTrue() {
+        @DisplayName("Should permit en passant following opponent double-square pawn advance")
+        void shouldPermitEnPassant_WhenPrecededByDoubleStepPawnAdvance() {
             // Arrange
             Position myPawnPos = new Position(4, 4);
             Position enemyPawnStart = new Position(5, 6);
@@ -148,8 +202,8 @@ class MoveValidatorTest {
         }
 
         @Test
-        @DisplayName("Should deny En Passant if the opponent's pawn only moved one square")
-        void canEnPassant_SingleStepLastMove_ReturnsFalse() {
+        @DisplayName("Should deny en passant if opponent pawn moved only a single square")
+        void shouldDenyEnPassant_WhenPrecededBySingleStepPawnAdvance() {
             // Arrange
             Position myPawnPos = new Position(4, 4);
             Position enemyPawnStart = new Position(5, 5);
@@ -164,15 +218,71 @@ class MoveValidatorTest {
             // Assert
             assertThat(result).isFalse();
         }
+
+        @Test
+        @DisplayName("Should return false when last move is null or piece is not a pawn")
+        void shouldReturnFalse_WhenLastMoveIsNotPawn() {
+            // Arrange
+            Position myPawnPos = new Position(4, 4);
+            Position knightStart = new Position(1, 0);
+            Position knightEnd = new Position(2, 2);
+            Knight knight = new Knight(black, knightEnd);
+
+            Game.Move lastMove = new Game.Move(knightStart, knightEnd, knight);
+
+            // Act
+            boolean nullMoveResult = validator.canEnPassant(myPawnPos, new Position(5, 5), null, white);
+            boolean knightMoveResult = validator.canEnPassant(myPawnPos, new Position(5, 5), lastMove, white);
+
+            // Assert
+            assertThat(nullMoveResult).isFalse();
+            assertThat(knightMoveResult).isFalse();
+        }
     }
 
     @Nested
-    @DisplayName("Square Utility Methods")
-    class UtilityTests {
+    @DisplayName("Promotion & Square Inquiries")
+    class PromotionAndSquareInquiriesTests {
+
+        @ParameterizedTest
+        @ValueSource(strings = {"QUEEN", "ROOK", "BISHOP", "KNIGHT", "Q", "R", "B", "N"})
+        @DisplayName("Should validate move when promotion type is a legal target piece")
+        void shouldValidateMove_WhenPromotionTypeIsLegal(String promotionType) {
+            // Arrange
+            Position start = new Position(0, 6);
+            Position end = new Position(0, 7);
+            Pawn pawn = new Pawn(white, start);
+            board.setPieceAt(start, pawn);
+            board.setPieceAt(new Position(4, 0), new King(white, new Position(4, 0)));
+
+            // Act
+            boolean result = validator.isMoveLegal(start, end, board, white, null, promotionType);
+
+            // Assert
+            assertThat(result).isTrue();
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"KING", "PAWN", "INVALID"})
+        @DisplayName("Should reject move when promotion type is illegal")
+        void shouldRejectMove_WhenPromotionTypeIsIllegal(String invalidPromotionType) {
+            // Arrange
+            Position start = new Position(0, 6);
+            Position end = new Position(0, 7);
+            Pawn pawn = new Pawn(white, start);
+            board.setPieceAt(start, pawn);
+            board.setPieceAt(new Position(4, 0), new King(white, new Position(4, 0)));
+
+            // Act
+            boolean result = validator.isMoveLegal(start, end, board, white, null, invalidPromotionType);
+
+            // Assert
+            assertThat(result).isFalse();
+        }
 
         @Test
-        @DisplayName("isSquareAttacked: should detect attack from enemy Knight")
-        void isSquareAttacked_ByKnight_ReturnsTrue() {
+        @DisplayName("Should detect square under attack by enemy Knight")
+        void shouldDetectSquareAttacked_ByEnemyKnight() {
             // Arrange
             Position target = new Position(4, 4);
             Position knightPos = new Position(3, 2);
@@ -186,8 +296,8 @@ class MoveValidatorTest {
         }
 
         @Test
-        @DisplayName("isPromotionSituation: should detect Pawn reaching the final rank")
-        void isPromotionSituation_DetectsEndRank() {
+        @DisplayName("Should confirm promotion situation when Pawn reaches opposing back rank")
+        void shouldConfirmPromotionSituation_WhenPawnReachesFinalRank() {
             // Arrange
             Position endPos = new Position(0, 7);
             Pawn whitePawn = new Pawn(white, new Position(0, 6));

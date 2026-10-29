@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AdminActiveGameResponseDTOTest {
 
     @Test
-    @DisplayName("Should build AdminActiveGameResponseDTO with correct field values")
+    @DisplayName("Should build AdminActiveGameResponseDTO with correct field values and verify equality")
     void shouldBuildAdminActiveGameResponseDTO() {
         // Arrange
         String gameId = "game-123";
@@ -30,6 +30,15 @@ class AdminActiveGameResponseDTOTest {
             .blackRemainingTimeMs(blackTime)
             .build();
 
+        AdminActiveGameResponseDTO duplicateDto = AdminActiveGameResponseDTO.builder()
+            .gameId(gameId)
+            .whitePlayerId(whitePlayerId)
+            .blackPlayerId(blackPlayerId)
+            .status(status)
+            .whiteRemainingTimeMs(whiteTime)
+            .blackRemainingTimeMs(blackTime)
+            .build();
+
         // Assert
         assertThat(dto).isNotNull();
         assertThat(dto.gameId()).isEqualTo(gameId);
@@ -38,5 +47,8 @@ class AdminActiveGameResponseDTOTest {
         assertThat(dto.status()).isEqualTo(status);
         assertThat(dto.whiteRemainingTimeMs()).isEqualTo(whiteTime);
         assertThat(dto.blackRemainingTimeMs()).isEqualTo(blackTime);
+        assertThat(dto)
+            .isEqualTo(duplicateDto)
+            .hasSameHashCodeAs(duplicateDto);
     }
 }

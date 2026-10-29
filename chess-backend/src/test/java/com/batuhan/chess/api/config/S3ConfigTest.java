@@ -4,7 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.s3.S3Client;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("S3Config Bean Creation Tests")
 class S3ConfigTest {
@@ -24,10 +24,9 @@ class S3ConfigTest {
         S3Config config = new S3Config(properties);
 
         // Act
-        S3Client s3Client = config.s3Client();
-
-        // Assert
-        assertNotNull(s3Client);
-        s3Client.close();
+        try (S3Client s3Client = config.s3Client()) {
+            // Assert
+            assertThat(s3Client).isNotNull();
+        }
     }
 }

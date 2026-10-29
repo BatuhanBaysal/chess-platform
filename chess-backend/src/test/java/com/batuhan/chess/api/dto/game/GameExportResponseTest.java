@@ -3,7 +3,7 @@ package com.batuhan.chess.api.dto.game;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("GameExportResponse Record Tests")
 class GameExportResponseTest {
@@ -21,10 +21,10 @@ class GameExportResponseTest {
         GameExportResponse response = new GameExportResponse(gameId, storageKey, fileName, sizeInBytes);
 
         // Assert
-        assertEquals(gameId, response.gameId());
-        assertEquals(storageKey, response.storageKey());
-        assertEquals(fileName, response.fileName());
-        assertEquals(sizeInBytes, response.sizeInBytes());
+        assertThat(response.gameId()).isEqualTo(gameId);
+        assertThat(response.storageKey()).isEqualTo(storageKey);
+        assertThat(response.fileName()).isEqualTo(fileName);
+        assertThat(response.sizeInBytes()).isEqualTo(sizeInBytes);
     }
 
     @Test
@@ -36,9 +36,10 @@ class GameExportResponseTest {
         GameExportResponse differentResponse = new GameExportResponse("g2", "key/path2", "log.txt", 512L);
 
         // Act & Assert
-        assertEquals(response1, response2);
-        assertEquals(response1.hashCode(), response2.hashCode());
-        assertNotEquals(response1, differentResponse);
+        assertThat(response1)
+            .isEqualTo(response2)
+            .hasSameHashCodeAs(response2)
+            .isNotEqualTo(differentResponse);
     }
 
     @Test
@@ -51,9 +52,10 @@ class GameExportResponseTest {
         String result = response.toString();
 
         // Assert
-        assertTrue(result.contains("gameId=g1"));
-        assertTrue(result.contains("storageKey=key/path"));
-        assertTrue(result.contains("fileName=log.txt"));
-        assertTrue(result.contains("sizeInBytes=100"));
+        assertThat(result)
+            .contains("gameId=g1")
+            .contains("storageKey=key/path")
+            .contains("fileName=log.txt")
+            .contains("sizeInBytes=100");
     }
 }

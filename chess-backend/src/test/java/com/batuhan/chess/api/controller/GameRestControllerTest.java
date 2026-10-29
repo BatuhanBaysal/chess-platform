@@ -53,11 +53,11 @@ class GameRestControllerTest {
     private GameArtifactService artifactService;
 
     @Nested
-    @DisplayName("Game Lifecycle Operations")
-    class GameLifecycleTests {
+    @DisplayName("Game Retrieval Operations")
+    class GameRetrievalTests {
 
         @Test
-        @DisplayName("Should return current game state including players and start status")
+        @DisplayName("Should return 200 OK with game state when game exists")
         void shouldReturnCurrentGameStateSuccessfully() throws Exception {
             // Arrange
             String gameId = "test-123";
@@ -81,7 +81,65 @@ class GameRestControllerTest {
         }
 
         @Test
-        @DisplayName("Should create a new game instance and return its initial state")
+        @DisplayName("Should return 404 Not Found when game does not exist")
+        void shouldReturnNotFoundWhenGameDoesNotExist() throws Exception {
+            // Arrange
+            String gameId = "unknown-game";
+            when(gameService.getGame(gameId)).thenReturn(null);
+
+            // Act
+            ResultActions result = mockMvc.perform(get("/api/games/{gameId}", gameId));
+
+            // Assert
+            result.andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+        }
+
+        @Test
+        @DisplayName("Should return 200 OK with active game when user is in a match")
+        void shouldReturnActiveGameForUser() throws Exception {
+            // Arrange
+            Long userId = 10L;
+            String gameId = "active-user-game";
+            Game game = new Game(new Board());
+            GameResponse response = new GameResponse(
+                gameId, "rnbqkbnr", Color.WHITE, GameStatus.ACTIVE,
+                List.of(), List.of(), "", 10L, 20L, null, null, null, true, 300000L, 300000L, 300
+            );
+            when(gameService.getActiveGameIdByUserId(userId)).thenReturn(gameId);
+            when(gameService.getGame(gameId)).thenReturn(game);
+            when(gameService.convertToResponse(gameId, game)).thenReturn(response);
+
+            // Act
+            ResultActions result = mockMvc.perform(get("/api/games/active/{userId}", userId));
+
+            // Assert
+            result.andExpect(status().isOk())
+                .andExpect(jsonPath("$.gameId").value(gameId))
+                .andExpect(jsonPath("$.whiteId").value(10));
+        }
+
+        @Test
+        @DisplayName("Should return 404 Not Found when user has no active game")
+        void shouldReturnNotFoundWhenUserHasNoActiveGame() throws Exception {
+            // Arrange
+            Long userId = 99L;
+            when(gameService.getActiveGameIdByUserId(userId)).thenReturn(null);
+
+            // Act
+            ResultActions result = mockMvc.perform(get("/api/games/active/{userId}", userId));
+
+            // Assert
+            result.andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("Game Lifecycle Operations")
+    class GameLifecycleTests {
+
+        @Test
+        @DisplayName("Should create a new game instance and return initial state")
         void shouldCreateNewGameSuccessfully() throws Exception {
             // Arrange
             String gameId = "new-game";
@@ -275,7 +333,7 @@ class GameRestControllerTest {
     class AiGameControllerTests {
 
         @Test
-        @DisplayName("Should create a new AI game session and return its initial state when user plays as white")
+        @DisplayName("Should create AI game when user plays as white")
         void shouldCreateAiGameAsWhiteSuccessfully() throws Exception {
             // Arrange
             String gameId = "ai-game-1";
@@ -301,7 +359,7 @@ class GameRestControllerTest {
         }
 
         @Test
-        @DisplayName("Should create a new AI game session when user plays as black with default parameter")
+        @DisplayName("Should create AI game when user plays as black")
         void shouldCreateAiGameAsBlackSuccessfully() throws Exception {
             // Arrange
             String gameId = "ai-game-2";

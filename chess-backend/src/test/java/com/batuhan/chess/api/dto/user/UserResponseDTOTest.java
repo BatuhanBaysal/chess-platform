@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class UserResponseDTOTest {
 
     @Test
-    @DisplayName("Should build UserResponseDTO with correct field values")
+    @DisplayName("Should build UserResponseDTO with all fields and verify equality")
     void shouldBuildUserResponseDTO() {
         // Arrange
         String username = "batuhan";
@@ -21,6 +21,7 @@ class UserResponseDTOTest {
         int totalDraws = 5;
         int totalGames = 45;
         UserRole role = UserRole.ROLE_ADMIN;
+        String avatarUrl = "/api/users/batuhan/avatar";
 
         // Act
         UserResponseDTO response = UserResponseDTO.builder()
@@ -32,6 +33,19 @@ class UserResponseDTOTest {
             .totalDraws(totalDraws)
             .totalGames(totalGames)
             .role(role)
+            .avatarUrl(avatarUrl)
+            .build();
+
+        UserResponseDTO duplicateResponse = UserResponseDTO.builder()
+            .username(username)
+            .email(email)
+            .eloRating(eloRating)
+            .totalWins(totalWins)
+            .totalLosses(totalLosses)
+            .totalDraws(totalDraws)
+            .totalGames(totalGames)
+            .role(role)
+            .avatarUrl(avatarUrl)
             .build();
 
         // Assert
@@ -44,5 +58,9 @@ class UserResponseDTOTest {
         assertThat(response.totalDraws()).isEqualTo(totalDraws);
         assertThat(response.totalGames()).isEqualTo(totalGames);
         assertThat(response.role()).isEqualTo(role);
+        assertThat(response.avatarUrl()).isEqualTo(avatarUrl);
+        assertThat(response)
+            .isEqualTo(duplicateResponse)
+            .hasSameHashCodeAs(duplicateResponse);
     }
 }

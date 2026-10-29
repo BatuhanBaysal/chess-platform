@@ -9,8 +9,8 @@
   </head>
   <body>
     <script>
-      if (typeof global === 'undefined') {
-        var global = window;
+      if (window.global === undefined) {
+        window.global = window;
       }
     </script>
     <div id="root"></div>

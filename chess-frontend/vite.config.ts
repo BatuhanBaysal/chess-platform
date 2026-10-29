@@ -1,7 +1,7 @@
 import { createLogger } from 'vite';
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
-import path from 'path';
+import path from 'node:path';
 
 const logger = createLogger();
 const originalError = logger.error;
@@ -16,15 +16,12 @@ const suppressProxyError = (proxy: any) => {
   proxy.on('error', (err: any, _req: any, res: any) => {
     const isConnRefused =
       err.code === 'ECONNREFUSED' ||
-      (err.errors && err.errors.some((e: any) => e.code === 'ECONNREFUSED')) ||
+      err.errors?.some((e: any) => e.code === 'ECONNREFUSED') ||
       err.message?.includes('ECONNREFUSED');
 
-    if (isConnRefused) {
-      if (res && !res.headersSent && typeof res.writeHead === 'function') {
-        res.writeHead(503, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Backend offline (mocking/testing)' }));
-      }
-      return;
+    if (isConnRefused && res && !res.headersSent && typeof res.writeHead === 'function') {
+      res.writeHead(503, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Backend offline (mocking/testing)' }));
     }
   });
 };
@@ -78,6 +75,19 @@ export default defineConfig({
       deps: {
         inline: ['react-router', 'react-router-dom'],
       },
+    },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov', 'html'],
+      reportsDirectory: './coverage',
+      exclude: [
+        'node_modules/**',
+        'src/test/**',
+        'e2e/**',
+        '**/*.d.ts',
+        '**/*.config.*',
+        'dist/**',
+      ],
     },
   },
 });

@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
+import { useState, type SyntheticEvent } from 'react';
 import { Terminal, Play, CheckCircle2, Loader2 } from 'lucide-react';
 import { triggerSandboxGame } from '../../../api/adminService';
 
 interface SandboxTriggerPanelProps {
-    onGameTriggered: () => void;
+    readonly onGameTriggered: () => void;
 }
 
-export default function SandboxTriggerPanel({ onGameTriggered }: SandboxTriggerPanelProps) {
+export default function SandboxTriggerPanel({ onGameTriggered }: Readonly<SandboxTriggerPanelProps>) {
     const [whiteId, setWhiteId] = useState<string>('');
     const [blackId, setBlackId] = useState<string>('');
     const [sandboxLoading, setSandboxLoading] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-    const handleTriggerSandbox = async (e: React.FormEvent) => {
+    const handleTriggerSandbox = async (e: SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!whiteId || !blackId) return;
         setSandboxLoading(true);
@@ -45,10 +45,11 @@ export default function SandboxTriggerPanel({ onGameTriggered }: SandboxTriggerP
             
             <form onSubmit={handleTriggerSandbox} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                 <div className="space-y-1.5">
-                    <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    <label htmlFor="sandbox-white-id" className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
                         White Player ID
                     </label>
                     <input 
+                        id="sandbox-white-id"
                         type="number" 
                         value={whiteId} 
                         onChange={(e) => setWhiteId(e.target.value)}
@@ -58,10 +59,11 @@ export default function SandboxTriggerPanel({ onGameTriggered }: SandboxTriggerP
                     />
                 </div>
                 <div className="space-y-1.5">
-                    <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    <label htmlFor="sandbox-black-id" className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
                         Black Player ID
                     </label>
                     <input 
+                        id="sandbox-black-id"
                         type="number" 
                         value={blackId} 
                         onChange={(e) => setBlackId(e.target.value)}

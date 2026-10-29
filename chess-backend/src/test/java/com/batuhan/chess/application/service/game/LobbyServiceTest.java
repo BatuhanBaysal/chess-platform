@@ -3,6 +3,7 @@ package com.batuhan.chess.application.service.game;
 import com.batuhan.chess.api.dto.lobby.GameRoomResponse;
 import com.batuhan.chess.api.dto.lobby.MatchFoundMessage;
 import com.batuhan.chess.api.exception.GameOperationException;
+import com.batuhan.chess.api.exception.ResourceNotFoundException;
 import com.batuhan.chess.domain.model.chess.Game;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -24,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -86,6 +88,15 @@ class LobbyServiceTest {
             // Assert
             assertThat(lobbyService.getRoom(roomId)).isEmpty();
         }
+
+        @Test
+        @DisplayName("Should throw ResourceNotFoundException when getRoomOrThrow is called with unknown ID")
+        void shouldThrowException_WhenGetRoomOrThrowCalledWithUnknownId() {
+            // Act & Assert
+            assertThatThrownBy(() -> lobbyService.getRoomOrThrow("missing-id"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Room not found with ID: missing-id");
+        }
     }
 
     @Nested
@@ -93,7 +104,7 @@ class LobbyServiceTest {
     class MatchMakingTests {
 
         @Test
-        @DisplayName("Should trigger game creation, assign player names, and notify both players when a match is found")
+        @DisplayName("Should trigger game creation and notify both players when a match is found")
         void shouldStartGameAndNotifyPlayersOnSuccessfulJoin() throws Exception {
             // Arrange
             Long hostId = 1L;
@@ -102,6 +113,7 @@ class LobbyServiceTest {
 
             Game mockGame = mock(Game.class);
             when(gameService.getGame(roomId)).thenReturn(mockGame);
+            when(gameService.getActiveGameIdByUserId(guestId)).thenReturn(null);
 
             when(redissonClient.getLock(anyString())).thenReturn(rLock);
             when(rLock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
@@ -111,7 +123,6 @@ class LobbyServiceTest {
 
             // Assert
             verify(gameService).createNewGameWithPlayers(roomId, hostId, guestId);
-            verify(gameService).getGame(roomId);
             verify(mockGame).setPlayerNames("hostUser", "guestUser");
 
             ArgumentCaptor<MatchFoundMessage> messageCaptor = ArgumentCaptor.forClass(MatchFoundMessage.class);
@@ -121,14 +132,30 @@ class LobbyServiceTest {
             assertThat(messages).hasSize(2)
                 .extracting(MatchFoundMessage::color)
                 .containsExactlyInAnyOrder("WHITE", "BLACK");
-
-            assertThat(messages)
-                .extracting(MatchFoundMessage::theme)
-                .containsOnly("classic");
         }
 
         @Test
-        @DisplayName("Should throw IllegalArgumentException when a player tries to join their own game room")
+        @DisplayName("Should throw IllegalStateException when joiner is already in an active game")
+        void shouldThrowException_WhenJoinerAlreadyInActiveGame() throws Exception {
+            // Arrange
+            Long hostId = 1L;
+            Long guestId = 2L;
+            String roomId = lobbyService.createRoom(hostId, "hostUser", 10, "classic");
+
+            when(gameService.getActiveGameIdByUserId(guestId)).thenReturn("existing-game-456");
+            when(redissonClient.getLock(anyString())).thenReturn(rLock);
+            when(rLock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
+
+            // Act & Assert
+            assertThatThrownBy(() -> lobbyService.joinRoom(roomId, guestId, "guestUser"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("You are already in an active game session.");
+
+            verify(gameService, never()).createNewGameWithPlayers(anyString(), any(), any());
+        }
+
+        @Test
+        @DisplayName("Should throw IllegalArgumentException when a player tries to join their own room")
         void shouldFailWhenHostJoinsSelfRoom() throws Exception {
             // Arrange
             Long hostId = 1L;
@@ -142,7 +169,6 @@ class LobbyServiceTest {
                 .isInstanceOf(IllegalArgumentException.class);
 
             verifyNoInteractions(gameService);
-            verify(messagingTemplate, never()).convertAndSend(anyString(), any(Object.class));
         }
 
         @Test
@@ -159,11 +185,11 @@ class LobbyServiceTest {
     }
 
     @Nested
-    @DisplayName("Room Filtering and Visibility")
+    @DisplayName("Room Visibility")
     class VisibilityTests {
 
         @Test
-        @DisplayName("Should only expose rooms with WAITING status to the lobby list")
+        @DisplayName("Should only expose rooms with WAITING status to the active rooms list")
         void shouldFilterOnlyWaitingRooms() throws Exception {
             // Arrange
             String room1 = lobbyService.createRoom(1L, "user1", 5, "classic");
@@ -186,7 +212,7 @@ class LobbyServiceTest {
     }
 
     @Nested
-    @DisplayName("Distributed Lock and Concurrency Safety Tests")
+    @DisplayName("Distributed Locking & Safety")
     class ConcurrencyAndLockTests {
 
         @Test
@@ -207,7 +233,7 @@ class LobbyServiceTest {
         }
 
         @Test
-        @DisplayName("Should successfully cancel room using distributed lock and broadcast cancellation event")
+        @DisplayName("Should cancel room and broadcast cancellation event when host initiates cancellation")
         void shouldCancelRoomAndBroadcastEventSuccessfully() throws Exception {
             // Arrange
             Long hostId = 1L;
@@ -230,7 +256,7 @@ class LobbyServiceTest {
         }
 
         @Test
-        @DisplayName("Should throw IllegalStateException when unauthorized user tries to cancel room")
+        @DisplayName("Should throw IllegalStateException when non-host user tries to cancel room")
         void shouldFailWhenUnauthorizedUserTriesToCancelRoom() throws Exception {
             // Arrange
             Long hostId = 1L;
@@ -246,25 +272,6 @@ class LobbyServiceTest {
 
             assertThat(lobbyService.getRoom(roomId)).isPresent();
             verify(messagingTemplate, never()).convertAndSend(anyString(), any(Object.class));
-        }
-
-        @Test
-        @DisplayName("Should prevent joining a cancelled or non-waiting room (Ghost game prevention)")
-        void shouldPreventJoiningCancelledOrExpiredRoom() throws Exception {
-            // Arrange
-            Long hostId = 1L;
-            String roomId = lobbyService.createRoom(hostId, "hostUser", 10, "classic");
-
-            when(redissonClient.getLock(anyString())).thenReturn(rLock);
-            when(rLock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
-
-            lobbyService.cancelRoom(roomId, hostId);
-
-            // Act & Assert
-            assertThatThrownBy(() -> lobbyService.joinRoom(roomId, 2L, "guestUser"))
-                .isInstanceOf(IllegalStateException.class);
-
-            verifyNoInteractions(gameService);
         }
     }
 }

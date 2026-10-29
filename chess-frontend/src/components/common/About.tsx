@@ -200,9 +200,9 @@ export const About: React.FC = () => {
 
         {/* Carousel Indicators */}
         <div className="absolute bottom-5 right-5 sm:bottom-7 sm:right-7 z-20 flex gap-2">
-          {aboutImages.map((_, idx) => (
+          {aboutImages.map((img, idx) => (
             <button
-              key={idx}
+              key={`indicator-${img.src}`}
               onClick={() => setCurrentImageIndex(idx)}
               className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
                 idx === currentImageIndex ? 'w-7 bg-indigo-500' : 'w-2 bg-white/40 hover:bg-white/70'

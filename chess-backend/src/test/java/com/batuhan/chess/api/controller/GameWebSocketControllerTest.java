@@ -2,6 +2,7 @@ package com.batuhan.chess.api.controller;
 
 import com.batuhan.chess.api.dto.game.DismissRequest;
 import com.batuhan.chess.api.dto.game.GameResponse;
+import com.batuhan.chess.api.dto.game.HeartbeatRequest;
 import com.batuhan.chess.api.dto.game.MoveRequest;
 import com.batuhan.chess.api.dto.game.ReadyRequest;
 import com.batuhan.chess.application.service.game.GameService;
@@ -9,6 +10,7 @@ import com.batuhan.chess.domain.model.chess.Board;
 import com.batuhan.chess.domain.model.chess.Color;
 import com.batuhan.chess.domain.model.chess.Game;
 import com.batuhan.chess.domain.model.chess.GameStatus;
+import com.batuhan.chess.domain.model.history.GameResult;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -77,7 +79,6 @@ class GameWebSocketControllerTest {
         void shouldNotBroadcastWhenOnlyOnePlayerIsReady() {
             // Arrange
             var request = new ReadyRequest("game-123", 1L);
-
             when(gameService.setPlayerReady(anyString(), anyLong())).thenReturn(false);
 
             // Act
@@ -89,11 +90,11 @@ class GameWebSocketControllerTest {
     }
 
     @Nested
-    @DisplayName("Move and Timeout Processing")
+    @DisplayName("Move and Heartbeat Processing")
     class GameFlowTests {
 
         @Test
-        @DisplayName("Should execute move and broadcast updated board state to all subscribers")
+        @DisplayName("Should execute move and broadcast updated board state to subscribers")
         void shouldProcessMoveAndBroadcastUpdate() {
             // Arrange
             String gameId = "game-123";
@@ -114,6 +115,63 @@ class GameWebSocketControllerTest {
             // Assert
             verify(gameService).makeMove(eq(gameId), any(), any(), any());
             verify(messagingTemplate).convertAndSend("/topic/game/" + gameId, mockResponse);
+        }
+
+        @Test
+        @DisplayName("Should delegate heartbeat recording to service")
+        void shouldRecordHeartbeatSuccessfully() {
+            // Arrange
+            String gameId = "game-123";
+            Long userId = 5L;
+            var request = new HeartbeatRequest(gameId, userId);
+
+            // Act
+            webSocketController.handleHeartbeat(request);
+
+            // Assert
+            verify(gameService, times(1)).recordHeartbeat(gameId, userId);
+        }
+
+        @Test
+        @DisplayName("Should broadcast game over message to topic subscribers")
+        void shouldSendGameOverSuccessfully() {
+            // Arrange
+            String gameId = "game-123";
+            GameResult result = GameResult.WHITE_WIN;
+
+            // Act
+            webSocketController.sendGameOver(gameId, result);
+
+            // Assert
+            verify(messagingTemplate).convertAndSend(
+                "/topic/game/" + gameId,
+                Map.of("type", "GAME_OVER", "result", "WHITE_WIN")
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("Dismiss Handler Logic")
+    class DismissControllerTests {
+
+        @Test
+        @DisplayName("Should invoke processPlayerDismiss and send user error notification on dismiss")
+        void shouldHandleDismissRequestSuccessfully() {
+            // Arrange
+            String gameId = "game-123";
+            Long userId = 1L;
+            var request = new DismissRequest(gameId, userId);
+
+            // Act
+            webSocketController.handleDismiss(request);
+
+            // Assert
+            verify(gameService).processPlayerDismiss(gameId, userId);
+            verify(messagingTemplate).convertAndSendToUser(
+                eq("1"),
+                eq("/queue/errors"),
+                anyMap()
+            );
         }
     }
 
@@ -161,31 +219,6 @@ class GameWebSocketControllerTest {
 
             // Assert
             verify(messagingTemplate, never()).convertAndSend(anyString(), any(GameResponse.class));
-        }
-    }
-
-    @Nested
-    @DisplayName("Dismiss Handler Logic")
-    class DismissControllerTests {
-
-        @Test
-        @DisplayName("Should invoke service processPlayerDismiss and send user notification on dismiss")
-        void shouldHandleDismissRequestSuccessfully() {
-            // Arrange
-            String gameId = "game-123";
-            Long userId = 1L;
-            var request = new DismissRequest(gameId, userId);
-
-            // Act
-            webSocketController.handleDismiss(request);
-
-            // Assert
-            verify(gameService).processPlayerDismiss(gameId, userId);
-            verify(messagingTemplate).convertAndSendToUser(
-                eq("1"),
-                eq("/queue/errors"),
-                anyMap()
-            );
         }
     }
 }

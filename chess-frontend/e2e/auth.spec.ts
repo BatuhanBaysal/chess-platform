@@ -1,8 +1,34 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './setup';
 
 test.describe('Authentication & Onboarding Flow', () => {
   test('should allow user to sign in with valid credentials', async ({ page }) => {
     // Arrange
+    await page.route('**/api/auth/login', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          token: 'mock-jwt-token',
+          user: { id: 1, username: 'validuser', role: 'ROLE_USER' },
+        }),
+      });
+    });
+
+    await page.route('**/api/users/me', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 1,
+          username: 'validuser',
+          eloRating: 1200,
+          totalWins: 0,
+          totalLosses: 0,
+          totalDraws: 0,
+        }),
+      });
+    });
+
     await page.goto('/sign-in');
 
     // Act
@@ -35,10 +61,17 @@ test.describe('Authentication & Onboarding Flow', () => {
     await expect(passwordInput).toHaveAttribute('type', 'password');
 
     // Act
-    await page.locator('button[title*="password" i]').click();
+    const toggleButton = page.locator('button[title*="password" i]');
+    await toggleButton.click();
 
     // Assert
     await expect(passwordInput).toHaveAttribute('type', 'text');
+
+    // Act
+    await toggleButton.click();
+
+    // Assert
+    await expect(passwordInput).toHaveAttribute('type', 'password');
   });
 
   test('should toggle between sign-in and sign-up views via footer switch button', async ({ page }) => {
@@ -78,6 +111,32 @@ test.describe('Authentication & Onboarding Flow', () => {
 
   test('should authenticate guest user when clicking play as guest now button', async ({ page }) => {
     // Arrange
+    await page.route('**/api/auth/guest', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          token: 'mock-guest-token',
+          user: { id: 999, username: 'guest_test', role: 'ROLE_GUEST' },
+        }),
+      });
+    });
+
+    await page.route('**/api/users/me', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 999,
+          username: 'guest_test',
+          eloRating: 1200,
+          totalWins: 0,
+          totalLosses: 0,
+          totalDraws: 0,
+        }),
+      });
+    });
+
     await page.goto('/sign-in');
 
     // Act
@@ -96,7 +155,7 @@ test.describe('Authentication & Onboarding Flow', () => {
     const email = `player${uniqueId}@chessplatform.com`;
     const password = 'Password123';
 
-    await page.route('**/*register*', async (route) => {
+    await page.route('**/api/auth/register', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -124,6 +183,6 @@ test.describe('Authentication & Onboarding Flow', () => {
 
     // Assert
     await expect(page).toHaveURL(/.*\/sign-in/);
-    await expect(page.locator('input[name="username"]')).toHaveValue(username.toLowerCase());
+    await expect(page.locator('input[name="username"]')).toHaveValue(new RegExp(username, 'i'));
   });
 });

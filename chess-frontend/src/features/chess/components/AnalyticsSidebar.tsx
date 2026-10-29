@@ -1,24 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { EvaluationBar } from './EvaluationBar';
 import type { HintResponse } from '@/api/gameService';
 
 interface AnalyticsSidebarProps {
-  score?: number;
-  evaluationType?: 'CP' | 'MATE';
-  hintData: HintResponse | null;
-  isHintLoading: boolean;
-  onGetHint: () => void;
-  isMyTurn?: boolean;
+  readonly score?: number;
+  readonly evaluationType?: 'CP' | 'MATE';
+  readonly hintData: HintResponse | null;
+  readonly isHintLoading: boolean;
+  readonly onGetHint: () => void;
+  readonly isMyTurn?: boolean;
 }
 
-export const AnalyticsSidebar: React.FC<AnalyticsSidebarProps> = ({
+export const AnalyticsSidebar = ({
   score = 0,
   evaluationType = 'CP',
   hintData,
   isHintLoading,
   onGetHint,
   isMyTurn = true
-}) => {
+}: Readonly<AnalyticsSidebarProps>) => {
   const [displayedHint, setDisplayedHint] = useState<HintResponse | null>(null);
 
   useEffect(() => {
@@ -80,6 +80,7 @@ export const AnalyticsSidebar: React.FC<AnalyticsSidebarProps> = ({
         </div>
 
         <button
+          type="button"
           onClick={onGetHint}
           disabled={isHintLoading || !isMyTurn}
           className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-600 text-white font-black py-3 px-3 rounded-xl transition-all text-[10px] shadow-md flex items-center justify-center gap-2 cursor-pointer uppercase tracking-[0.15em] active:scale-95"
@@ -87,10 +88,10 @@ export const AnalyticsSidebar: React.FC<AnalyticsSidebarProps> = ({
           {isHintLoading ? (
             <>
               <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Calculating...
+              <span>Calculating...</span>
             </>
           ) : (
-            <>🎯 Get Smart Hint</>
+            <span>🎯 Get Smart Hint</span>
           )}
         </button>
       </div>

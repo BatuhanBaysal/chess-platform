@@ -31,15 +31,22 @@ All notable changes to this project will be documented in this file. This projec
 - ✅ **Phase 22: Enterprise Data & Identity Management (v2.3.0)** 🔑 - Integrating MinIO object storage for artifacts and Keycloak for centralized OAuth2/OIDC RBAC security.
 - ✅ **Phase 23: Asynchronous Eventing & Observability (v2.4.0)** ⚡ - Decoupling heavy Stockfish analysis tasks via RabbitMQ and integrating OpenTelemetry with the LGTM stack.
 - ✅ **Phase 24: Quality Assurance & Integration Testing (v2.5.0)** 🧪 — Establishing the complete testing pyramid with Playwright E2E automation tests, Vitest & React Testing Library component tests, and Testcontainers PostgreSQL integration.
-- ⏳ **Phase 25: Core Stabilization, RBAC Governance & Player Experience (v2.6.0)** 💎 — Enforcing strict TypeScript DTO alignment, fixing AI match state leaks, implementing role-based navigation, polishing player identity (avatar/profile), and delivering admin CRUD capabilities.
-- 🔜
+- ✅ **Phase 25: Core Stabilization, RBAC Governance & Player Experience (v2.6.0)** 💎 — Enforcing strict TypeScript DTO alignment, fixing AI match state leaks, implementing role-based navigation, polishing player identity (avatar/profile), and delivering admin CRUD capabilities.
+- ⏳🔜
 
 ---
 
-## [2.6.0] - 2026-10-26
+## [2.6.0] - 2026-10-29
 
 ### 💎 Phase v2.6.0: Core Stabilization, RBAC Governance & Player Experience 🚀
 > **Note:** Finalizing production readiness by enforcing compile-time type contracts, isolating AI engine state lifecycles, refining authentication and role-based access, polishing player identity systems, and delivering administrative control capabilities.
+
+- **2026-10-29:**
+    - **Release Finalization, Architectural Records (ADRs), Quality Gate Synchronization & Media Assets (PR #206 | Issue #205):**
+        - **Formal Architectural Decision Records Catalog (`docs/ENGINEERING_DECISIONS.md`):** Formalized foundational ADRs cataloging production trade-offs: `ADR-001: Stateless Keycloak JWT Authentication & Real-Time Session Eviction` via Axios HTTP 401 interceptors, `ADR-002: Liquibase Schema Evolution & Permanent Relational Cascading` enforcing production validation mode, and `ADR-003: Keycloak Ephemeral Guest Accounts & Scheduled Session Purge` with 7-day lifecycles. Detailed architectural trade-offs between in-memory `ConcurrentHashMap` sessions with Redisson `RLock` vs. distributed cache, deep-copy `Board.copy()` check simulations, and asynchronous sub-process Stockfish IPC.
+        - **Quality Gate Consolidation & Test Metric Alignment (`docs/TESTING.md`, `INFRASTRUCTURE.md`):** Harmonized full-stack testing metrics across project documents, capturing official verified test evidence: 570 passing backend tests (81.9% JaCoCo coverage), 350 passing frontend unit/hook tests (85.5% V8 coverage across 54 suites), and 108 cross-browser Playwright E2E scenarios across Chromium, Firefox, and WebKit (10 suites), certified with SonarQube Clean Code Quality Gate Rating A (0 open bugs, 0 vulnerabilities, 0 code smells, and 0.0% duplication).
+        - **Showcase Media Assets & Interactive Feature Demos (`docs/assets/videos/`):** Deployed a curated high-fidelity demonstration suite featuring three dedicated recordings: dual-client real-time PvP multiplayer match synchronization with server-authoritative checkmate adjudication (`online-multiplayer-demo.gif`), interactive Stockfish AI sparring with live centipawn evaluation bars and on-demand tactical hints (`ai-practice-demo.gif`), and Keycloak-backed onboarding, guest access, and menu navigation walkthroughs (`auth-navigation-demo.gif`).
+        - **Submodule & Root Documentation Synchronization:** Aligned the root `README.md`, `chess-backend/README.md`, and `chess-frontend/README.md` with verified Docker Compose profiles (`core`, `storage-local`, `monitoring`), explicit Git LFS binary pull prerequisites, standardized HTTPS repository clone commands, and exhaustive OpenAPI 3.1 / Swagger UI endpoint mappings.
 
 - **2026-10-26:**
     - **Resilience4j Public Endpoint Rate Limiting & Actuator Route Lockdown (PR #204 | Issue #203):**

@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("S3Properties Configuration Binding Tests")
 class S3PropertiesTest {
@@ -32,13 +32,13 @@ class S3PropertiesTest {
             .run(context -> {
                 // Assert
                 S3Properties properties = context.getBean(S3Properties.class);
-                assertNotNull(properties);
-                assertEquals("http://localhost:9000", properties.getEndpoint());
-                assertEquals("eu-central-1", properties.getRegion());
-                assertEquals("customAccessKey", properties.getAccessKey());
-                assertEquals("customSecretKey", properties.getSecretKey());
-                assertEquals("custom-bucket", properties.getBucketName());
-                assertFalse(properties.isPathStyleAccessEnabled());
+                assertThat(properties).isNotNull();
+                assertThat(properties.getEndpoint()).isEqualTo("http://localhost:9000");
+                assertThat(properties.getRegion()).isEqualTo("eu-central-1");
+                assertThat(properties.getAccessKey()).isEqualTo("customAccessKey");
+                assertThat(properties.getSecretKey()).isEqualTo("customSecretKey");
+                assertThat(properties.getBucketName()).isEqualTo("custom-bucket");
+                assertThat(properties.isPathStyleAccessEnabled()).isFalse();
             });
     }
 
@@ -48,13 +48,13 @@ class S3PropertiesTest {
         // Arrange & Act & Assert
         contextRunner.run(context -> {
             S3Properties properties = context.getBean(S3Properties.class);
-            assertNotNull(properties);
-            assertEquals("us-east-1", properties.getRegion());
-            assertEquals("chess-storage", properties.getBucketName());
-            assertTrue(properties.isPathStyleAccessEnabled());
-            assertNull(properties.getEndpoint());
-            assertNull(properties.getAccessKey());
-            assertNull(properties.getSecretKey());
+            assertThat(properties).isNotNull();
+            assertThat(properties.getRegion()).isEqualTo("us-east-1");
+            assertThat(properties.getBucketName()).isEqualTo("chess-storage");
+            assertThat(properties.isPathStyleAccessEnabled()).isTrue();
+            assertThat(properties.getEndpoint()).isNull();
+            assertThat(properties.getAccessKey()).isNull();
+            assertThat(properties.getSecretKey()).isNull();
         });
     }
 }

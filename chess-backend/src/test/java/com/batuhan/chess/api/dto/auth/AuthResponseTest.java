@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AuthResponseTest {
 
     @Test
-    @DisplayName("Should build AuthResponse with correct field values")
+    @DisplayName("Should build AuthResponse with correct field values and verify equality")
     void shouldBuildAuthResponse() {
         // Arrange
         Long id = 1L;
@@ -30,6 +30,15 @@ class AuthResponseTest {
             .role(role)
             .build();
 
+        AuthResponse duplicateResponse = AuthResponse.builder()
+            .id(id)
+            .token(token)
+            .username(username)
+            .email(email)
+            .eloRating(eloRating)
+            .role(role)
+            .build();
+
         // Assert
         assertThat(response).isNotNull();
         assertThat(response.id()).isEqualTo(id);
@@ -38,5 +47,8 @@ class AuthResponseTest {
         assertThat(response.email()).isEqualTo(email);
         assertThat(response.eloRating()).isEqualTo(eloRating);
         assertThat(response.role()).isEqualTo(role);
+        assertThat(response)
+            .isEqualTo(duplicateResponse)
+            .hasSameHashCodeAs(duplicateResponse);
     }
 }

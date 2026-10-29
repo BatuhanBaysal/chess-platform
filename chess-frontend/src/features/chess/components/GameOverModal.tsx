@@ -22,7 +22,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   const playerColor = orientation?.toUpperCase();
   const activeTurn = currentTurn?.toUpperCase();
 
-  const getTimeoutLoser = (): string => {
+  const getLoserColor = (): string => {
     if (upperStatus.includes('WHITE')) return 'WHITE';
     if (upperStatus.includes('BLACK')) return 'BLACK';
     return activeTurn;
@@ -35,17 +35,13 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
     if (upperStatus.includes('DRAW') || upperStatus.includes('STALEMATE')) {
       return "Draw!";
     }
-    if (upperStatus.includes('TIMEOUT')) {
-      const loser = getTimeoutLoser();
+    if (upperStatus.includes('TIMEOUT') || upperStatus.includes('RESIGN')) {
+      const loser = getLoserColor();
       return loser === playerColor ? "Defeat!" : "Victory!";
     }
     if (upperStatus.includes('CHECKMATE')) {
       const isMyTurn = activeTurn === playerColor;
       return isMyTurn ? "Defeat!" : "Victory!";
-    }
-    if (upperStatus.includes('RESIGN')) {
-      const loser = upperStatus.includes('WHITE') ? 'WHITE' : upperStatus.includes('BLACK') ? 'BLACK' : activeTurn;
-      return loser === playerColor ? "Defeat!" : "Victory!";
     }
     return "Game Over";
   };
@@ -61,7 +57,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
       return "The game finished in a draw.";
     }
     if (upperStatus.includes('TIMEOUT')) {
-      const loser = getTimeoutLoser();
+      const loser = getLoserColor();
       return loser === playerColor 
         ? "Your time limit has expired." 
         : "Your opponent's time limit has expired.";

@@ -50,7 +50,7 @@ export interface MoveRequest {
   fromRank: number;
   toFile: number;
   toRank: number;
-  promotionType?: PromotionType | string | null;
+  promotionType?: PromotionType | null;
 }
 
 export interface HintResponse {

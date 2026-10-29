@@ -37,10 +37,12 @@ export const EvaluationBar: React.FC<EvaluationBarProps> = React.memo(({
     if (evaluationType === 'MATE') {
       const absScore = Math.abs(score);
       const mateMoves = absScore > 9000 ? Math.max(1, Math.round((10000 - absScore) / 100)) : absScore;
-      return displayScore > 0 ? `Mate in +${mateMoves}` : `Mate in -${mateMoves}`;
+      const prefix = displayScore > 0 ? '+' : '-';
+      return `Mate in ${prefix}${mateMoves}`;
     }
     const evalInPawns = (displayScore / 100).toFixed(1);
-    return `Evaluation: ${displayScore > 0 ? `+${evalInPawns}` : evalInPawns}`;
+    const sign = displayScore > 0 ? '+' : '';
+    return `Evaluation: ${sign}${evalInPawns}`;
   }, [displayScore, score, evaluationType]);
 
   return (

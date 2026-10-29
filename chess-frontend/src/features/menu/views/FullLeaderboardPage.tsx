@@ -1,11 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getFullLeaderboard, type LeaderboardUser } from '../../../api/userService';
 import { ArrowLeft, Loader2, Trophy, Medal } from 'lucide-react';
 import Pagination from '../../../components/ui/Pagination';
 import { getFullAvatarUrl } from '../../../utils/avatarUtils';
 
-export const FullLeaderboardPage: React.FC = () => {
+const getWinRate = (wins: number, total: number) => 
+    total === 0 ? "0%" : `${Math.round((wins / total) * 100)}%`;
+
+const getRowBackgroundClass = (globalRank: number, isAlternate: boolean): string => {
+    if (globalRank === 1) {
+        return 'bg-amber-100/80 dark:bg-amber-500/10';
+    }
+    if (globalRank === 2) {
+        return 'bg-slate-200/90 dark:bg-slate-400/10';
+    }
+    if (globalRank === 3) {
+        return 'bg-amber-200/50 dark:bg-orange-500/10';
+    }
+    if (isAlternate) {
+        return 'bg-slate-50 dark:bg-slate-950/50';
+    }
+    return 'bg-white dark:bg-transparent';
+};
+
+export const FullLeaderboardPage = () => {
     const navigate = useNavigate();
     const [users, setUsers] = useState<LeaderboardUser[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -38,9 +57,6 @@ export const FullLeaderboardPage: React.FC = () => {
             isMounted = false;
         };
     }, [currentPage]);
-
-    const getWinRate = (wins: number, total: number) => 
-        total === 0 ? "0%" : `${Math.round((wins / total) * 100)}%`;
 
     const getMedalBox = (index: number) => {
         const globalIndex = (currentPage - 1) * itemsPerPage + index;
@@ -75,11 +91,91 @@ export const FullLeaderboardPage: React.FC = () => {
         );
     };
 
+    const renderTableBody = () => {
+        if (isLoading) {
+            return (
+                <tr>
+                    <td colSpan={6} className="py-28 text-center">
+                        <div className="flex flex-col items-center justify-center gap-3 text-slate-500">
+                            <Loader2 className="animate-spin text-indigo-600" size={34} />
+                            <span className="text-xs uppercase font-bold tracking-widest">Fetching rankings...</span>
+                        </div>
+                    </td>
+                </tr>
+            );
+        }
+
+        if (users.length === 0) {
+            return (
+                <tr>
+                    <td colSpan={6} className="py-28 text-center text-slate-500">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                            <Trophy size={40} className="opacity-30" />
+                            <span className="text-xs uppercase font-bold tracking-widest">No players found</span>
+                        </div>
+                    </td>
+                </tr>
+            );
+        }
+
+        return users.map((user, index) => {
+            const globalRank = (currentPage - 1) * itemsPerPage + index + 1;
+            const userInitial = (user.username?.charAt(0) || 'U').toUpperCase();
+            const isAlternate = index % 2 === 1;
+
+            return (
+                <tr 
+                    key={user.username} 
+                    className={`transition-colors ${getRowBackgroundClass(globalRank, isAlternate)} hover:bg-indigo-500/10 dark:hover:bg-indigo-500/10`}
+                >
+                    <td className="py-4 px-2 sm:px-6 text-center">
+                        {getMedalBox(index)}
+                    </td>
+                    <td className="py-4 px-2 sm:px-6">
+                        <div className="flex items-center gap-2 sm:gap-3.5 min-w-0">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs sm:text-sm font-black shrink-0 overflow-hidden shadow-xs">
+                                {user.avatarUrl ? (
+                                    <img 
+                                        src={getFullAvatarUrl(user.avatarUrl)} 
+                                        alt={user.username} 
+                                        className="w-full h-full object-cover" 
+                                    />
+                                ) : (
+                                    userInitial
+                                )}
+                            </div>
+                            <span className="font-black text-xs sm:text-base text-slate-950 dark:text-white truncate max-w-28 sm:max-w-44">
+                                {user.username}
+                            </span>
+                        </div>
+                    </td>
+                    <td className="hidden md:table-cell py-4.5 px-6 text-center font-mono text-base font-black text-slate-900 dark:text-slate-300">
+                        <span className="text-emerald-700 dark:text-emerald-400">{user.totalWins}</span>
+                        <span className="text-slate-400 dark:text-slate-700 mx-2">/</span>
+                        <span className="text-rose-700 dark:text-rose-400">{user.totalLosses}</span>
+                        <span className="text-slate-400 dark:text-slate-700 mx-2">/</span>
+                        <span className="text-slate-700 dark:text-slate-400">{user.totalDraws}</span>
+                    </td>
+                    <td className="hidden lg:table-cell py-4.5 px-6 text-center font-black text-base text-slate-950 dark:text-slate-200">
+                        {user.totalGames}
+                    </td>
+                    <td className="hidden sm:table-cell py-4.5 px-6 text-center font-black text-base text-emerald-700 dark:text-emerald-400">
+                        {getWinRate(user.totalWins, user.totalGames)}
+                    </td>
+                    <td className="py-4 px-3 sm:px-8 text-right font-black text-base sm:text-2xl text-slate-950 dark:text-indigo-400 tabular-nums">
+                        {user.eloRating}
+                    </td>
+                </tr>
+            );
+        });
+    };
+
     return (
         <div className="w-full max-w-350 mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-10 text-slate-900 dark:text-white animate-in fade-in duration-300">
             {/* Back to Dashboard */}
             <button 
-                onClick={() => navigate('/menu')} 
+                type="button"
+                onClick={() => void navigate('/menu')} 
                 className="min-h-11 flex items-center gap-2 text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors mb-5 uppercase font-black text-xs tracking-widest cursor-pointer"
             >
                 <ArrowLeft size={16} /> Back to Menu
@@ -107,86 +203,7 @@ export const FullLeaderboardPage: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-800/50">
-                        {isLoading ? (
-                            <tr>
-                                <td colSpan={6} className="py-28 text-center">
-                                    <div className="flex flex-col items-center justify-center gap-3 text-slate-500">
-                                        <Loader2 className="animate-spin text-indigo-600" size={34} />
-                                        <span className="text-xs uppercase font-bold tracking-widest">Fetching rankings...</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        ) : users.length > 0 ? (
-                            users.map((user, index) => {
-                                const globalRank = (currentPage - 1) * itemsPerPage + index + 1;
-                                const userInitial = (user.username?.charAt(0) || 'U').toUpperCase();
-                                const isAlternate = index % 2 === 1;
-
-                                return (
-                                    <tr 
-                                        key={user.username} 
-                                        className={`transition-colors ${
-                                            globalRank === 1 
-                                                ? 'bg-amber-100/80 dark:bg-amber-500/10' 
-                                                : globalRank === 2 
-                                                    ? 'bg-slate-200/90 dark:bg-slate-400/10' 
-                                                    : globalRank === 3 
-                                                        ? 'bg-amber-200/50 dark:bg-orange-500/10' 
-                                                        : isAlternate 
-                                                            ? 'bg-slate-50 dark:bg-slate-950/50' 
-                                                            : 'bg-white dark:bg-transparent'
-                                        } hover:bg-indigo-500/10 dark:hover:bg-indigo-500/10`}
-                                    >
-                                        <td className="py-4 px-2 sm:px-6 text-center">
-                                            {getMedalBox(index)}
-                                        </td>
-                                        <td className="py-4 px-2 sm:px-6">
-                                            <div className="flex items-center gap-2 sm:gap-3.5 min-w-0">
-                                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs sm:text-sm font-black shrink-0 overflow-hidden shadow-xs">
-                                                    {user.avatarUrl ? (
-                                                        <img 
-                                                            src={getFullAvatarUrl(user.avatarUrl)} 
-                                                            alt={user.username} 
-                                                            className="w-full h-full object-cover" 
-                                                        />
-                                                    ) : (
-                                                        userInitial
-                                                    )}
-                                                </div>
-                                                <span className="font-black text-xs sm:text-base text-slate-950 dark:text-white truncate max-w-28 sm:max-w-44">
-                                                    {user.username}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="hidden md:table-cell py-4.5 px-6 text-center font-mono text-base font-black text-slate-900 dark:text-slate-300">
-                                            <span className="text-emerald-700 dark:text-emerald-400">{user.totalWins}</span>
-                                            <span className="text-slate-400 dark:text-slate-700 mx-2">/</span>
-                                            <span className="text-rose-700 dark:text-rose-400">{user.totalLosses}</span>
-                                            <span className="text-slate-400 dark:text-slate-700 mx-2">/</span>
-                                            <span className="text-slate-700 dark:text-slate-400">{user.totalDraws}</span>
-                                        </td>
-                                        <td className="hidden lg:table-cell py-4.5 px-6 text-center font-black text-base text-slate-950 dark:text-slate-200">
-                                            {user.totalGames}
-                                        </td>
-                                        <td className="hidden sm:table-cell py-4.5 px-6 text-center font-black text-base text-emerald-700 dark:text-emerald-400">
-                                            {getWinRate(user.totalWins, user.totalGames)}
-                                        </td>
-                                        <td className="py-4 px-3 sm:px-8 text-right font-black text-base sm:text-2xl text-slate-950 dark:text-indigo-400 tabular-nums">
-                                            {user.eloRating}
-                                        </td>
-                                    </tr>
-                                );
-                            })
-                        ) : (
-                            <tr>
-                                <td colSpan={6} className="py-28 text-center text-slate-500">
-                                    <div className="flex flex-col items-center justify-center gap-2">
-                                        <Trophy size={40} className="opacity-30" />
-                                        <span className="text-xs uppercase font-bold tracking-widest">No players found</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        )}
+                        {renderTableBody()}
                     </tbody>
                 </table>
             </div>

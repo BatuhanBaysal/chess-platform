@@ -12,7 +12,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 
-@DisplayName("Board Unified Professional Test Suite")
+@DisplayName("Board Domain Model Tests")
 class BoardTest {
 
     private Board board;
@@ -23,19 +23,15 @@ class BoardTest {
     }
 
     @Nested
-    @DisplayName("Board Initialization & Setup")
+    @DisplayName("Initialization & Placement")
     class InitializationTests {
 
         @Test
-        @DisplayName("Should verify board dimensions and initial piece counts")
-        void shouldVerifyInitialCounts() {
+        @DisplayName("Should initialize 8x8 grid with 32 total pieces evenly split by color")
+        void shouldInitializeStandardBoardCorrectly() {
             // Act & Assert
-            assertThat(board.getSquares()).as("Board must be an 8x8 grid").hasDimensions(8, 8);
-
-            assertThat(board.findAllPieces())
-                .as("Initial board must contain exactly 32 pieces")
-                .hasSize(32);
-
+            assertThat(board.getSquares()).hasDimensions(8, 8);
+            assertThat(board.findAllPieces()).hasSize(32);
             assertThat(board.findPiecesByColor(Color.WHITE)).hasSize(16);
             assertThat(board.findPiecesByColor(Color.BLACK)).hasSize(16);
         }
@@ -49,8 +45,8 @@ class BoardTest {
             "4, 7, BLACK, KING",
             "3, 7, BLACK, QUEEN"
         })
-        @DisplayName("Major pieces should be placed correctly according to standard rules")
-        void shouldValidateMajorPiecePlacement(int file, int rank, Color color, PieceType type) {
+        @DisplayName("Should position major pieces according to official rules")
+        void shouldPositionMajorPiecesCorrectly(int file, int rank, Color color, PieceType type) {
             // Arrange
             Position pos = new Position(file, rank);
 
@@ -65,17 +61,15 @@ class BoardTest {
         }
 
         @Test
-        @DisplayName("Pawn ranks should be completely filled for both colors")
-        void shouldValidatePawnRanks() {
+        @DisplayName("Should fill second and seventh ranks completely with pawns")
+        void shouldFillPawnRanksCorrectly() {
             // Act & Assert
             for (int file = 0; file < 8; file++) {
                 assertThat(board.getPiece(new Position(file, 1)))
-                    .as("Rank 2 should only contain White Pawns")
                     .isPresent()
                     .get().extracting(Piece::getType).isEqualTo(PieceType.PAWN);
 
                 assertThat(board.getPiece(new Position(file, 6)))
-                    .as("Rank 7 should only contain Black Pawns")
                     .isPresent()
                     .get().extracting(Piece::getType).isEqualTo(PieceType.PAWN);
             }
@@ -83,12 +77,71 @@ class BoardTest {
     }
 
     @Nested
-    @DisplayName("Deep Copy & Memory Management")
-    class DataManipulationTests {
+    @DisplayName("State Mutation & Querying")
+    class MutationTests {
 
         @Test
-        @DisplayName("Should perform a deep copy where board and pieces are distinct instances")
-        void shouldEnsureDeepCopyIntegrity() {
+        @DisplayName("Should clear all pieces when clearBoard is executed")
+        void shouldEmptyBoard_WhenClearBoardCalled() {
+            // Act
+            board.clearBoard();
+
+            // Assert
+            assertThat(board.findAllPieces()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("Should remove piece from square when removePiece is executed")
+        void shouldRemovePiece_WhenSquareOccupied() {
+            // Arrange
+            Position e2 = new Position(4, 1);
+            assertThat(board.getPiece(e2)).isPresent();
+
+            // Act
+            board.removePiece(e2);
+
+            // Assert
+            assertThat(board.getPiece(e2)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("Should synchronize piece internal coordinates when setPieceAt is executed")
+        void shouldSynchronizeCoordinates_WhenSetPieceAtCalled() {
+            // Arrange
+            board.clearBoard();
+            Position target = new Position(4, 4);
+            Piece knight = new Knight(Color.WHITE, new Position(0, 0));
+
+            // Act
+            board.setPieceAt(target, knight);
+
+            // Assert
+            assertThat(knight.getPosition()).isEqualTo(target);
+            assertThat(board.getPiece(target)).contains(knight);
+        }
+
+        @Test
+        @DisplayName("Should generate ASCII string representation of current board state")
+        void shouldGenerateStringRepresentation() {
+            // Act
+            String boardString = board.toString();
+
+            // Assert
+            assertThat(boardString)
+                .isNotNull()
+                .hasSize(64)
+                .contains("rnbqkbnr")
+                .contains("RNBQKBNR");
+        }
+    }
+
+    @Nested
+    @DisplayName("Cloning & Memory Isolation")
+    class DeepCopyTests {
+
+        @Test
+        @DisplayName("Should produce completely independent board and piece copies on copy")
+        void shouldIsolateInstances_WhenBoardIsCopied() {
             // Arrange
             Board original = new Board(false);
             Position pos = new Position(4, 4);
@@ -98,52 +151,26 @@ class BoardTest {
             Board copied = original.copy();
 
             // Assert
-            assertNotSame(original, copied, "Board instances must be different");
-            assertThat(copied.getPiece(pos)).isPresent();
-
+            assertNotSame(original, copied);
             Piece originalPiece = original.getPiece(pos).orElseThrow();
             Piece copiedPiece = copied.getPiece(pos).orElseThrow();
 
-            assertNotSame(originalPiece, copiedPiece, "Piece instances within the board must be different");
+            assertNotSame(originalPiece, copiedPiece);
             assertThat(originalPiece).usingRecursiveComparison().isEqualTo(copiedPiece);
         }
 
         @Test
-        @DisplayName("Pieces should synchronize their internal coordinates when moved on the board")
-        void shouldSynchronizeInternalPosition() {
-            // Arrange
-            board.clearBoard();
-            Position targetPos = new Position(4, 4);
-            Piece knight = new Knight(Color.WHITE, new Position(0, 0));
-
+        @DisplayName("Should find King instance correctly for specified color")
+        void shouldLocateKing_WhenColorSpecified() {
             // Act
-            board.setPieceAt(targetPos, knight);
-
-            // Assert
-            assertThat(knight.getPosition())
-                .as("Piece internal state must update to match board position")
-                .isEqualTo(targetPos);
-        }
-    }
-
-    @Nested
-    @DisplayName("Utility & Querying")
-    class UtilityTests {
-
-        @Test
-        @DisplayName("Should locate the King of a specific color correctly")
-        void shouldFindKingInstance() {
-            // Act
-            Optional<King> whiteKing = board.findKing(Color.WHITE)
-                .map(King.class::cast);
+            Optional<Piece> whiteKing = board.findKing(Color.WHITE);
 
             // Assert
             assertThat(whiteKing)
-                .as("White king should be present and instance of King class")
                 .isPresent()
-                .hasValueSatisfying(king -> {
-                    assertThat(king.getType()).isEqualTo(PieceType.KING);
-                    assertThat(king.getColor()).isEqualTo(Color.WHITE);
+                .hasValueSatisfying(k -> {
+                    assertThat(k.getType()).isEqualTo(PieceType.KING);
+                    assertThat(k.getColor()).isEqualTo(Color.WHITE);
                 });
         }
     }

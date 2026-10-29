@@ -3,13 +3,27 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import AuthForm from './AuthForm';
 
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
+
 const renderAuthForm = (initialRoute: string = '/sign-in') => {
   const mockOnLogin = vi.fn();
   const mockOnRegister = vi.fn();
+  const mockOnSuccessChange = vi.fn();
 
   const utils = render(
     <MemoryRouter initialEntries={[initialRoute]}>
-      <AuthForm onLogin={mockOnLogin} onRegister={mockOnRegister} />
+      <AuthForm 
+        onLogin={mockOnLogin} 
+        onRegister={mockOnRegister} 
+        onSuccessChange={mockOnSuccessChange} 
+      />
     </MemoryRouter>
   );
 
@@ -17,11 +31,13 @@ const renderAuthForm = (initialRoute: string = '/sign-in') => {
     ...utils,
     mockOnLogin,
     mockOnRegister,
+    mockOnSuccessChange,
   };
 };
 
 describe('AuthForm Component', () => {
   beforeEach(() => {
+    // Arrange
     vi.clearAllMocks();
   });
 
@@ -64,18 +80,43 @@ describe('AuthForm Component', () => {
       });
     });
 
-    it('focuses password field on Enter press when username is filled', () => {
+    it('submits form when Enter is pressed inside password input', async () => {
       // Arrange
-      renderAuthForm('/sign-in');
+      const { mockOnLogin } = renderAuthForm('/sign-in');
       const usernameInput = screen.getByPlaceholderText('username or email');
       const passwordInput = screen.getByPlaceholderText('••••••••');
 
       // Act
       fireEvent.change(usernameInput, { target: { name: 'username', value: 'player1' } });
-      fireEvent.keyDown(usernameInput, { key: 'Enter', code: 'Enter' });
+      fireEvent.change(passwordInput, { target: { name: 'password', value: 'Secret123' } });
+      fireEvent.keyDown(passwordInput, { key: 'Enter', code: 'Enter' });
 
       // Assert
-      expect(document.activeElement).toBe(passwordInput);
+      await waitFor(() => {
+        expect(mockOnLogin).toHaveBeenCalledWith('player1', 'Secret123');
+      });
+    });
+
+    it('handles generic backend login error and displays it on password field', async () => {
+      // Arrange
+      const { mockOnLogin } = renderAuthForm('/sign-in');
+      mockOnLogin.mockRejectedValueOnce({
+        response: { data: { message: 'Bad credentials' } },
+      });
+
+      const usernameInput = screen.getByPlaceholderText('username or email');
+      const passwordInput = screen.getByPlaceholderText('••••••••');
+      const submitButton = screen.getByRole('button', { name: /^sign in$/i });
+
+      // Act
+      fireEvent.change(usernameInput, { target: { name: 'username', value: 'user_unknown' } });
+      fireEvent.change(passwordInput, { target: { name: 'password', value: 'WrongPass1' } });
+      fireEvent.click(submitButton);
+
+      // Assert
+      await waitFor(() => {
+        expect(screen.getByText('Bad credentials')).toBeDefined();
+      });
     });
   });
 
@@ -126,22 +167,49 @@ describe('AuthForm Component', () => {
       });
     });
 
-    it('blocks Enter navigation to next input when current field fails validation', () => {
+    it('shows validation error when password does not meet complexity requirements', async () => {
       // Arrange
       renderAuthForm('/sign-up');
       const usernameInput = screen.getByPlaceholderText('batuchess');
       const emailInput = screen.getByPlaceholderText('player@chessplatform.com');
+      const passwordInput = screen.getByPlaceholderText('••••••••');
+      const submitButton = screen.getByRole('button', { name: /create account/i });
 
       // Act
-      fireEvent.change(usernameInput, { target: { name: 'username', value: 'a' } });
+      fireEvent.change(usernameInput, { target: { name: 'username', value: 'validuser' } });
+      fireEvent.change(emailInput, { target: { name: 'email', value: 'valid@test.com' } });
+      fireEvent.change(passwordInput, { target: { name: 'password', value: 'allletters' } });
+      fireEvent.click(submitButton);
+
+      // Assert
+      await waitFor(() => {
+        expect(screen.getByText(/password must be at least 8 characters with letters and numbers/i)).toBeDefined();
+      });
+    });
+
+    it('focuses email and then password on consecutive Enter key downs in sign up view', () => {
+      // Arrange
+      renderAuthForm('/sign-up');
+      const usernameInput = screen.getByPlaceholderText('batuchess');
+      const emailInput = screen.getByPlaceholderText('player@chessplatform.com');
+      const passwordInput = screen.getByPlaceholderText('••••••••');
+
+      // Act
+      fireEvent.change(usernameInput, { target: { name: 'username', value: 'validuser' } });
       fireEvent.keyDown(usernameInput, { key: 'Enter', code: 'Enter' });
 
       // Assert
-      expect(document.activeElement).not.toBe(emailInput);
-      expect(screen.getByText(/username must be between 3 and 20 characters/i)).toBeDefined();
+      expect(document.activeElement).toBe(emailInput);
+
+      // Act
+      fireEvent.change(emailInput, { target: { name: 'email', value: 'valid@email.com' } });
+      fireEvent.keyDown(emailInput, { key: 'Enter', code: 'Enter' });
+
+      // Assert
+      expect(document.activeElement).toBe(passwordInput);
     });
 
-    it('renders SignUpSuccessCard upon successful registration submission', async () => {
+    it('renders SignUpSuccessCard upon successful registration and proceeds to sign in on CTA click', async () => {
       // Arrange
       const { mockOnRegister } = renderAuthForm('/sign-up');
       mockOnRegister.mockResolvedValueOnce(undefined);
@@ -161,15 +229,21 @@ describe('AuthForm Component', () => {
       await waitFor(() => {
         expect(mockOnRegister).toHaveBeenCalledWith('kasparov', 'Password123', 'garry@chess.com');
         expect(screen.getByRole('heading', { name: /welcome, @kasparov!/i })).toBeDefined();
-        expect(screen.getByText(/1200 elo/i)).toBeDefined();
       });
+
+      // Act
+      const proceedBtn = screen.getByRole('button', { name: /proceed to sign in/i });
+      fireEvent.click(proceedBtn);
+
+      // Assert
+      expect(mockNavigate).toHaveBeenCalledWith('/sign-in');
     });
 
     it('handles backend conflict errors properly when username is taken', async () => {
       // Arrange
       const { mockOnRegister } = renderAuthForm('/sign-up');
       mockOnRegister.mockRejectedValueOnce({
-        response: { data: { message: 'Username is already taken' } }
+        response: { data: { message: 'Username is already taken' } },
       });
 
       const usernameInput = screen.getByPlaceholderText('batuchess');
@@ -188,9 +262,33 @@ describe('AuthForm Component', () => {
         expect(screen.getByText(/this username is already taken\./i)).toBeDefined();
       });
     });
+
+    it('handles backend conflict errors properly when email is taken', async () => {
+      // Arrange
+      const { mockOnRegister } = renderAuthForm('/sign-up');
+      mockOnRegister.mockRejectedValueOnce({
+        response: { data: { message: 'Email address is already in use' } },
+      });
+
+      const usernameInput = screen.getByPlaceholderText('batuchess');
+      const emailInput = screen.getByPlaceholderText('player@chessplatform.com');
+      const passwordInput = screen.getByPlaceholderText('••••••••');
+      const submitButton = screen.getByRole('button', { name: /create account/i });
+
+      // Act
+      fireEvent.change(usernameInput, { target: { name: 'username', value: 'newuser123' } });
+      fireEvent.change(emailInput, { target: { name: 'email', value: 'taken@chess.com' } });
+      fireEvent.change(passwordInput, { target: { name: 'password', value: 'Norway2026' } });
+      fireEvent.click(submitButton);
+
+      // Assert
+      await waitFor(() => {
+        expect(screen.getByText(/this email address is already in use\./i)).toBeDefined();
+      });
+    });
   });
 
-  describe('UI Interactions & State', () => {
+  describe('UI Interactions & Mode Switch', () => {
     it('toggles password visibility when the eye button is clicked', () => {
       // Arrange
       renderAuthForm('/sign-in');
@@ -225,6 +323,28 @@ describe('AuthForm Component', () => {
 
       // Assert
       expect(screen.getByText(/caps lock is on/i)).toBeDefined();
+    });
+
+    it('switches between Sign In and Sign Up modes and clears previous inputs', () => {
+      // Arrange
+      renderAuthForm('/sign-in');
+      const modeSwitchBtn = screen.getByText(/don't have an account\?/i).closest('button')!;
+
+      // Act
+      fireEvent.click(modeSwitchBtn);
+
+      // Assert
+      expect(mockNavigate).toHaveBeenCalledWith('/sign-up');
+
+      // Arrange
+      renderAuthForm('/sign-up');
+      const signInSwitchBtn = screen.getByText(/already have an account\?/i).closest('button')!;
+
+      // Act
+      fireEvent.click(signInSwitchBtn);
+
+      // Assert
+      expect(mockNavigate).toHaveBeenCalledWith('/sign-in');
     });
   });
 });

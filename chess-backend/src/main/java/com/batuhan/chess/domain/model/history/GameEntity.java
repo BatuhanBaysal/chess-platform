@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "games")
@@ -21,11 +22,11 @@ public class GameEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "white_player_id", nullable = true)
+    @JoinColumn(name = "white_player_id")
     private UserEntity whitePlayer;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "black_player_id", nullable = true)
+    @JoinColumn(name = "black_player_id")
     private UserEntity blackPlayer;
 
     @Column(columnDefinition = "TEXT")
@@ -46,6 +47,8 @@ public class GameEntity {
 
     @PrePersist
     protected void onCreate() {
-        this.playedAt = LocalDateTime.now();
+        if (this.playedAt == null) {
+            this.playedAt = LocalDateTime.now(ZoneOffset.UTC);
+        }
     }
 }

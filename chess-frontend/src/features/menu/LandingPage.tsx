@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import Dashboard from './Dashboard';
-import MatchHistory from './views/MatchHistory';
+import MatchHistory, { type MatchHistoryHandle } from './views/MatchHistory';
 import GlobalLeaderboard from './panels/GlobalLeaderboard';
 import api from '../../api/axios';
 import { getActiveGame, createAiGame } from '../../api/gameService'; 
@@ -11,6 +11,7 @@ import { getMyProfile, type UserResponse } from '../../api/userService';
 
 import { useLobby } from './hooks/useLobby';
 import type { TimeControl } from './hooks/useLobby';
+import type { ChessThemeKey } from '../../constants/chessThemes';
 import { GameSetupPanel } from './panels/GameSetupPanel';
 import { LobbyRoomsList } from './panels/LobbyRoomsList';
 import { AiMatchModal } from './modals/AiMatchModal';
@@ -20,13 +21,43 @@ import { WaitingRoomModal } from './modals/WaitingRoomModal';
 import { History, User, Bot, FileText, ChevronRight } from 'lucide-react';
 
 interface LandingPageProps {
-  onStart: (theme: any, time: TimeControl, roomId?: string) => void;
+  readonly onStart: (theme: ChessThemeKey, time: TimeControl, roomId?: string) => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
+interface LobbyRoomItem {
+  roomId: string;
+  timeLimit?: number;
+  theme?: ChessThemeKey;
+}
+
+const checkActiveGameReconnect = (activeGame: GameResponse | null): GameResponse | null => {
+  if (!activeGame || (activeGame.status as string) === 'CLOSING') {
+    return null;
+  }
+
+  const dismissedGames: string[] = JSON.parse(localStorage.getItem('dismissed_games') || '[]');
+  const justResigned = localStorage.getItem('just_resigned') === 'true';
+
+  if (justResigned) {
+    localStorage.removeItem('just_resigned');
+    if (!dismissedGames.includes(activeGame.gameId)) {
+      dismissedGames.push(activeGame.gameId);
+      localStorage.setItem('dismissed_games', JSON.stringify(dismissedGames));
+    }
+    return null;
+  }
+
+  if (!dismissedGames.includes(activeGame.gameId)) {
+    return activeGame;
+  }
+
+  return null;
+};
+
+export const LandingPage = ({ onStart }: Readonly<LandingPageProps>) => {
   const { user, loginAsGuest } = useAuth();
   const navigate = useNavigate();
-  const matchHistoryRef = useRef<{ refresh: () => void }>(null);
+  const matchHistoryRef = useRef<MatchHistoryHandle>(null);
 
   const {
     rooms,
@@ -51,7 +82,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   useEffect(() => {
     const savedTheme = localStorage.getItem('preferred_theme');
     if (savedTheme) {
-      setSelectedTheme(savedTheme as any);
+      setSelectedTheme(savedTheme as ChessThemeKey);
     }
   }, [setSelectedTheme]);
 
@@ -63,32 +94,23 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      if (user?.id) {
-        getMyProfile()
-          .then(setUserProfile)
-          .catch((err) => console.error("Banner profile fetch error:", err));
+      if (!user?.id) return;
 
+      getMyProfile()
+        .then(setUserProfile)
+        .catch((err: unknown) => console.error("Banner profile fetch error:", err));
+
+      try {
         const activeGame = await getActiveGame(Number(user.id));
-        if (activeGame && (activeGame.status as string) !== 'CLOSING') {
-          const dismissedGames: string[] = JSON.parse(localStorage.getItem('dismissed_games') || '[]');
-          const justResigned = localStorage.getItem('just_resigned') === 'true';
-
-          if (justResigned) {
-            localStorage.removeItem('just_resigned');
-            if (!dismissedGames.includes(activeGame.gameId)) {
-              dismissedGames.push(activeGame.gameId);
-              localStorage.setItem('dismissed_games', JSON.stringify(dismissedGames));
-            }
-            return;
-          }
-
-          if (!dismissedGames.includes(activeGame.gameId)) {
-            setReconnectGame(activeGame);
-          }
+        const eligibleGame = checkActiveGameReconnect(activeGame);
+        if (eligibleGame) {
+          setReconnectGame(eligibleGame);
         }
+      } catch (err: unknown) {
+        console.error("Failed to check active game status:", err);
       }
     };
-    fetchUserData();
+    void fetchUserData();
   }, [user]);
 
   const totalGames = useMemo(() => {
@@ -96,19 +118,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
     return (userProfile.totalWins || 0) + (userProfile.totalLosses || 0) + (userProfile.totalDraws || 0);
   }, [userProfile]);
 
-  const handleStartGame = useCallback((roomId: string, time?: number, customTheme?: any) => {
+  const handleStartGame = useCallback((roomId: string, time?: number, customTheme?: ChessThemeKey) => {
     setWaitingRoomId(null);
     setReconnectGame(null);
-    const chosenTheme = customTheme || selectedTheme;
+    const chosenTheme = customTheme || (selectedTheme as ChessThemeKey);
     localStorage.setItem('preferred_theme', chosenTheme);
     onStart(chosenTheme, (time as TimeControl) || selectedTime, roomId);
-    navigate('/game');
+    void navigate('/game');
   }, [navigate, onStart, selectedTheme, selectedTime, setWaitingRoomId]);
 
   const handleStartAiMatch = async () => {
     try {
       setIsAiLoading(true);
-      let currentUser = user || await loginAsGuest();
+      const currentUser = user || await loginAsGuest();
       if (currentUser?.id) {
         localStorage.setItem('preferred_theme', String(selectedTheme));
         const aiGameData = await createAiGame(
@@ -118,10 +140,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
           Number(selectedTime)
         );
 
-        if (aiGameData && aiGameData.gameId) {
+        if (aiGameData?.gameId) {
           setShowAiModal(false);
-          onStart(selectedTheme, selectedTime, aiGameData.gameId);
-          navigate('/game', { 
+          onStart(selectedTheme as ChessThemeKey, selectedTime, aiGameData.gameId);
+          void navigate('/game', { 
             state: { 
               isAiGame: true, 
               aiDifficulty, 
@@ -132,8 +154,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
           });
         }
       }
-    } catch (e) {
-      console.error("AI game start error:", e);
+    } catch (err: unknown) {
+      console.error("AI game start error:", err);
       alert("Could not start AI game.");
     } finally {
       setIsAiLoading(false);
@@ -143,7 +165,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   const handleCreateRoom = async () => {
     setIsCreating(true);
     try {
-      let currentUser = user || await loginAsGuest();
+      const currentUser = user || await loginAsGuest();
       if (currentUser?.id) {
         localStorage.setItem('preferred_theme', String(selectedTheme));
         const res = await api.post('/api/lobby/create', {
@@ -155,16 +177,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         const roomId = typeof res.data === 'string' ? res.data : (res.data.roomId || res.data.id);
         if (roomId) setWaitingRoomId(roomId); 
       }
-    } catch (e) {
+    } catch (err: unknown) {
+      console.error("Could not create match room:", err);
       alert("Could not create match.");
     } finally {
       setIsCreating(false);
     }
   };
 
-  const handleJoinRoom = async (room: any) => {
+  const handleJoinRoom = async (room: LobbyRoomItem) => {
     try {
-      let currentUser = user || await loginAsGuest();
+      const currentUser = user || await loginAsGuest();
       if (currentUser?.id) {
         await api.post('/api/lobby/join', {
           roomId: room.roomId,
@@ -174,9 +197,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         });
         
         setSelectedTime(room.timeLimit as TimeControl);
-        handleStartGame(room.roomId, room.timeLimit, selectedTheme);
+        handleStartGame(room.roomId, room.timeLimit, selectedTheme as ChessThemeKey);
       }
-    } catch (e) {
+    } catch (err: unknown) {
+      console.error("Room join failed:", err);
       alert("Room is full or no longer exists.");
     }
   };
@@ -193,7 +217,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
           } else if (res.data.status === 'FULL' || res.data.status === 'IN_PROGRESS' || res.data.ready) {
             handleStartGame(waitingRoomId);
           }
-        } catch (e) {
+        } catch (err: unknown) {
+          console.error("Lobby status check error:", err);
           setWaitingRoomId(null);
         }
       }, 2000);
@@ -228,7 +253,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         totalGames={totalGames}
         onQuickMatch={() => {
           setSelectedTime(10);
-          handleCreateRoom();
+          void handleCreateRoom();
         }}
         isCreating={isCreating}
       />
@@ -237,7 +262,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
       <WaitingRoomModal 
         waitingRoomId={waitingRoomId}
         selectedTime={selectedTime}
-        selectedTheme={selectedTheme}
+        selectedTheme={String(selectedTheme)}
         onCancel={handleCancelDeployment}
       />
 
@@ -246,8 +271,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         onClose={() => setShowAiModal(false)}
         selectedTime={selectedTime}
         setSelectedTime={setSelectedTime}
-        selectedTheme={selectedTheme}        
-        setSelectedTheme={setSelectedTheme as any}  
+        selectedTheme={String(selectedTheme)}        
+        setSelectedTheme={(t: string) => setSelectedTheme(t as ChessThemeKey)}  
         aiPlayAsWhite={aiPlayAsWhite}
         setAiPlayAsWhite={setAiPlayAsWhite}
         aiDifficulty={aiDifficulty}
@@ -262,8 +287,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
           <GameSetupPanel
             selectedTime={selectedTime}
             setSelectedTime={setSelectedTime}
-            selectedTheme={selectedTheme}
-            setSelectedTheme={setSelectedTheme}
+            selectedTheme={selectedTheme as ChessThemeKey}
+            setSelectedTheme={(t: ChessThemeKey) => setSelectedTheme(t)}
             isCreating={isCreating}
             onCreateRoom={handleCreateRoom}
             onOpenAiModal={() => setShowAiModal(true)}
@@ -309,7 +334,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                 type="button"
                 onClick={() => {
                   window.scrollTo({ top: 0, behavior: 'instant' });
-                  navigate('/history');
+                  void navigate('/history');
                 }}
                 className="min-h-11 px-3 flex items-center text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors cursor-pointer"
               >
@@ -348,7 +373,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                 type="button"
                 onClick={() => {
                   window.scrollTo({ top: 0, behavior: 'instant' });
-                  navigate('/about');
+                  void navigate('/about');
                 }}
                 className="flex-1 min-h-18 sm:min-h-20 flex items-center justify-between p-4 sm:p-5 rounded-2xl border-2 border-indigo-400/40 bg-slate-950/70 hover:bg-indigo-950/60 hover:border-indigo-400 backdrop-blur-md transition-all text-left group cursor-pointer shadow-md shadow-indigo-950/30"
               >
@@ -374,7 +399,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                 type="button"
                 onClick={() => {
                   window.scrollTo({ top: 0, behavior: 'instant' });
-                  navigate('/contact');
+                  void navigate('/contact');
                 }}
                 className="flex-1 min-h-18 sm:min-h-20 flex items-center justify-between p-4 sm:p-5 rounded-2xl border-2 border-purple-400/40 bg-slate-950/70 hover:bg-purple-950/60 hover:border-purple-400 backdrop-blur-md transition-all text-left group cursor-pointer shadow-md shadow-purple-950/30"
               >
@@ -400,7 +425,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                 type="button"
                 onClick={() => {
                   window.scrollTo({ top: 0, behavior: 'instant' });
-                  navigate('/changelog');
+                  void navigate('/changelog');
                 }}
                 className="flex-1 min-h-18 sm:min-h-20 flex items-center justify-between p-4 sm:p-5 rounded-2xl border-2 border-emerald-400/40 bg-slate-950/70 hover:bg-emerald-950/60 hover:border-emerald-400 backdrop-blur-md transition-all text-left group cursor-pointer shadow-md shadow-emerald-950/30"
               >

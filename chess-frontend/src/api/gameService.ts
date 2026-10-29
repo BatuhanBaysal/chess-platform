@@ -109,7 +109,7 @@ export const getActiveGame = async (userId: number): Promise<GameResponse | null
   try {
     const response = await api.get<GameResponse>(`/api/games/active/${userId}`);
     return response.data;
-  } catch (error) {
+  } catch {
     return null;
   }
 };

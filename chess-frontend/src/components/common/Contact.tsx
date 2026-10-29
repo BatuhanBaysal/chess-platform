@@ -10,13 +10,17 @@ export const Contact: React.FC = () => {
 
   const email = 'batuhanbaysal3@gmail.com';
 
-  const handleCopyEmail = () => {
-    navigator.clipboard.writeText(email);
-    setCopiedEmail(true);
-    setTimeout(() => setCopiedEmail(false), 2000);
+  const handleCopyEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(email);
+      setCopiedEmail(true);
+      setTimeout(() => setCopiedEmail(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy email:', error);
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     const subject = encodeURIComponent(`Message from ${formData.name} via Chess Platform`);
     const body = encodeURIComponent(formData.message);
@@ -29,6 +33,7 @@ export const Contact: React.FC = () => {
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 text-slate-900 dark:text-white animate-in fade-in duration-300">
       {/* Return to Dashboard */}
       <button 
+        type="button"
         onClick={() => navigate('/')} 
         className="min-h-11 flex items-center gap-2 text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors mb-5 uppercase font-black text-xs tracking-widest cursor-pointer"
       >
@@ -48,7 +53,7 @@ export const Contact: React.FC = () => {
         </p>
       </div>
 
-      {/* Hero Knight Banner Card */}
+      {/* Hero Banner Card */}
       <div className="relative w-full h-48 sm:h-64 rounded-[2.5rem] overflow-hidden shadow-sm border border-slate-200 dark:border-slate-800/80 group bg-slate-950 mb-6 sm:mb-8">
         <img 
           src="/assets/images/knight.jpg" 
@@ -67,11 +72,12 @@ export const Contact: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 sm:mb-8">
         {/* Email */}
-        <div 
+        <button 
+          type="button"
           onClick={handleCopyEmail}
-          className="bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 hover:border-indigo-500/50 rounded-2xl p-5 flex flex-col justify-between gap-4 shadow-sm transition-all cursor-pointer group"
+          className="w-full text-left bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 hover:border-indigo-500/50 rounded-2xl p-5 flex flex-col justify-between gap-4 shadow-sm transition-all cursor-pointer group focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between w-full">
             <div className="p-3 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl border border-indigo-200 dark:border-indigo-500/20">
               <Mail size={20} />
             </div>
@@ -93,7 +99,7 @@ export const Contact: React.FC = () => {
             <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">Email Dispatch</span>
             <p className="text-sm font-black text-slate-950 dark:text-white truncate mt-0.5">{email}</p>
           </div>
-        </div>
+        </button>
 
         {/* LinkedIn */}
         <a 
@@ -143,10 +149,11 @@ export const Contact: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-mono font-bold uppercase text-slate-600 dark:text-slate-400">
+              <label htmlFor="contact-name" className="text-xs font-mono font-bold uppercase text-slate-600 dark:text-slate-400">
                 Your Name / Organization
               </label>
               <input 
+                id="contact-name"
                 type="text" 
                 required
                 value={formData.name}
@@ -156,10 +163,11 @@ export const Contact: React.FC = () => {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-mono font-bold uppercase text-slate-600 dark:text-slate-400">
+              <label htmlFor="contact-email" className="text-xs font-mono font-bold uppercase text-slate-600 dark:text-slate-400">
                 Your Email Address
               </label>
               <input 
+                id="contact-email"
                 type="email" 
                 required
                 value={formData.email}
@@ -171,10 +179,11 @@ export const Contact: React.FC = () => {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-mono font-bold uppercase text-slate-600 dark:text-slate-400">
+            <label htmlFor="contact-message" className="text-xs font-mono font-bold uppercase text-slate-600 dark:text-slate-400">
               Message / Opportunity Details
             </label>
             <textarea 
+              id="contact-message"
               rows={4}
               required
               value={formData.message}

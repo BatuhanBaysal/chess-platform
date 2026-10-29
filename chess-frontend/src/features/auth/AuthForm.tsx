@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ChangeEvent, type KeyboardEvent, type SyntheticEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, ShieldCheck, Info, Loader2 } from 'lucide-react';
 import FormField from '../../components/common/FormField';
 import SignUpSuccessCard from './SignUpSuccessCard';
 
 interface AuthFormProps {
-  onLogin: (username: string, password: string) => void | Promise<void>;
-  onRegister: (username: string, password: string, email: string) => Promise<void> | void;
-  onSuccessChange?: (isSuccess: boolean) => void;
+  readonly onLogin: (username: string, password: string) => void | Promise<void>;
+  readonly onRegister: (username: string, password: string, email: string) => Promise<void> | void;
+  readonly onSuccessChange?: (isSuccess: boolean) => void;
 }
 
 interface ApiErrorResponse {
@@ -20,7 +20,7 @@ interface ApiErrorResponse {
   message?: string;
 }
 
-export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onSuccessChange }) => {
+export const AuthForm = ({ onLogin, onRegister, onSuccessChange }: Readonly<AuthFormProps>) => {
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -78,13 +78,13 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onSucce
   const handleToggleMode = () => {
     resetForm();
     if (isSignUp) {
-      navigate('/sign-in');
+      void navigate('/sign-in');
     } else {
-      navigate('/sign-up');
+      void navigate('/sign-up');
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const processedValue = (name === 'username' || name === 'email') 
       ? value.toLowerCase() 
@@ -156,16 +156,16 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onSucce
     const val = formData.password;
     if (!val) return 0;
     
-    let strength = 0;
-    if (val.length >= 8) strength++;   
-    if (/[a-z]/.test(val)) strength++; 
-    if (/[A-Z]/.test(val)) strength++; 
-    if (/[0-9]/.test(val)) strength++; 
-    if (/[^A-Za-z0-9]/.test(val)) strength++; 
+    let strengthCount = 0;
+    if (val.length >= 8) strengthCount++;   
+    if (/[a-z]/.test(val)) strengthCount++; 
+    if (/[A-Z]/.test(val)) strengthCount++; 
+    if (/\d/.test(val)) strengthCount++; 
+    if (/[^A-Za-z0-9]/.test(val)) strengthCount++; 
     
-    if (strength <= 1) return 0; 
-    if (strength <= 2) return 1; 
-    if (strength <= 3) return 2; 
+    if (strengthCount <= 1) return 0; 
+    if (strengthCount <= 2) return 1; 
+    if (strengthCount <= 3) return 2; 
     return 3;            
   };
 
@@ -179,7 +179,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onSucce
     return isUValid && isEValid && isPValid;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validateAll() || isSubmitting) return;
 
@@ -227,7 +227,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onSucce
           formDataRef.current = prefillData;
           setFormData(prefillData);
           setSuccess(false);
-          navigate('/sign-in');
+          void navigate('/sign-in');
         }} 
       />
     );
@@ -258,7 +258,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onSucce
             placeholder={isSignUp ? "batuchess" : "username or email"} 
             value={formData.username} 
             onChange={handleInputChange} 
-            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+            onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
                 if (validateUsername()) {
@@ -269,7 +269,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onSucce
                   }
                 }
               }
-            }}
+            }} 
             error={errors.username} 
           />
           
@@ -282,14 +282,14 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onSucce
               placeholder="player@chessplatform.com" 
               value={formData.email} 
               onChange={handleInputChange} 
-              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+              onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
                   if (validateEmail()) {
                     passwordRef.current?.focus();
                   }
                 }
-              }}
+              }} 
               error={errors.email} 
             />
           )}
@@ -303,13 +303,13 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onSucce
               placeholder="••••••••" 
               value={formData.password} 
               onChange={handleInputChange} 
-              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+              onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
                 setCapsLockOn(e.getModifierState("CapsLock"));
                 if (e.key === 'Enter') {
                   e.preventDefault();
-                  handleSubmit(e);
+                  void handleSubmit(e as unknown as SyntheticEvent<HTMLFormElement>);
                 }
-              }}
+              }} 
               error={errors.password} 
             />
             

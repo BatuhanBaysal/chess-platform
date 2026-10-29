@@ -18,8 +18,6 @@ class RedisConfigTest {
             .withPropertyValues("spring.profiles.active=test");
 
         // Act & Assert
-        contextRunner.run(context -> {
-            assertThat(context).doesNotHaveBean(RedisConfig.class);
-        });
+        contextRunner.run(context -> assertThat(context).doesNotHaveBean(RedisConfig.class));
     }
 }

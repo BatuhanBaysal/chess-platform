@@ -83,8 +83,8 @@ class AdminServiceTest {
     class GetAllUsersTests {
 
         @Test
-        @DisplayName("Should return paginated active users successfully when filter is 'all' and search is null")
-        void getAllUsers_ValidRequestWithoutSearch_ReturnsPageOfUsers() {
+        @DisplayName("Should return paginated active users when filter is 'all' and search is null")
+        void shouldReturnUsersPage_WhenFilterIsAllAndSearchIsNull() {
             // Arrange
             Pageable pageable = PageRequest.of(0, 10);
             Page<UserEntity> userPage = new PageImpl<>(List.of(testUser), pageable, 1);
@@ -101,8 +101,8 @@ class AdminServiceTest {
         }
 
         @Test
-        @DisplayName("Should return paginated filtered users when filter is 'members' and search keyword is provided")
-        void getAllUsers_WithFilterAndSearch_CallsRepositoryWithParameters() {
+        @DisplayName("Should return paginated filtered users when filter and search keyword are provided")
+        void shouldReturnFilteredUsers_WhenFilterAndSearchKeywordProvided() {
             // Arrange
             Pageable pageable = PageRequest.of(0, 10);
             Page<UserEntity> userPage = new PageImpl<>(List.of(testUser), pageable, 1);
@@ -119,7 +119,7 @@ class AdminServiceTest {
 
         @Test
         @DisplayName("Should trim and normalize blank search queries to null")
-        void getAllUsers_BlankSearch_NormalizesToNull() {
+        void shouldNormalizeSearchToNull_WhenSearchIsBlank() {
             // Arrange
             Pageable pageable = PageRequest.of(0, 10);
             Page<UserEntity> userPage = new PageImpl<>(List.of(testUser), pageable, 1);
@@ -132,15 +132,31 @@ class AdminServiceTest {
             assertThat(result).isNotNull();
             verify(userRepository, times(1)).findUsersWithFilterAndSearch("guests", null, pageable);
         }
+
+        @Test
+        @DisplayName("Should default filter to 'all' when filter parameter is null or blank")
+        void shouldDefaultFilterToAll_WhenFilterIsNullOrEmpty() {
+            // Arrange
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<UserEntity> userPage = new PageImpl<>(List.of(testUser), pageable, 1);
+            when(userRepository.findUsersWithFilterAndSearch("all", null, pageable)).thenReturn(userPage);
+
+            // Act
+            Page<AdminUserResponseDTO> result = adminService.getAllUsers(null, null, pageable);
+
+            // Assert
+            assertThat(result).isNotNull();
+            verify(userRepository, times(1)).findUsersWithFilterAndSearch("all", null, pageable);
+        }
     }
 
     @Nested
-    @DisplayName("Delete User (Soft Delete & Keycloak Purge) Tests")
+    @DisplayName("Delete User Tests")
     class DeleteUserTests {
 
         @Test
-        @DisplayName("Should soft delete user and invoke Keycloak removal when user exists")
-        void deleteUser_ValidId_DeactivatesUserAndPurgesKeycloak() {
+        @DisplayName("Should soft delete user and invoke Keycloak removal when user exists with externalId")
+        void shouldSoftDeleteUserAndPurgeKeycloak_WhenUserExists() {
             // Arrange
             Long userId = 1L;
             when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
@@ -161,8 +177,47 @@ class AdminServiceTest {
         }
 
         @Test
+        @DisplayName("Should deactivate user locally even when Keycloak user deletion throws exception")
+        void shouldDeactivateUserLocally_WhenKeycloakRemovalFails() {
+            // Arrange
+            Long userId = 1L;
+            when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+            when(userRepository.save(any(UserEntity.class))).thenReturn(testUser);
+
+            when(keycloak.realm("chess-realm")).thenReturn(realmResource);
+            when(realmResource.users()).thenReturn(usersResource);
+            when(usersResource.get(testUser.getExternalId().toString())).thenReturn(userResource);
+            doThrow(new RuntimeException("Keycloak connection error")).when(userResource).remove();
+
+            // Act
+            adminService.deleteUser(userId);
+
+            // Assert
+            assertThat(testUser.isActive()).isFalse();
+            verify(userRepository, times(1)).save(testUser);
+        }
+
+        @Test
+        @DisplayName("Should deactivate user without Keycloak call when externalId is null")
+        void shouldDeactivateUserLocally_WhenExternalIdIsNull() {
+            // Arrange
+            Long userId = 1L;
+            testUser.setExternalId(null);
+            when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+            when(userRepository.save(any(UserEntity.class))).thenReturn(testUser);
+
+            // Act
+            adminService.deleteUser(userId);
+
+            // Assert
+            assertThat(testUser.isActive()).isFalse();
+            verifyNoInteractions(keycloak);
+            verify(userRepository, times(1)).save(testUser);
+        }
+
+        @Test
         @DisplayName("Should throw ResourceNotFoundException when user to delete does not exist")
-        void deleteUser_UserNotFound_ThrowsException() {
+        void shouldThrowResourceNotFoundException_WhenUserDoesNotExist() {
             // Arrange
             Long userId = 99L;
             when(userRepository.findById(userId)).thenReturn(Optional.empty());
@@ -182,7 +237,7 @@ class AdminServiceTest {
 
         @Test
         @DisplayName("Should return list of active games successfully")
-        void getActiveGames_ValidState_ReturnsActiveGamesList() {
+        void shouldReturnActiveGamesList_WhenGamesExist() {
             // Arrange
             Game mockGame = mock(Game.class);
             when(mockGame.getWhitePlayerId()).thenReturn(1L);
@@ -214,7 +269,7 @@ class AdminServiceTest {
 
         @Test
         @DisplayName("Should force finish game when game exists")
-        void forceFinishGame_ValidGameId_FinishesGame() {
+        void shouldForceFinishGame_WhenGameExists() {
             // Arrange
             String gameId = "game-123";
             Game mockGame = mock(Game.class);
@@ -230,7 +285,7 @@ class AdminServiceTest {
 
         @Test
         @DisplayName("Should throw ResourceNotFoundException when game does not exist")
-        void forceFinishGame_GameNotFound_ThrowsException() {
+        void shouldThrowResourceNotFoundException_WhenGameDoesNotExist() {
             // Arrange
             String gameId = "non-existent";
             when(gameService.getGame(gameId)).thenReturn(null);
@@ -250,7 +305,7 @@ class AdminServiceTest {
 
         @Test
         @DisplayName("Should call game service to create sandbox game successfully")
-        void triggerSandboxGame_ValidIds_CallsGameService() {
+        void shouldCallGameService_WhenTriggerSandboxGameInvoked() {
             // Arrange
             Long whiteId = 1L;
             Long blackId = 2L;

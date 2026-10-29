@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AdminUserResponseDTOTest {
 
     @Test
-    @DisplayName("Should build AdminUserResponseDTO with correct field values")
+    @DisplayName("Should build AdminUserResponseDTO with correct field values and verify equality")
     void shouldBuildAdminUserResponseDTO() {
         // Arrange
         Long id = 10L;
@@ -38,6 +38,18 @@ class AdminUserResponseDTOTest {
             .createdAt(now)
             .build();
 
+        AdminUserResponseDTO duplicateDto = AdminUserResponseDTO.builder()
+            .id(id)
+            .username(username)
+            .email(email)
+            .eloRating(eloRating)
+            .totalWins(wins)
+            .totalLosses(losses)
+            .totalDraws(draws)
+            .role(role)
+            .createdAt(now)
+            .build();
+
         // Assert
         assertThat(dto).isNotNull();
         assertThat(dto.id()).isEqualTo(id);
@@ -49,5 +61,8 @@ class AdminUserResponseDTOTest {
         assertThat(dto.totalDraws()).isEqualTo(draws);
         assertThat(dto.role()).isEqualTo(role);
         assertThat(dto.createdAt()).isEqualTo(now);
+        assertThat(dto)
+            .isEqualTo(duplicateDto)
+            .hasSameHashCodeAs(duplicateDto);
     }
 }

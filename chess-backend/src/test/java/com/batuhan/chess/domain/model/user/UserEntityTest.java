@@ -6,19 +6,20 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("User Entity Domain Model Tests")
+@DisplayName("UserEntity Domain Model Tests")
 class UserEntityTest {
 
     @Nested
-    @DisplayName("Constructor and Builder Logic")
+    @DisplayName("Initialization and Defaults")
     class InitializationTests {
 
         @Test
-        @DisplayName("Should apply business default values when creating a new user via builder")
-        void shouldApplyDefaultValuesOnBuild() {
+        @DisplayName("Should apply standard defaults when creating user via builder")
+        void shouldApplyDefaults_WhenCreatingViaBuilder() {
             // Arrange
             String username = "batuhan";
             String email = "batuhan@chess.com";
@@ -31,24 +32,22 @@ class UserEntityTest {
                 .build();
 
             // Assert
-            assertThat(user).isNotNull().satisfies(u -> {
-                assertThat(u.getUsername()).isEqualTo(username);
-                assertThat(u.getEmail()).isEqualTo(email);
-                assertThat(u.getExternalId()).isNotNull();
-                assertThat(u.getEloRating()).isEqualTo(1200);
-                assertThat(u.getTotalWins()).isZero();
-                assertThat(u.getTotalLosses()).isZero();
-                assertThat(u.getTotalDraws()).isZero();
-                assertThat(u.isGuest()).isFalse();
-                assertThat(u.isActive()).isTrue();
-                assertThat(u.getPassword()).isNull();
-                assertThat(u.getRole()).isEqualTo(UserRole.ROLE_USER);
-            });
+            assertThat(user.getUsername()).isEqualTo(username);
+            assertThat(user.getEmail()).isEqualTo(email);
+            assertThat(user.getExternalId()).isNotNull();
+            assertThat(user.getEloRating()).isEqualTo(1200);
+            assertThat(user.getTotalWins()).isZero();
+            assertThat(user.getTotalLosses()).isZero();
+            assertThat(user.getTotalDraws()).isZero();
+            assertThat(user.isGuest()).isFalse();
+            assertThat(user.isActive()).isTrue();
+            assertThat(user.getPassword()).isNull();
+            assertThat(user.getRole()).isEqualTo(UserRole.ROLE_USER);
         }
 
         @Test
-        @DisplayName("Should allow creating guest user without password and with isGuest true")
-        void shouldSupportGuestUserCreationWithoutPassword() {
+        @DisplayName("Should configure guest user with guest role and isGuest flag set to true")
+        void shouldConfigureGuestUser_WhenIsGuestIsTrue() {
             // Arrange & Act
             UserEntity guest = UserEntity.builder()
                 .username("guest_12345678")
@@ -64,15 +63,36 @@ class UserEntityTest {
             assertThat(guest.getRole()).isEqualTo(UserRole.ROLE_GUEST);
             assertThat(guest.isActive()).isTrue();
         }
+
+        @Test
+        @DisplayName("Should support mutation using no-args constructor and setters")
+        void shouldSupportSetters_WhenUsingNoArgsConstructor() {
+            // Arrange
+            UserEntity user = new UserEntity();
+
+            // Act
+            user.setId(5L);
+            user.setUsername("customUser");
+            user.setEmail("custom@chess.com");
+            user.setEloRating(1600);
+            user.setActive(false);
+
+            // Assert
+            assertThat(user.getId()).isEqualTo(5L);
+            assertThat(user.getUsername()).isEqualTo("customUser");
+            assertThat(user.getEmail()).isEqualTo("custom@chess.com");
+            assertThat(user.getEloRating()).isEqualTo(1600);
+            assertThat(user.isActive()).isFalse();
+        }
     }
 
     @Nested
-    @DisplayName("Statistical Business Logic")
-    class StatisticsTests {
+    @DisplayName("Total Games Calculation")
+    class TotalGamesTests {
 
         @Test
-        @DisplayName("Should return the correct sum of all game results")
-        void shouldCalculateTotalGamesCorrectly() {
+        @DisplayName("Should return the accurate sum of wins, losses, and draws")
+        void shouldCalculateTotalGames_WhenStatsAreNonZero() {
             // Arrange
             UserEntity user = new UserEntity();
             user.setTotalWins(5);
@@ -83,19 +103,30 @@ class UserEntityTest {
             int totalGames = user.getTotalGames();
 
             // Assert
-            assertThat(totalGames)
-                .as("Total games should be the sum of wins, losses, and draws")
-                .isEqualTo(10);
+            assertThat(totalGames).isEqualTo(10);
+        }
+
+        @Test
+        @DisplayName("Should return zero total games when all match counters are zero")
+        void shouldReturnZero_WhenAllCountersAreZero() {
+            // Arrange
+            UserEntity user = new UserEntity();
+
+            // Act
+            int totalGames = user.getTotalGames();
+
+            // Assert
+            assertThat(totalGames).isZero();
         }
     }
 
     @Nested
-    @DisplayName("Lifecycle and Persistence Hooks")
+    @DisplayName("Lifecycle Hooks")
     class LifecycleTests {
 
         @Test
-        @DisplayName("Should initialize createdAt timestamp before persisting to database")
-        void shouldSetCreatedAtOnPrePersist() {
+        @DisplayName("Should assign current UTC timestamp when createdAt is null during pre-persist")
+        void shouldAssignTimestamp_WhenCreatedAtIsNullOnPrePersist() {
             // Arrange
             UserEntity user = new UserEntity();
 
@@ -105,7 +136,23 @@ class UserEntityTest {
             // Assert
             assertThat(user.getCreatedAt())
                 .isNotNull()
-                .isBeforeOrEqualTo(LocalDateTime.now());
+                .isBeforeOrEqualTo(LocalDateTime.now(ZoneOffset.UTC));
+        }
+
+        @Test
+        @DisplayName("Should preserve existing timestamp when createdAt is already provided")
+        void shouldPreserveTimestamp_WhenCreatedAtIsAlreadySet() {
+            // Arrange
+            LocalDateTime customCreatedAt = LocalDateTime.of(2024, 1, 15, 10, 0);
+            UserEntity user = UserEntity.builder()
+                .createdAt(customCreatedAt)
+                .build();
+
+            // Act
+            ReflectionTestUtils.invokeMethod(user, "onCreate");
+
+            // Assert
+            assertThat(user.getCreatedAt()).isEqualTo(customCreatedAt);
         }
     }
 }

@@ -4,7 +4,17 @@ import { createAiGame } from '@/api/gameService';
 import api from '@/api/axios';
 import { StompHeaders } from '@stomp/stompjs';
 
-const FINISHED_STATUSES = ['CHECKMATE', 'STALEMATE', 'RESIGNED', 'TIMEOUT', 'DRAW', 'CLOSING', 'ABANDONED', 'FINISHED', 'DISMISSED'];
+const FINISHED_STATUSES = new Set([
+  'CHECKMATE',
+  'STALEMATE',
+  'RESIGNED',
+  'TIMEOUT',
+  'DRAW',
+  'CLOSING',
+  'ABANDONED',
+  'FINISHED',
+  'DISMISSED'
+]);
 
 export const useChessActions = (
   stompClientRef: React.RefObject<any>,
@@ -15,7 +25,7 @@ export const useChessActions = (
   disconnectWebSocket: () => void,
   disconnectLobby: () => void
 ) => {
-  const [game, setGame] = useState<any | null>(null);
+  const [game, setGame] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [gameOverResult, setGameOverResult] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -24,7 +34,7 @@ export const useChessActions = (
   const [evaluation, setEvaluation] = useState<{ score: number; type: 'CP' | 'MATE' }>({ score: 0, type: 'CP' });
   const [selectedTheme, setSelectedTheme] = useState<any>('default');
 
-  const pendingGameStateRef = useRef<any | null>(null);
+  const pendingGameStateRef = useRef<any>(null);
   const animationFrameRef = useRef<number | null>(null);
 
   const scheduleGameStateUpdate = useCallback((gameState: any) => {
@@ -47,7 +57,7 @@ export const useChessActions = (
             }
           }
 
-          if (latestState.status && FINISHED_STATUSES.includes(latestState.status.toUpperCase())) {
+          if (latestState.status && FINISHED_STATUSES.has(latestState.status.toUpperCase())) {
             setGameOverResult(latestState.status);
           }
         }
@@ -81,7 +91,7 @@ export const useChessActions = (
     const { userId } = getAuthDetails();
     if (!gameIdRef.current || !userId) return;
 
-    if (client && client.connected) {
+    if (client?.connected) {
       client.publish({
         destination: '/app/game/dismiss',
         body: JSON.stringify({ gameId: gameIdRef.current, userId })
@@ -100,6 +110,7 @@ export const useChessActions = (
       });
       return response.data || [];
     } catch (err) {
+      console.error("Failed to fetch legal moves:", err);
       return [];
     }
   }, [game, gameIdRef]);
@@ -122,7 +133,7 @@ export const useChessActions = (
       setGame(data);
       syncPlayerColor(data);
       
-      if (data.status && FINISHED_STATUSES.includes(data.status.toUpperCase())) {
+      if (data.status && FINISHED_STATUSES.has(data.status.toUpperCase())) {
         setGameOverResult(data.status);
       } else {
         connectWebSocket(data.gameId);

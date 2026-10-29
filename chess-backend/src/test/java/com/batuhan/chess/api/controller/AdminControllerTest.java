@@ -72,7 +72,7 @@ class AdminControllerTest {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-            when(adminService.getAllUsers(anyString(), any(), any(Pageable.class)))
+            when(adminService.getAllUsers(eq("all"), isNull(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(userDTO), PageRequest.of(0, 10), 1));
 
             // Act & Assert

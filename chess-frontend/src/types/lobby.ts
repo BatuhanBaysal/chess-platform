@@ -22,7 +22,7 @@ export interface GameRoomResponse {
   hostName: string;
   blackPlayerId: number | null;
   blackPlayerName: string | null;
-  status: RoomStatus | string;
+  status: RoomStatus;
   timeLimit: number;
   theme: string;
 }
@@ -30,7 +30,7 @@ export interface GameRoomResponse {
 export interface MatchFoundMessage {
   gameId: string;
   status: string;
-  color: PieceColor | string;
+  color: PieceColor;
   opponentId: number | null;
   opponentName: string | null;
   theme: string;

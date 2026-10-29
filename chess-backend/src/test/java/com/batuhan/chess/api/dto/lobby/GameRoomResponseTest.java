@@ -1,6 +1,7 @@
 package com.batuhan.chess.api.dto.lobby;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -8,40 +9,59 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("GameRoomResponse Unit Tests")
 class GameRoomResponseTest {
 
-    @Test
-    @DisplayName("Should build GameRoomResponse with correct field values")
-    void shouldBuildGameRoomResponse() {
-        // Arrange
-        String roomId = "room-123";
-        Long hostId = 1L;
-        String hostName = "batuhan";
-        Long blackPlayerId = 2L;
-        String blackPlayerName = "opponent";
-        String status = "WAITING";
-        int timeLimit = 10;
-        String theme = "modern";
-
-        // Act
-        GameRoomResponse response = GameRoomResponse.builder()
+    private GameRoomResponse createSampleResponse(String roomId) {
+        return GameRoomResponse.builder()
             .roomId(roomId)
-            .hostId(hostId)
-            .hostName(hostName)
-            .blackPlayerId(blackPlayerId)
-            .blackPlayerName(blackPlayerName)
-            .status(status)
-            .timeLimit(timeLimit)
-            .theme(theme)
+            .hostId(1L)
+            .hostName("batuhan")
+            .blackPlayerId(2L)
+            .blackPlayerName("opponent")
+            .status("WAITING")
+            .timeLimit(10)
+            .theme("modern")
             .build();
+    }
 
-        // Assert
-        assertThat(response).isNotNull();
-        assertThat(response.roomId()).isEqualTo(roomId);
-        assertThat(response.hostId()).isEqualTo(hostId);
-        assertThat(response.hostName()).isEqualTo(hostName);
-        assertThat(response.blackPlayerId()).isEqualTo(blackPlayerId);
-        assertThat(response.blackPlayerName()).isEqualTo(blackPlayerName);
-        assertThat(response.status()).isEqualTo(status);
-        assertThat(response.timeLimit()).isEqualTo(timeLimit);
-        assertThat(response.theme()).isEqualTo(theme);
+    @Nested
+    @DisplayName("Field Accessors")
+    class FieldAccessorTests {
+
+        @Test
+        @DisplayName("Should build GameRoomResponse with correct field values")
+        void shouldBuildGameRoomResponse() {
+            // Act
+            GameRoomResponse response = createSampleResponse("room-123");
+
+            // Assert
+            assertThat(response).isNotNull();
+            assertThat(response.roomId()).isEqualTo("room-123");
+            assertThat(response.hostId()).isEqualTo(1L);
+            assertThat(response.hostName()).isEqualTo("batuhan");
+            assertThat(response.blackPlayerId()).isEqualTo(2L);
+            assertThat(response.blackPlayerName()).isEqualTo("opponent");
+            assertThat(response.status()).isEqualTo("WAITING");
+            assertThat(response.timeLimit()).isEqualTo(10);
+            assertThat(response.theme()).isEqualTo("modern");
+        }
+    }
+
+    @Nested
+    @DisplayName("Equality and HashCode Contract")
+    class EqualityTests {
+
+        @Test
+        @DisplayName("Should verify equality and hash code consistency for matching instances")
+        void shouldVerifyEqualityAndHashCode() {
+            // Arrange
+            GameRoomResponse response1 = createSampleResponse("room-123");
+            GameRoomResponse response2 = createSampleResponse("room-123");
+            GameRoomResponse differentResponse = createSampleResponse("room-999");
+
+            // Act & Assert
+            assertThat(response1)
+                .isEqualTo(response2)
+                .hasSameHashCodeAs(response2)
+                .isNotEqualTo(differentResponse);
+        }
     }
 }

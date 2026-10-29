@@ -1,12 +1,19 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Globe2, Cpu, Lightbulb, ArrowRight, Sparkles, Clock, ShieldCheck, Loader2 } from 'lucide-react';
 
 interface AuthShowcaseProps {
-  onGuestLogin: () => void | Promise<void>;
-  isGuestLoading?: boolean;
+  readonly onGuestLogin: () => void | Promise<void>;
+  readonly isGuestLoading?: boolean;
 }
 
-export const AuthShowcase: React.FC<AuthShowcaseProps> = ({ onGuestLogin, isGuestLoading }) => {
+interface ShowcaseFeature {
+  id: string;
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+}
+
+export const AuthShowcase = ({ onGuestLogin, isGuestLoading }: Readonly<AuthShowcaseProps>) => {
   const [localLoading, setLocalLoading] = useState(false);
   const isLoading = isGuestLoading ?? localLoading;
 
@@ -20,18 +27,21 @@ export const AuthShowcase: React.FC<AuthShowcaseProps> = ({ onGuestLogin, isGues
     }
   };
 
-  const features = [
+  const features: readonly ShowcaseFeature[] = [
     {
+      id: 'online-multiplayer',
       icon: <Globe2 className="text-blue-400" size={22} />,
       title: 'Online Multiplayer',
       desc: 'Fast real-time matches against online players.'
     },
     {
+      id: 'stockfish-engine',
       icon: <Cpu className="text-indigo-400" size={22} />,
       title: 'Stockfish AI Engine',
       desc: 'Play against Stockfish across 3 difficulty levels.'
     },
     {
+      id: 'smart-hints',
       icon: <Lightbulb className="text-amber-400" size={22} />,
       title: 'Smart Hints',
       desc: 'Get move suggestions and live board analysis in any game.'
@@ -49,9 +59,9 @@ export const AuthShowcase: React.FC<AuthShowcaseProps> = ({ onGuestLogin, isGues
         </div>
 
         <div className="flex flex-col gap-3">
-          {features.map((item, idx) => (
+          {features.map((item) => (
             <div 
-              key={idx}
+              key={item.id}
               className="p-3.5 sm:p-4 rounded-2xl bg-slate-950/75 backdrop-blur-md border border-slate-700/60 flex items-start gap-3.5 transition-all hover:border-indigo-400/60 shadow-lg"
             >
               <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 shrink-0 mt-0.5">

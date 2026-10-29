@@ -32,7 +32,7 @@ export const SystemHealth: React.FC = () => {
       }
 
       const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
+      if (!contentType?.includes('application/json')) {
         throw new Error('Vite proxy returned HTML instead of Actuator JSON. Ensure backend is running and proxy is active.');
       }
 
@@ -46,7 +46,7 @@ export const SystemHealth: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchHealth();
+    void fetchHealth();
   }, []);
 
   const isUp = health?.status === 'UP';
@@ -58,6 +58,7 @@ export const SystemHealth: React.FC = () => {
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 text-slate-900 dark:text-white animate-in fade-in duration-300">
       {/* Return to Dashboard */}
       <button 
+        type="button"
         onClick={() => navigate('/')} 
         className="min-h-11 flex items-center gap-2 text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors mb-5 uppercase font-black text-xs tracking-widest cursor-pointer"
       >
@@ -76,7 +77,8 @@ export const SystemHealth: React.FC = () => {
           </h1>
         </div>
         <button
-          onClick={fetchHealth}
+          type="button"
+          onClick={() => void fetchHealth()}
           disabled={loading}
           className="min-h-11 flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer disabled:opacity-50 shadow-md shadow-indigo-600/20 active:scale-95 shrink-0"
         >

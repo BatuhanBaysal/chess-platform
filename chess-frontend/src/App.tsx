@@ -77,7 +77,7 @@ function App() {
   
   useEffect(() => {
     if (game?.gameId && location.pathname !== '/game') {
-      navigate('/game');
+      void navigate('/game');
     }
   }, [game?.gameId, location.pathname, navigate]);
 

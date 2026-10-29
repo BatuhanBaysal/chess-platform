@@ -7,6 +7,7 @@ import com.batuhan.chess.domain.model.history.GameResult;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -17,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
-@DisplayName("Game Timer Service Unit Tests")
+@DisplayName("GameTimerService Unit Tests")
 class GameTimerServiceTest {
 
     @Mock
@@ -39,62 +40,78 @@ class GameTimerServiceTest {
         closeable.close();
     }
 
-    @Test
-    @DisplayName("Should detect when game time has expired for white player")
-    void shouldDetectTimeExpiredForWhite() {
-        // Arrange
-        Game game = new Game(new Board());
-        game.setRemainingTimes(-100L, 60000L);
+    @Nested
+    @DisplayName("Expiration Checks")
+    class ExpirationTests {
 
-        // Act
-        boolean isExpired = timerService.isTimeExpired(game);
+        @Test
+        @DisplayName("Should detect time expiration when remaining milliseconds drop below zero")
+        void shouldDetectTimeExpired_WhenRemainingMsIsNegative() {
+            // Arrange
+            Game game = new Game(new Board());
+            game.setRemainingTimes(-100L, 60000L);
 
-        // Assert
-        assertThat(isExpired).isTrue();
+            // Act
+            boolean isExpired = timerService.isTimeExpired(game);
+
+            // Assert
+            assertThat(isExpired).isTrue();
+        }
     }
 
-    @Test
-    @DisplayName("Should determine correct game result when timeout occurs")
-    void shouldDetermineTimeoutResult() {
-        // Arrange
-        Game game = new Game(new Board());
+    @Nested
+    @DisplayName("Result Determinations")
+    class ResultDeterminationTests {
 
-        // Act
-        GameResult whiteTimeoutResult = timerService.determineResult(game, GameStatus.TIMEOUT);
+        @Test
+        @DisplayName("Should award win to opponent when timeout occurs")
+        void shouldDetermineTimeoutResult_ForCurrentPlayer() {
+            // Arrange
+            Game game = new Game(new Board());
 
-        // Assert
-        assertThat(whiteTimeoutResult).isEqualTo(GameResult.BLACK_WIN);
+            // Act
+            GameResult whiteTimeoutResult = timerService.determineResult(game, GameStatus.TIMEOUT);
+
+            // Assert
+            assertThat(whiteTimeoutResult).isEqualTo(GameResult.BLACK_WIN);
+        }
+
+        @Test
+        @DisplayName("Should return DRAW when status is STALEMATE or DRAW")
+        void shouldReturnDraw_WhenStatusIsStalemateOrDraw() {
+            // Arrange
+            Game game = new Game(new Board());
+
+            // Act
+            GameResult stalemateResult = timerService.determineResult(game, GameStatus.STALEMATE);
+            GameResult drawResult = timerService.determineResult(game, GameStatus.DRAW);
+
+            // Assert
+            assertThat(stalemateResult).isEqualTo(GameResult.DRAW);
+            assertThat(drawResult).isEqualTo(GameResult.DRAW);
+        }
     }
 
-    @Test
-    @DisplayName("Should schedule timeout task successfully")
-    void shouldScheduleTimeoutTask() {
-        // Arrange
-        String gameId = "room123";
-        Game game = new Game(new Board());
-        ConcurrentHashMap<String, Game> activeGames = new ConcurrentHashMap<>();
-        activeGames.put(gameId, game);
-        when(sessionManager.getActiveGames()).thenReturn(activeGames);
+    @Nested
+    @DisplayName("Task Scheduling Operations")
+    class SchedulingTests {
 
-        // Act
-        timerService.scheduleTimeoutTask(gameId, 5000L);
+        @Test
+        @DisplayName("Should schedule timeout task and allow safe cancellation")
+        void shouldScheduleAndCancelTimeoutTask() {
+            // Arrange
+            String gameId = "room123";
+            Game game = new Game(new Board());
+            ConcurrentHashMap<String, Game> activeGames = new ConcurrentHashMap<>();
+            activeGames.put(gameId, game);
+            when(sessionManager.getActiveGames()).thenReturn(activeGames);
 
-        // Assert
-        assertThat(activeGames).containsKey(gameId);
-        timerService.cancelTimeoutTask(gameId);
-    }
+            // Act
+            timerService.scheduleTimeoutTask(gameId, 5000L);
 
-    @Test
-    @DisplayName("Should cancel scheduled timeout task")
-    void shouldCancelTimeoutTask() {
-        // Arrange
-        String gameId = "room123";
-        timerService.scheduleTimeoutTask(gameId, 5000L);
-
-        // Act
-        timerService.cancelTimeoutTask(gameId);
-
-        // Assert
-        assertThat(gameId).isNotNull();
+            // Assert
+            assertThat(activeGames).containsKey(gameId);
+            timerService.cancelTimeoutTask(gameId);
+        }
     }
 }

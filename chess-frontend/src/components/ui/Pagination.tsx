@@ -104,13 +104,13 @@ export const Pagination: React.FC<PaginationProps> = ({
         <ChevronLeft size={16} />
       </button>
 
-      {/* Number Buttons & Ellipsis */}
       <div className="flex items-center gap-1 sm:gap-1.5">
         {paginationRange.map((pageNumber, idx) => {
           if (pageNumber === 'ellipsis') {
+            const ellipsisKey = idx < paginationRange.length / 2 ? 'ellipsis-start' : 'ellipsis-end';
             return (
               <span
-                key={`ellipsis-${idx}`}
+                key={ellipsisKey}
                 className="w-8 h-8 flex items-center justify-center text-xs font-black text-slate-400 tracking-widest"
               >
                 ...
@@ -122,7 +122,7 @@ export const Pagination: React.FC<PaginationProps> = ({
 
           return (
             <button
-              key={pageNumber}
+              key={`page-${pageNumber}`}
               type="button"
               onClick={() => onPageChange(pageNumber)}
               disabled={disabled}

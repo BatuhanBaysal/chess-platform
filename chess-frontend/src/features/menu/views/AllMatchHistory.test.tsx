@@ -36,9 +36,20 @@ describe('AllMatchHistory Tabbed Component', () => {
       finishMethod: 'RESIGNATION',
       playedAt: '2026-10-16T12:00:00Z',
     },
+    {
+      id: 103,
+      whitePlayerId: 2,
+      whitePlayerName: 'guest_opponent',
+      blackPlayerId: 1,
+      blackPlayerName: 'batuhanbaysal',
+      result: '1/2-1/2',
+      finishMethod: 'STALEMATE',
+      playedAt: '2026-10-17T14:00:00Z',
+    },
   ];
 
   beforeEach(() => {
+    // Arrange
     vi.clearAllMocks();
     localStorage.setItem('userId', '1');
     localStorage.setItem('username', 'batuhanbaysal');
@@ -58,12 +69,12 @@ describe('AllMatchHistory Tabbed Component', () => {
     await waitFor(() => {
       expect(screen.getByText('grandmaster')).toBeDefined();
     });
-    expect(screen.getByText(/Ranked \(PvP\) \(1\)/i)).toBeDefined();
+    expect(screen.getByText(/Ranked \(PvP\) \(2\)/i)).toBeDefined();
     expect(screen.getByText(/AI Practice \(1\)/i)).toBeDefined();
     expect(screen.queryByText('Stockfish AI')).toBeNull();
   });
 
-  it('renders opponent avatar image for registered ranked players', async () => {
+  it('renders opponent avatar image for registered ranked players and handles draw outcomes', async () => {
     // Arrange & Act
     render(
       <MemoryRouter>
@@ -76,6 +87,8 @@ describe('AllMatchHistory Tabbed Component', () => {
       const avatarImg = screen.getByRole('img', { name: 'grandmaster' }) as HTMLImageElement;
       expect(avatarImg).toBeDefined();
       expect(avatarImg.src).toContain('/api/users/grandmaster/avatar');
+      expect(screen.getByText('guest_opponent')).toBeDefined();
+      expect(screen.getByText('Draw')).toBeDefined();
     });
   });
 
@@ -116,10 +129,10 @@ describe('AllMatchHistory Tabbed Component', () => {
       expect(screen.getByText('grandmaster')).toBeDefined();
     });
 
-    const replayBtn = screen.getByRole('button', { name: /replay/i });
+    const replayButtons = screen.getAllByRole('button', { name: /replay/i });
 
     // Act
-    fireEvent.click(replayBtn);
+    fireEvent.click(replayButtons[0]);
 
     // Assert
     await waitFor(() => {
@@ -146,7 +159,7 @@ describe('AllMatchHistory Tabbed Component', () => {
 
     // Assert
     expect(avatarImg.style.display).toBe('none');
-    expect(screen.getByText('G')).toBeDefined();
+    expect(screen.getAllByText('G').length).toBeGreaterThan(0);
   });
 
   it('displays empty state notice when user has no match records', async () => {
@@ -163,6 +176,41 @@ describe('AllMatchHistory Tabbed Component', () => {
     // Assert
     await waitFor(() => {
       expect(screen.getByText('No Ranked Matches Yet')).toBeDefined();
+    });
+  });
+
+  it('navigates through pages when matches exceed page size', async () => {
+    // Arrange
+    const manyMatches = Array.from({ length: 15 }, (_, i) => ({
+      id: 200 + i,
+      whitePlayerId: 1,
+      whitePlayerName: 'batuhanbaysal',
+      blackPlayerId: 10 + i,
+      blackPlayerName: `opponent_${i}`,
+      result: '1-0',
+      finishMethod: 'CHECKMATE',
+      playedAt: '2026-10-18T10:00:00Z',
+    }));
+    vi.mocked(gameService.getPlayerHistory).mockResolvedValue(manyMatches as any);
+
+    render(
+      <MemoryRouter>
+        <AllMatchHistory userId={1} />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('opponent_0')).toBeDefined();
+    });
+
+    // Act
+    const nextBtn = screen.getByRole('button', { name: /next page/i });
+    fireEvent.click(nextBtn);
+
+    // Assert
+    await waitFor(() => {
+      expect(screen.getByText('opponent_10')).toBeDefined();
+      expect(screen.queryByText('opponent_0')).toBeNull();
     });
   });
 });

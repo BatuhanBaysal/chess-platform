@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './setup';
 
 test.describe('Admin Route Access & Role Protection', () => {
   test('should redirect unauthenticated guest to sign-in page when accessing admin route directly', async ({ page }) => {
@@ -24,7 +24,7 @@ test.describe('Admin Route Access & Role Protection', () => {
       window.localStorage.setItem('user', JSON.stringify({
         id: 'guest-101',
         username: 'guest_batu',
-        role: 'ROLE_GUEST'
+        role: 'ROLE_GUEST',
       }));
     });
 
@@ -51,7 +51,7 @@ test.describe('Admin Route Access & Role Protection', () => {
       window.localStorage.setItem('user', JSON.stringify({
         id: 'user-456',
         username: 'player_one',
-        role: 'ROLE_USER'
+        role: 'ROLE_USER',
       }));
     });
 
@@ -80,7 +80,7 @@ test.describe('Admin Route Access & Role Protection', () => {
       window.localStorage.setItem('user', JSON.stringify({
         id: 'admin-001',
         username: 'admin',
-        role: 'ROLE_ADMIN'
+        role: 'ROLE_ADMIN',
       }));
     });
 
@@ -99,6 +99,7 @@ test.describe('Admin Route Access & Role Protection', () => {
   });
 
   test('should immediately revoke access if session credentials are cleared while on admin page', async ({ page }) => {
+    // Arrange
     await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => {
       window.localStorage.setItem('token', 'mock-admin-valid-token');
@@ -108,19 +109,24 @@ test.describe('Admin Route Access & Role Protection', () => {
       window.localStorage.setItem('user', JSON.stringify({
         id: 'admin-001',
         username: 'admin',
-        role: 'ROLE_ADMIN'
+        role: 'ROLE_ADMIN',
       }));
     });
 
+    // Act
     await page.goto('/admin', { waitUntil: 'domcontentloaded' });
+
+    // Assert
     await expect(page).toHaveURL(/.*\/admin/);
 
+    // Act
     await page.evaluate(() => {
       window.localStorage.clear();
       window.sessionStorage.clear();
     });
-
     await page.goto('/admin', { waitUntil: 'domcontentloaded' });
+
+    // Assert
     await expect(page).toHaveURL(/.*\/sign-in/);
   });
 });

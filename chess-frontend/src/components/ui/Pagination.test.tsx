@@ -112,6 +112,28 @@ describe('Pagination Component & Helper', () => {
       expect(lastBtn.disabled).toBe(true);
     });
 
+    it('disables all navigation and page buttons when disabled prop is true', () => {
+      // Arrange
+      render(<Pagination currentPage={5} totalPages={10} disabled={true} onPageChange={vi.fn()} />);
+
+      // Act
+      const firstBtn = screen.getByLabelText(/go to first page/i) as HTMLButtonElement;
+      const pageBtn = screen.getByLabelText(/page 5/i) as HTMLButtonElement;
+
+      // Assert
+      expect(firstBtn.disabled).toBe(true);
+      expect(pageBtn.disabled).toBe(true);
+    });
+
+    it('renders ellipsis elements correctly when total pages are large', () => {
+      // Arrange & Act
+      render(<Pagination currentPage={10} totalPages={20} onPageChange={vi.fn()} />);
+
+      // Assert
+      const ellipsisElements = screen.getAllByText('...');
+      expect(ellipsisElements.length).toBeGreaterThan(0);
+    });
+
     it('calls onPageChange with correct page numbers when navigation buttons are clicked', () => {
       // Arrange
       const handlePageChange = vi.fn();

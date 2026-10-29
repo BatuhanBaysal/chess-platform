@@ -1,6 +1,6 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './setup';
 
-test.describe('Dashboard & Landing Page (Master Plan v2.6.0)', () => {
+test.describe('Dashboard & Landing Page', () => {
   test.beforeEach(async ({ page }) => {
     // Arrange
     await page.goto('/menu');
@@ -54,6 +54,7 @@ test.describe('Dashboard & Landing Page (Master Plan v2.6.0)', () => {
   });
 
   test('should not generate horizontal scrollbar on mobile viewport (390px)', async ({ page }) => {
+    // Arrange
     await page.setViewportSize({ width: 390, height: 844 });
 
     // Act

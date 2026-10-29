@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './setup';
 
 test.describe('AI Match Configuration Modal Flow', () => {
   test.beforeEach(async ({ page }) => {
@@ -54,6 +54,7 @@ test.describe('AI Match Configuration Modal Flow', () => {
   test('should update time controls and difficulty levels in configuration state', async ({ page }) => {
     // Arrange
     await page.getByRole('button', { name: /PLAY (VS )?COMPUTER/i }).click();
+    await expect(page.getByRole('heading', { name: /CONFIGURE AI MATCH/i })).toBeVisible();
 
     // Act
     const timeBtn3Min = page.getByRole('button', { name: /^3 MIN$/i }).first();

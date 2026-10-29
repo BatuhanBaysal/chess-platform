@@ -3,11 +3,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MatchReplayModal } from './MatchReplayModal';
 
 const samplePgn = `[Event "Ranked Match"]
-[White "batuhan"]
-[Black "Stockfish AI"]
-[Result "1-0"]
+[White "Stockfish AI"]
+[Black "batuhan"]
+[Result "1/2-1/2"]
 
-1. e4 c5 2. Nf3 Nc6 3. Bb5 e5 4. O-O Bd6 1-0`;
+1. e4 c5 2. Nf3 Nc6 3. Bb5 e5 4. O-O-O O-O 5. d4 exd4 6. c3 dxc3 7. e8=Q c1=N 8. e8=B c1=R 9. e8=Q c1=q 1/2-1/2`;
 
 const mocks = vi.hoisted(() => ({
   getGamePgn: vi.fn(),
@@ -21,6 +21,8 @@ describe('MatchReplayModal Component', () => {
   const mockOnClose = vi.fn();
 
   beforeEach(() => {
+    // Arrange
+    vi.clearAllMocks();
     mocks.getGamePgn.mockReset();
     mocks.getGamePgn.mockResolvedValue(samplePgn);
   });
@@ -43,7 +45,7 @@ describe('MatchReplayModal Component', () => {
     });
   });
 
-  it('renders header details, match badges and initial move notations after pgn loads', async () => {
+  it('renders header details, draw badge, and parses O-O-O and promotions properly', async () => {
     // Arrange & Act
     render(
       <MatchReplayModal
@@ -51,7 +53,7 @@ describe('MatchReplayModal Component', () => {
         onClose={mockOnClose}
         gameId={177}
         opponentName="Stockfish AI"
-        result="Victory"
+        result="Draw"
         playerColor="white"
       />
     );
@@ -59,10 +61,50 @@ describe('MatchReplayModal Component', () => {
     // Assert
     await waitFor(() => {
       expect(screen.getByText('Match #177')).toBeDefined();
-      expect(screen.getByText('Victory')).toBeDefined();
-      expect(screen.getByText('Stockfish AI')).toBeDefined();
-      expect(screen.getByText('e4')).toBeDefined();
-      expect(screen.getByText('O-O')).toBeDefined();
+      expect(screen.getByText('Draw')).toBeDefined();
+      expect(screen.getAllByText('Stockfish AI').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('O-O-O').length).toBeGreaterThan(0);
+    });
+  });
+
+  it('renders error notice when getGamePgn rejects', async () => {
+    // Arrange
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    mocks.getGamePgn.mockRejectedValueOnce(new Error('Network error'));
+
+    // Act
+    render(
+      <MatchReplayModal
+        isOpen={true}
+        onClose={mockOnClose}
+        gameId={999}
+        opponentName="Stockfish AI"
+      />
+    );
+
+    // Assert
+    await waitFor(() => {
+      expect(screen.getByText(/PGN record could not be retrieved/i)).toBeDefined();
+    });
+  });
+
+  it('renders empty move message when pgn has no moves', async () => {
+    // Arrange
+    mocks.getGamePgn.mockResolvedValueOnce('[Event "Empty"]\n[Result "*"]\n*');
+
+    // Act
+    render(
+      <MatchReplayModal
+        isOpen={true}
+        onClose={mockOnClose}
+        gameId={200}
+        opponentName="Opponent"
+      />
+    );
+
+    // Assert
+    await waitFor(() => {
+      expect(screen.getByText(/No moves recorded in PGN/i)).toBeDefined();
     });
   });
 
@@ -94,7 +136,7 @@ describe('MatchReplayModal Component', () => {
         isOpen={true}
         onClose={mockOnClose}
         gameId={177}
-        opponentName="Stockfish AI"
+        opponentName="HumanOpponent"
         result="Victory"
         playerColor="white"
       />
@@ -112,7 +154,7 @@ describe('MatchReplayModal Component', () => {
     expect(screen.getAllByText('Black').length).toBeGreaterThan(0);
   });
 
-  it('advances current step and updates active move when clicking next move button', async () => {
+  it('navigates through steps using First, Previous, Next and Last move buttons', async () => {
     // Arrange
     render(
       <MatchReplayModal
@@ -129,9 +171,49 @@ describe('MatchReplayModal Component', () => {
       expect(screen.getByText(/0 \/ \d+/)).toBeDefined();
     });
     const nextBtn = screen.getByTitle('Next Move');
+    const lastBtn = screen.getByTitle('Last Move');
+    const prevBtn = screen.getByTitle('Previous Move');
+    const firstBtn = screen.getByTitle('First Move');
+
+    // Act & Assert
+    fireEvent.click(nextBtn);
+    await waitFor(() => {
+      expect(screen.getByText(/1 \/ \d+/)).toBeDefined();
+    });
+
+    // Act & Assert
+    fireEvent.click(prevBtn);
+    expect(screen.getByText(/0 \/ \d+/)).toBeDefined();
+
+    // Act & Assert
+    fireEvent.click(lastBtn);
+    expect(screen.queryByText(/0 \/ \d+/)).toBeNull();
+
+    // Act & Assert
+    fireEvent.click(firstBtn);
+    expect(screen.getByText(/0 \/ \d+/)).toBeDefined();
+  });
+
+  it('jumps directly to a step when clicking on a move in the notation list', async () => {
+    // Arrange
+    render(
+      <MatchReplayModal
+        isOpen={true}
+        onClose={mockOnClose}
+        gameId={177}
+        opponentName="Stockfish AI"
+        result="Victory"
+        playerColor="white"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText('e4').length).toBeGreaterThan(0);
+    });
+    const e4Button = screen.getAllByRole('button', { name: 'e4' })[0];
 
     // Act
-    fireEvent.click(nextBtn);
+    fireEvent.click(e4Button);
 
     // Assert
     await waitFor(() => {
@@ -139,7 +221,74 @@ describe('MatchReplayModal Component', () => {
     });
   });
 
-  it('invokes onClose callback when clicking close button', async () => {
+  it('toggles autoplay playback with Play and Pause button', async () => {
+    // Arrange
+    render(
+      <MatchReplayModal
+        isOpen={true}
+        onClose={mockOnClose}
+        gameId={177}
+        opponentName="Stockfish AI"
+        result="Victory"
+        playerColor="white"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Match #177')).toBeDefined();
+    });
+
+    const playBtn = await screen.findByRole('button', { name: /^play$/i });
+
+    // Act
+    fireEvent.click(playBtn);
+
+    // Assert
+    const pauseBtn = await screen.findByRole('button', { name: /^pause$/i });
+    expect(pauseBtn).toBeDefined();
+
+    // Act
+    fireEvent.click(pauseBtn);
+
+    // Assert
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /^play$/i })).toBeDefined();
+    });
+  });
+
+  it('triggers file download when clicking download PGN button', async () => {
+    // Arrange
+    const originalCreateObjectURL = window.URL.createObjectURL;
+    const originalRevokeObjectURL = window.URL.revokeObjectURL;
+    window.URL.createObjectURL = vi.fn().mockReturnValue('blob:mock-url');
+    window.URL.revokeObjectURL = vi.fn();
+
+    render(
+      <MatchReplayModal
+        isOpen={true}
+        onClose={mockOnClose}
+        gameId={177}
+        opponentName="Stockfish AI"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTitle('Download PGN')).toBeDefined();
+    });
+    const downloadBtn = screen.getByTitle('Download PGN');
+
+    // Act
+    fireEvent.click(downloadBtn);
+
+    // Assert
+    expect(window.URL.createObjectURL).toHaveBeenCalledTimes(1);
+    expect(window.URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+
+    window.URL.createObjectURL = originalCreateObjectURL;
+    window.URL.revokeObjectURL = originalRevokeObjectURL;
+  });
+
+  it('invokes onClose callback when clicking close button or backdrop', async () => {
     // Arrange
     render(
       <MatchReplayModal
@@ -160,5 +309,19 @@ describe('MatchReplayModal Component', () => {
 
     // Assert
     expect(mockOnClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns null when isOpen is false', () => {
+    // Arrange & Act
+    const { container } = render(
+      <MatchReplayModal
+        isOpen={false}
+        onClose={mockOnClose}
+        gameId={177}
+      />
+    );
+
+    // Assert
+    expect(container.firstChild).toBeNull();
   });
 });

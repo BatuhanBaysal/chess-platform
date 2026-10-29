@@ -3,12 +3,12 @@ import { type AdminAuditLogResponseDTO } from '../../../api/adminService';
 import Pagination from '../../../components/ui/Pagination';
 
 interface AuditLogsPanelProps {
-    auditLogs: AdminAuditLogResponseDTO[];
-    loading: boolean;
-    auditPage: number;
-    auditTotalPages: number;
-    auditTotalElements: number;
-    onAuditPageChange: (page: number) => void;
+    readonly auditLogs: readonly AdminAuditLogResponseDTO[];
+    readonly loading: boolean;
+    readonly auditPage: number;
+    readonly auditTotalPages: number;
+    readonly auditTotalElements: number;
+    readonly onAuditPageChange: (page: number) => void;
 }
 
 export default function AuditLogsPanel({
@@ -18,7 +18,7 @@ export default function AuditLogsPanel({
     auditTotalPages,
     auditTotalElements,
     onAuditPageChange
-}: AuditLogsPanelProps) {
+}: Readonly<AuditLogsPanelProps>) {
     return (
         <div className="bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 rounded-3xl p-4 sm:p-7 shadow-sm">
             <div className="flex justify-between items-center mb-4">

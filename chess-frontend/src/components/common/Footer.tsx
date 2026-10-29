@@ -16,7 +16,8 @@ export const Footer: React.FC<FooterProps> = ({ isInGame }) => {
   const isOnline = Boolean(user) || Boolean(localStorage.getItem('token'));
 
   const backendBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-  const swaggerUrl = `${backendBaseUrl.replace(/\/+$/, '')}/swagger-ui/index.html`;
+  const cleanBaseUrl = backendBaseUrl.endsWith('/') ? backendBaseUrl.slice(0, -1) : backendBaseUrl;
+  const swaggerUrl = `${cleanBaseUrl}/swagger-ui/index.html`;
 
   useEffect(() => {
     if (isGamePage) return;
@@ -28,13 +29,16 @@ export const Footer: React.FC<FooterProps> = ({ isInGame }) => {
         await fetch('/api/auth/health', { method: 'HEAD' });
         const end = performance.now();
         if (isMounted) setPing(Math.round(end - start));
-      } catch (error) {
+      } catch {
         if (isMounted) setPing(999);
       }
     };
 
-    checkPing();
-    const interval = setInterval(checkPing, 5000);
+    void checkPing();
+    const interval = setInterval(() => {
+      void checkPing();
+    }, 5000);
+
     return () => {
       isMounted = false;
       clearInterval(interval);

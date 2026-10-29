@@ -1,4 +1,4 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { PieChart, Pie, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
 export interface MatchDistributionItem {
     name: string;
@@ -6,6 +6,10 @@ export interface MatchDistributionItem {
     fill: string;
     [key: string]: any;
 }
+
+const renderLegendText = (value: string) => (
+    <span className="text-[10px] font-bold text-slate-500 uppercase">{value}</span>
+);
 
 export const MatchDistributionGraph = ({ data }: { data: MatchDistributionItem[] }) => {
     return (
@@ -18,11 +22,8 @@ export const MatchDistributionGraph = ({ data }: { data: MatchDistributionItem[]
                     paddingAngle={8} 
                     cornerRadius={4} 
                     dataKey="value"
-                >
-                    {data.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} stroke="none" />
-                    ))}
-                </Pie>
+                    stroke="none"
+                />
                 <Tooltip 
                     cursor={{ fill: 'transparent' }}
                     contentStyle={{ 
@@ -34,10 +35,9 @@ export const MatchDistributionGraph = ({ data }: { data: MatchDistributionItem[]
                     }} 
                 />
                 <Legend 
-                    verticalAlign="bottom" 
                     height={36} 
                     iconType="circle"
-                    formatter={(value) => <span className="text-[10px] font-bold text-slate-500 uppercase">{value}</span>}
+                    formatter={renderLegendText}
                 />
             </PieChart>
         </ResponsiveContainer>

@@ -95,21 +95,21 @@ export default function AdminDashboard() {
     }, [pageSize]);
 
     useEffect(() => {
-        fetchUsersData(currentPage, userFilter, searchQuery);
-        fetchActiveGamesData();
-        fetchAuditLogsData(auditPage);
+        void fetchUsersData(currentPage, userFilter, searchQuery);
+        void fetchActiveGamesData();
+        void fetchAuditLogsData(auditPage);
     }, [currentPage, auditPage, userFilter, searchQuery, fetchUsersData, fetchActiveGamesData, fetchAuditLogsData]);
 
     const handleFilterChange = (filter: 'all' | 'members' | 'guests') => {
         setUserFilter(filter);
         setCurrentPage(0);
-        fetchUsersData(0, filter, searchQuery);
+        void fetchUsersData(0, filter, searchQuery);
     };
 
     const handleSearchChange = (query: string) => {
         setSearchQuery(query);
         setCurrentPage(0);
-        fetchUsersData(0, userFilter, query);
+        void fetchUsersData(0, userFilter, query);
     };
 
     const handleDeleteUser = async (id: number) => {
@@ -119,7 +119,7 @@ export default function AdminDashboard() {
             try {
                 await deleteUserAccount(id);
                 await fetchUsersData(currentPage, userFilter, searchQuery);
-                fetchAuditLogsData(auditPage);
+                await fetchAuditLogsData(auditPage);
             } catch (error) {
                 console.error("Failed to delete user:", error);
                 await fetchUsersData(currentPage, userFilter, searchQuery);
@@ -133,8 +133,8 @@ export default function AdminDashboard() {
         if (window.confirm(`Game session (${gameId}) will be forcefully terminated. Are you sure?`)) {
             try {
                 await forceFinishGame(gameId);
-                fetchActiveGamesData();
-                fetchAuditLogsData(auditPage);
+                await fetchActiveGamesData();
+                await fetchAuditLogsData(auditPage);
             } catch (error) {
                 console.error("Failed to force finish game:", error);
             }
@@ -142,9 +142,9 @@ export default function AdminDashboard() {
     };
 
     const handleRefreshAll = () => {
-        fetchUsersData(currentPage, userFilter, searchQuery);
-        fetchActiveGamesData();
-        fetchAuditLogsData(auditPage);
+        void fetchUsersData(currentPage, userFilter, searchQuery);
+        void fetchActiveGamesData();
+        void fetchAuditLogsData(auditPage);
     };
 
     return (
@@ -152,7 +152,7 @@ export default function AdminDashboard() {
             {/* Return to Dashboard */}
             <button 
                 type="button"
-                onClick={() => navigate('/menu')} 
+                onClick={() => void navigate('/menu')} 
                 className="min-h-11 flex items-center gap-2 text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors uppercase font-black text-xs tracking-widest cursor-pointer mb-5"
             >
                 <ArrowLeft size={16} /> Back to Menu

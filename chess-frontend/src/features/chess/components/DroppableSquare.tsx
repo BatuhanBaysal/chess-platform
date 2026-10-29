@@ -13,13 +13,17 @@ export const DroppableSquare: React.FC<DroppableSquareProps> = ({ index, childre
   const { setNodeRef, isOver } = useDroppable({ id: `square-${index}` });
   
   return (
-    <div 
+    <button
+      type="button"
       ref={setNodeRef} 
-      onClick={onClick} 
+      aria-label={`Chess square ${index}`}
+      onClick={onClick}
       style={style} 
-      className={`${className} ${isOver ? 'brightness-110 contrast-125' : ''}`}
+      className={`${className} ${isOver ? 'brightness-110 contrast-125' : ''} p-0 border-0 bg-transparent cursor-pointer`}
     >
       {children}
-    </div>
+    </button>
   );
 };
+
+export default DroppableSquare;

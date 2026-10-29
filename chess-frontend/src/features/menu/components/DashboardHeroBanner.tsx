@@ -10,6 +10,15 @@ interface DashboardHeroBannerProps {
   isCreating?: boolean;
 }
 
+const getSecureRandomIndex = (max: number): number => {
+  if (typeof window !== 'undefined' && window.crypto?.getRandomValues) {
+    const array = new Uint32Array(1);
+    window.crypto.getRandomValues(array);
+    return array[0] % max;
+  }
+  return 0;
+};
+
 export const DashboardHeroBanner: React.FC<DashboardHeroBannerProps> = ({
   username = 'Player',
   eloRating,
@@ -18,7 +27,7 @@ export const DashboardHeroBanner: React.FC<DashboardHeroBannerProps> = ({
   isCreating = false,
 }) => {
   const todayQuote = useMemo(() => {
-    const randomIndex = Math.floor(Math.random() * CHESS_QUOTES.length);
+    const randomIndex = getSecureRandomIndex(CHESS_QUOTES.length);
     return CHESS_QUOTES[randomIndex];
   }, []);
 

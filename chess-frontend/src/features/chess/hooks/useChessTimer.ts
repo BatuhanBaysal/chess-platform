@@ -1,6 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 
-const FINISHED_STATUSES = ['CHECKMATE', 'STALEMATE', 'RESIGNED', 'TIMEOUT', 'DRAW', 'CLOSING', 'ABANDONED', 'FINISHED', 'DISMISSED'];
+const FINISHED_STATUSES = new Set([
+  'CHECKMATE',
+  'STALEMATE',
+  'RESIGNED',
+  'TIMEOUT',
+  'DRAW',
+  'CLOSING',
+  'ABANDONED',
+  'FINISHED',
+  'DISMISSED'
+]);
 
 export const useChessTimer = (game: any) => {
   const [displayTime, setDisplayTime] = useState({ white: 0, black: 0 });
@@ -26,7 +36,7 @@ export const useChessTimer = (game: any) => {
   }, [game?.gameId]);
 
   useEffect(() => {
-    if (!game || !game.isStarted || FINISHED_STATUSES.includes(game.status.toUpperCase())) {
+    if (!game?.isStarted || FINISHED_STATUSES.has(game?.status?.toUpperCase())) {
       return;
     }
 

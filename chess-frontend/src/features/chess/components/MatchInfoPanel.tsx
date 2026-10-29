@@ -28,6 +28,178 @@ interface MatchInfoPanelProps {
   game?: any;
 }
 
+interface SidePlayerInput {
+  name: string;
+  time?: number;
+  isTurn: boolean;
+  captured: string[];
+  avatarUrl?: string | null;
+  gameAvatarUrl?: string | null;
+}
+
+const checkIsAiMatch = (g: any): boolean => {
+  if (!g) return false;
+  if (g.gameType === 'AI' || g.isAi || g.vsAi || g.mode === 'AI') return true;
+  if (g.whiteId === -1 || g.blackId === -1 || g.whitePlayerId === -1 || g.blackPlayerId === -1) return true;
+  return g.blackPlayerId === null && !g.roomId;
+};
+
+const getCandidateName = (
+  color: 'WHITE' | 'BLACK',
+  whitePlayerName?: string,
+  blackPlayerName?: string,
+  g?: any
+): string => {
+  const isW = color === 'WHITE';
+  const propName = isW ? whitePlayerName : blackPlayerName;
+  if (propName && propName !== 'White Player' && propName !== 'Black Player') {
+    return propName;
+  }
+  if (!g) return '';
+
+  if (isW) {
+    return (
+      g.whitePlayerName ||
+      g.whiteUsername ||
+      g.whitePlayerUsername ||
+      g.whitePlayer?.username ||
+      g.whitePlayer?.name ||
+      g.whiteUser?.username ||
+      ''
+    );
+  }
+  return (
+    g.blackPlayerName ||
+    g.blackUsername ||
+    g.blackPlayerUsername ||
+    g.blackPlayer?.username ||
+    g.blackPlayer?.name ||
+    g.blackUser?.username ||
+    ''
+  );
+};
+
+const resolvePlayerName = (
+  color: 'WHITE' | 'BLACK',
+  candidate: string,
+  isMyColor: boolean,
+  isAi: boolean,
+  storedUsername: string,
+  g?: any
+): string => {
+  if (candidate) return candidate;
+
+  const defaultFallback = color === 'WHITE' ? 'White Player' : 'Black Player';
+  if (isMyColor) {
+    return storedUsername || defaultFallback;
+  }
+
+  if (isAi) {
+    const diff = g?.aiDifficulty;
+    return diff ? `Stockfish (Lv. ${diff})` : 'Stockfish AI';
+  }
+
+  if (g?.opponentName || g?.opponentUsername || g?.opponent?.username) {
+    return g.opponentName || g.opponentUsername || g.opponent.username;
+  }
+  const idVal = color === 'WHITE' ? (g?.whiteId ?? g?.whitePlayerId) : (g?.blackId ?? g?.blackPlayerId);
+  if (idVal && idVal !== -1) {
+    return `User #${idVal}`;
+  }
+  return defaultFallback;
+};
+
+const resolvePlayerAvatar = (
+  directAvatar: string | null | undefined,
+  gameAvatar: string | null | undefined,
+  isAi: boolean,
+  playerLabel: string
+): string | undefined => {
+  if (directAvatar) {
+    return getFullAvatarUrl(directAvatar);
+  }
+  if (gameAvatar) {
+    return getFullAvatarUrl(gameAvatar);
+  }
+  const isGuest = playerLabel.toLowerCase().startsWith('guest') || playerLabel === 'White Player' || playerLabel === 'Black Player';
+  if (!isAi && !isGuest && playerLabel) {
+    return getUsernameAvatarUrl(playerLabel);
+  }
+  return undefined;
+};
+
+const checkPlayerIsAi = (
+  isAiMatch: boolean,
+  color: 'WHITE' | 'BLACK',
+  label: string,
+  game?: any
+): boolean => {
+  if (!isAiMatch) return false;
+  const isTargetAi = color === 'BLACK'
+    ? (game?.blackId === -1 || game?.blackPlayerId === -1)
+    : (game?.whiteId === -1 || game?.whitePlayerId === -1);
+  return isTargetAi || label.toLowerCase().includes('stockfish') || label.toLowerCase().includes('bot');
+};
+
+const getPlayerInitial = (isAi: boolean, label: string, color: 'WHITE' | 'BLACK'): string => {
+  if (isAi) return 'AI';
+  return (label.charAt(0) || (color === 'WHITE' ? 'W' : 'B')).toUpperCase();
+};
+
+const getBadgeBg = (isAi: boolean, color: 'WHITE' | 'BLACK'): string => {
+  if (isAi) return 'bg-amber-600';
+  return color === 'WHITE' ? 'bg-blue-600' : 'bg-rose-600';
+};
+
+const getColorBadgeClass = (color: 'WHITE' | 'BLACK'): string => {
+  return color === 'WHITE'
+    ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+    : 'bg-rose-500/10 text-rose-600 dark:text-rose-400';
+};
+
+const getPlayerStyle = (isTurn: boolean, playerColor: 'WHITE' | 'BLACK') => {
+  if (playerColor === 'WHITE') {
+    return isTurn
+      ? 'text-blue-600 dark:text-blue-400 border-blue-500 bg-blue-500/10 dark:bg-blue-500/20 animate-pulse shadow-xs'
+      : 'text-slate-900 dark:text-slate-100 bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 shadow-xs';
+  }
+  return isTurn
+    ? 'text-rose-600 dark:text-rose-400 border-rose-500 bg-rose-500/10 dark:bg-rose-500/20 animate-pulse shadow-xs'
+    : 'text-slate-900 dark:text-slate-100 bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 shadow-xs';
+};
+
+const getStoredUsername = (): string => {
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem('username') || '';
+};
+
+const getSideTelemetry = (
+  isTop: boolean,
+  isWhiteOrientation: boolean,
+  white: SidePlayerInput,
+  black: SidePlayerInput,
+  isAiMatch: boolean,
+  game?: any
+) => {
+  const isTargetWhite = isTop ? !isWhiteOrientation : isWhiteOrientation;
+  const current = isTargetWhite ? white : black;
+  const color: 'WHITE' | 'BLACK' = isTargetWhite ? 'WHITE' : 'BLACK';
+  const isAi = checkPlayerIsAi(isAiMatch, color, current.name, game);
+  const initial = getPlayerInitial(isAi, current.name, color);
+  const avatarSrc = resolvePlayerAvatar(current.avatarUrl, current.gameAvatarUrl, isAi, current.name);
+
+  return {
+    color,
+    time: current.time || 0,
+    label: current.name,
+    isTurn: current.isTurn,
+    captured: current.captured,
+    isAi,
+    initial,
+    avatarSrc
+  };
+};
+
 export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
   orientation, currentTurn, isGameOver, whiteRemainingTimeMs, blackRemainingTimeMs,
   whiteCaptured, blackCaptured, pieceImages, formatTime, onDismissGame,
@@ -52,164 +224,66 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
   }, [hintData]);
 
   const isWhiteOrientation = orientation === 'WHITE';
-
-  const storedUsername = useMemo(() => {
-    return typeof window !== 'undefined' ? (localStorage.getItem('username') || '') : '';
-  }, []);
-
-  const isAiMatch = useMemo(() => {
-    const g = game as any;
-    if (!g) return false;
-    if (g.gameType === 'AI' || g.isAi || g.vsAi || g.mode === 'AI') return true;
-    if (g.whiteId === -1 || g.blackId === -1 || g.whitePlayerId === -1 || g.blackPlayerId === -1) return true;
-    if (g.blackPlayerId === null && !g.roomId) return true;
-    return false;
-  }, [game]);
-
-  const getCandidateName = (color: 'WHITE' | 'BLACK'): string => {
-    const isW = color === 'WHITE';
-    const propName = isW ? whitePlayerName : blackPlayerName;
-    if (propName && propName !== 'White Player' && propName !== 'Black Player') {
-      return propName;
-    }
-
-    const g = game as any;
-    if (!g) return '';
-
-    if (isW) {
-      return (
-        g.whitePlayerName ||
-        g.whiteUsername ||
-        g.whitePlayerUsername ||
-        g.whitePlayer?.username ||
-        g.whitePlayer?.name ||
-        g.whiteUser?.username ||
-        ''
-      );
-    } else {
-      return (
-        g.blackPlayerName ||
-        g.blackUsername ||
-        g.blackPlayerUsername ||
-        g.blackPlayer?.username ||
-        g.blackPlayer?.name ||
-        g.blackUser?.username ||
-        ''
-      );
-    }
-  };
+  const storedUsername = useMemo(() => getStoredUsername(), []);
+  const isAiMatch = useMemo(() => checkIsAiMatch(game), [game]);
 
   const resolvedWhiteName = useMemo(() => {
-    const candidate = getCandidateName('WHITE');
-    if (candidate) return candidate;
-
-    if (isWhiteOrientation) {
-      return storedUsername || 'White Player';
-    }
-
-    if (isAiMatch) {
-      const diff = game?.aiDifficulty;
-      return diff ? `Stockfish (Lv. ${diff})` : 'Stockfish AI';
-    }
-
-    const g = game as any;
-    if (g?.opponentName || g?.opponentUsername || g?.opponent?.username) {
-      return g.opponentName || g.opponentUsername || g.opponent.username;
-    }
-    const wId = g?.whiteId ?? g?.whitePlayerId;
-    if (wId && wId !== -1) return `User #${wId}`;
-    return 'White Player';
-  }, [whitePlayerName, game, isWhiteOrientation, storedUsername, isAiMatch]);
+    const candidate = getCandidateName('WHITE', whitePlayerName, blackPlayerName, game);
+    return resolvePlayerName('WHITE', candidate, isWhiteOrientation, isAiMatch, storedUsername, game);
+  }, [whitePlayerName, blackPlayerName, game, isWhiteOrientation, storedUsername, isAiMatch]);
 
   const resolvedBlackName = useMemo(() => {
-    const candidate = getCandidateName('BLACK');
-    if (candidate) return candidate;
+    const candidate = getCandidateName('BLACK', whitePlayerName, blackPlayerName, game);
+    return resolvePlayerName('BLACK', candidate, !isWhiteOrientation, isAiMatch, storedUsername, game);
+  }, [blackPlayerName, whitePlayerName, game, isWhiteOrientation, storedUsername, isAiMatch]);
 
-    if (!isWhiteOrientation) {
-      return storedUsername || 'Black Player';
-    }
+  const {
+    color: topColor,
+    time: topTime,
+    label: topPlayerLabel,
+    isTurn: isTopTurn,
+    captured: topCaptured,
+    isAi: isTopAi,
+    initial: topInitial,
+    avatarSrc: topAvatarSrc
+  } = getSideTelemetry(
+    true,
+    isWhiteOrientation,
+    { name: resolvedWhiteName, time: whiteRemainingTimeMs, isTurn: isWhiteTurn, captured: whiteCaptured, avatarUrl: whiteAvatarUrl, gameAvatarUrl: game?.whiteAvatarUrl },
+    { name: resolvedBlackName, time: blackRemainingTimeMs, isTurn: isBlackTurn, captured: blackCaptured, avatarUrl: blackAvatarUrl, gameAvatarUrl: game?.blackAvatarUrl },
+    isAiMatch,
+    game
+  );
 
-    if (isAiMatch) {
-      const diff = game?.aiDifficulty;
-      return diff ? `Stockfish (Lv. ${diff})` : 'Stockfish AI';
-    }
-
-    const g = game as any;
-    if (g?.opponentName || g?.opponentUsername || g?.opponent?.username) {
-      return g.opponentName || g.opponentUsername || g.opponent.username;
-    }
-    const bId = g?.blackId ?? g?.blackPlayerId;
-    if (bId && bId !== -1) return `User #${bId}`;
-    return 'Black Player';
-  }, [blackPlayerName, game, isWhiteOrientation, storedUsername, isAiMatch]);
-
-  const topColor = isWhiteOrientation ? 'BLACK' : 'WHITE';
-  const topTime = isWhiteOrientation ? (blackRemainingTimeMs || 0) : (whiteRemainingTimeMs || 0);
-  const topPlayerLabel = isWhiteOrientation ? resolvedBlackName : resolvedWhiteName;
-  const isTopTurn = isWhiteOrientation ? isBlackTurn : isWhiteTurn;
-  const topCaptured = isWhiteOrientation ? blackCaptured : whiteCaptured;
-  
-  const isTopAi = isAiMatch && (isWhiteOrientation 
-    ? (game?.blackId === -1 || game?.blackPlayerId === -1 || topPlayerLabel.toLowerCase().includes('stockfish') || topPlayerLabel.toLowerCase().includes('bot'))
-    : (game?.whiteId === -1 || game?.whitePlayerId === -1 || topPlayerLabel.toLowerCase().includes('stockfish') || topPlayerLabel.toLowerCase().includes('bot')));
-  
-  const topInitial = isTopAi ? 'AI' : (topPlayerLabel.charAt(0) || (topColor === 'WHITE' ? 'W' : 'B')).toUpperCase();
-  const isTopGuest = topPlayerLabel.toLowerCase().startsWith('guest') || topPlayerLabel === 'White Player' || topPlayerLabel === 'Black Player';
-  
-  const topAvatarSrc = isWhiteOrientation 
-    ? (blackAvatarUrl 
-        ? getFullAvatarUrl(blackAvatarUrl) 
-        : (game as any)?.blackAvatarUrl 
-          ? getFullAvatarUrl((game as any).blackAvatarUrl) 
-          : (!isTopAi && !isTopGuest ? getUsernameAvatarUrl(topPlayerLabel) : null))
-    : (whiteAvatarUrl 
-        ? getFullAvatarUrl(whiteAvatarUrl) 
-        : (game as any)?.whiteAvatarUrl 
-          ? getFullAvatarUrl((game as any).whiteAvatarUrl) 
-          : (!isTopAi && !isTopGuest ? getUsernameAvatarUrl(topPlayerLabel) : null));
-
-  const bottomColor = isWhiteOrientation ? 'WHITE' : 'BLACK';
-  const bottomTime = isWhiteOrientation ? (whiteRemainingTimeMs || 0) : (blackRemainingTimeMs || 0);
-  const bottomPlayerLabel = isWhiteOrientation ? resolvedWhiteName : resolvedBlackName;
-  const isBottomTurn = isWhiteOrientation ? isWhiteTurn : isBlackTurn;
-  const bottomCaptured = isWhiteOrientation ? whiteCaptured : blackCaptured;
-
-  const isBottomAi = isAiMatch && (!isWhiteOrientation 
-    ? (game?.blackId === -1 || game?.blackPlayerId === -1 || bottomPlayerLabel.toLowerCase().includes('stockfish') || bottomPlayerLabel.toLowerCase().includes('bot'))
-    : (game?.whiteId === -1 || game?.whitePlayerId === -1 || bottomPlayerLabel.toLowerCase().includes('stockfish') || bottomPlayerLabel.toLowerCase().includes('bot')));
-
-  const bottomInitial = isBottomAi ? 'AI' : (bottomPlayerLabel.charAt(0) || (bottomColor === 'WHITE' ? 'W' : 'B')).toUpperCase();
-  const isBottomGuest = bottomPlayerLabel.toLowerCase().startsWith('guest') || bottomPlayerLabel === 'White Player' || bottomPlayerLabel === 'Black Player';
-
-  const bottomAvatarSrc = isWhiteOrientation 
-    ? (whiteAvatarUrl 
-        ? getFullAvatarUrl(whiteAvatarUrl) 
-        : (game as any)?.whiteAvatarUrl 
-          ? getFullAvatarUrl((game as any).whiteAvatarUrl) 
-          : (!isBottomAi && !isBottomGuest ? getUsernameAvatarUrl(bottomPlayerLabel) : null))
-    : (blackAvatarUrl 
-        ? getFullAvatarUrl(blackAvatarUrl) 
-        : (game as any)?.blackAvatarUrl 
-          ? getFullAvatarUrl((game as any).blackAvatarUrl) 
-          : (!isBottomAi && !isBottomGuest ? getUsernameAvatarUrl(bottomPlayerLabel) : null));
-
-  const getPlayerStyle = (isTurn: boolean, playerColor: 'WHITE' | 'BLACK') => {
-    if (playerColor === 'WHITE') {
-      return isTurn
-        ? 'text-blue-600 dark:text-blue-400 border-blue-500 bg-blue-500/10 dark:bg-blue-500/20 animate-pulse shadow-xs'
-        : 'text-slate-900 dark:text-slate-100 bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 shadow-xs';
-    } else {
-      return isTurn
-        ? 'text-rose-600 dark:text-rose-400 border-rose-500 bg-rose-500/10 dark:bg-rose-500/20 animate-pulse shadow-xs'
-        : 'text-slate-900 dark:text-slate-100 bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 shadow-xs';
-    }
-  };
+  const {
+    color: bottomColor,
+    time: bottomTime,
+    label: bottomPlayerLabel,
+    isTurn: isBottomTurn,
+    captured: bottomCaptured,
+    isAi: isBottomAi,
+    initial: bottomInitial,
+    avatarSrc: bottomAvatarSrc
+  } = getSideTelemetry(
+    false,
+    isWhiteOrientation,
+    { name: resolvedWhiteName, time: whiteRemainingTimeMs, isTurn: isWhiteTurn, captured: whiteCaptured, avatarUrl: whiteAvatarUrl, gameAvatarUrl: game?.whiteAvatarUrl },
+    { name: resolvedBlackName, time: blackRemainingTimeMs, isTurn: isBlackTurn, captured: blackCaptured, avatarUrl: blackAvatarUrl, gameAvatarUrl: game?.blackAvatarUrl },
+    isAiMatch,
+    game
+  );
 
   const handleCapturedImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>, pieceChar: string) => {
     const target = e.currentTarget as HTMLImageElement;
     target.style.display = 'none';
     if (target.parentElement) {
       target.parentElement.innerHTML = `<span class="text-[13px] font-black font-mono opacity-60">${pieceChar}</span>`;
+    }
+  };
+
+  const handleHintButtonClick = () => {
+    if (isMyTurn && !isHintLoading) {
+      onGetHint();
     }
   };
 
@@ -222,7 +296,7 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
           <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 dark:text-slate-400">Match & Engine</span>
         </div>
         {onDismissGame && !isGameOver && (
-          <button onClick={onDismissGame} title="Dismiss Game" className="text-rose-500 hover:text-rose-600 transition-colors p-1 cursor-pointer">
+          <button type="button" onClick={onDismissGame} title="Dismiss Game" className="text-rose-500 hover:text-rose-600 transition-colors p-1 cursor-pointer">
             <LogOut size={14} />
           </button>
         )}
@@ -231,7 +305,7 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
       {/* Top Player Details */}
       <div className="flex items-center justify-between gap-2 w-full flex-none">
         <div className="flex items-center gap-2 pl-1 pr-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 shadow-xs min-w-0">
-          <div className={`relative w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0 overflow-hidden ${isTopAi ? 'bg-amber-600' : topColor === 'WHITE' ? 'bg-blue-600' : 'bg-rose-600'}`}>
+          <div className={`relative w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0 overflow-hidden ${getBadgeBg(isTopAi, topColor)}`}>
             {isTopAi ? (
               <Bot size={13} />
             ) : (
@@ -253,7 +327,7 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
           <span className="text-[11px] font-black uppercase tracking-wider text-slate-900 dark:text-slate-200 truncate max-w-28 sm:max-w-32">
             {topPlayerLabel}
           </span>
-          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded font-mono shrink-0 ${topColor === 'WHITE' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'}`}>
+          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded font-mono shrink-0 ${getColorBadgeClass(topColor)}`}>
             {topColor === 'WHITE' ? 'W' : 'B'}
           </span>
         </div>
@@ -265,7 +339,7 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
       {/* Top Captured Pieces */}
       <div className="grid grid-cols-5 gap-1.5 bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs min-h-9.5 items-center justify-items-center content-start transition-all">
         {topCaptured.map((p, i) => (
-          <div key={i} className="w-6 h-6 flex items-center justify-center">
+          <div key={`top-cap-${p}-${i}`} className="w-6 h-6 flex items-center justify-center">
             <img 
               src={pieceImages[p]} 
               className="w-full h-full drop-shadow-md object-contain" 
@@ -304,21 +378,18 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
         )}
 
         <button
-          onClick={() => {
-            if (isMyTurn && !isHintLoading) {
-              onGetHint();
-            }
-          }}
+          type="button"
+          onClick={handleHintButtonClick}
           disabled={!isMyTurn || isHintLoading}
           className="min-h-9 sm:min-h-10 w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-100 dark:disabled:bg-slate-800/60 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:cursor-not-allowed text-white font-black py-2 px-3 rounded-xl transition-all text-[10px] shadow-sm flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider active:scale-95"
         >
           {isHintLoading ? (
             <>
               <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Calculating...
+              <span>Calculating...</span>
             </>
           ) : (
-            <>🎯 Get Smart Hint</>
+            <span>🎯 Get Smart Hint</span>
           )}
         </button>
       </div>
@@ -328,7 +399,7 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
       {/* Bottom Captured Pieces */}
       <div className="grid grid-cols-5 gap-1.5 bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs min-h-9.5 items-center justify-items-center content-start transition-all">
         {bottomCaptured.map((p, i) => (
-          <div key={i} className="w-6 h-6 flex items-center justify-center">
+          <div key={`bottom-cap-${p}-${i}`} className="w-6 h-6 flex items-center justify-center">
             <img 
               src={pieceImages[p]} 
               className="w-full h-full drop-shadow-md object-contain" 
@@ -342,7 +413,7 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
       {/* Bottom Player Details */}
       <div className="flex items-center justify-between gap-2 w-full flex-none">
         <div className="flex items-center gap-2 pl-1 pr-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 shadow-xs min-w-0">
-          <div className={`relative w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0 overflow-hidden ${isBottomAi ? 'bg-amber-600' : bottomColor === 'WHITE' ? 'bg-blue-600' : 'bg-rose-600'}`}>
+          <div className={`relative w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0 overflow-hidden ${getBadgeBg(isBottomAi, bottomColor)}`}>
             {isBottomAi ? (
               <Bot size={13} />
             ) : (
@@ -364,7 +435,7 @@ export const MatchInfoPanel: React.FC<MatchInfoPanelProps> = ({
           <span className="text-[11px] font-black uppercase tracking-wider text-slate-900 dark:text-slate-200 truncate max-w-28 sm:max-w-32">
             {bottomPlayerLabel}
           </span>
-          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded font-mono shrink-0 ${bottomColor === 'WHITE' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'}`}>
+          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded font-mono shrink-0 ${getColorBadgeClass(bottomColor)}`}>
             {bottomColor === 'WHITE' ? 'W' : 'B'}
           </span>
         </div>

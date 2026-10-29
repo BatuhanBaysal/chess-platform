@@ -26,21 +26,21 @@ body {
 }
 
 .modern-scroll::-webkit-scrollbar {
-  width: 8px !important;
-  height: 8px !important;
+  width: 8px;
+  height: 8px;
 }
 
 .modern-scroll::-webkit-scrollbar-track {
-  background: #1e293b !important;
-  border-radius: 10px !important;
+  background: #1e293b;
+  border-radius: 10px;
 }
 
 .modern-scroll::-webkit-scrollbar-thumb {
-  background: #475569 !important;
-  border-radius: 10px !important;
-  border: 2px solid #1e293b !important;
+  background: #475569;
+  border-radius: 10px;
+  border: 2px solid #1e293b;
 }
 
 .modern-scroll::-webkit-scrollbar-thumb:hover {
-  background: #64748b !important;
+  background: #64748b;
 }

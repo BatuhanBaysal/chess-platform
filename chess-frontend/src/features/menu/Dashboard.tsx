@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { getMyProfile } from '../../api/userService';
 import { Trophy, Swords, BarChart3, Activity, TrendingUp, Percent, Info } from 'lucide-react';
 import ChessBoard from '../chess/components/ChessBoard.tsx';
@@ -15,35 +15,33 @@ interface Stats {
 }
 
 interface DashboardProps {
-  userId: number;
-  activeLobbyId?: string | null;
+  readonly userId: number;
+  readonly activeLobbyId?: string | null;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) => {
+export const Dashboard = ({ userId, activeLobbyId }: Readonly<DashboardProps>) => {
   const [stats, setStats] = useState<Stats | null>(null);
   const [theme] = useState<'classic' | 'modern' | 'emerald'>('classic');
 
   const { game, makeMove, fetchLegalMoves, resetChessState } = useChess();
 
-  const loadDashboardData = useCallback(async () => {
+  const loadDashboardData = useCallback(() => {
     if (!userId) return; 
 
-    try {
-      const statsData = await getMyProfile();
-      setStats(statsData);
-    } catch (err: unknown) {
-      console.error("Dashboard data loading error:", err);
-    }
+    getMyProfile()
+      .then((statsData) => {
+        setStats(statsData);
+      })
+      .catch((err: unknown) => {
+        console.error("Dashboard data loading error:", err);
+      });
   }, [userId]);
 
   useEffect(() => {
-    const init = async () => {
-      await loadDashboardData();
-    };
-    init();
+    loadDashboardData();
     
     return () => {
-      resetChessState();
+      void resetChessState();
     };
   }, [loadDashboardData, resetChessState]);
 
@@ -125,12 +123,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) =
           currentTurn={game.currentTurn}
           moveHistory={game.moveHistory}
           lastMoveMessage={game.lastMoveMessage}
-          onMove={(f, r, tf, tr, prom) => makeMove(activeLobbyId, f, r, tf, tr, prom)}
+          onMove={(f, r, tf, tr, prom) => {
+            makeMove(activeLobbyId, f, r, tf, tr, prom);
+          }}
           fetchLegalMoves={fetchLegalMoves}
           orientation={'WHITE'}
           theme={theme}
           timeLimit={10}
-          onBackToMenu={() => resetChessState()}
+          onBackToMenu={() => {
+            void resetChessState();
+          }}
         />
       </div>
     );
@@ -141,8 +143,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) =
       {/* 4 Stats Cards */}
       <section>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {statsCards.map((card, idx) => (
-            <Tooltip key={idx} content={card.tooltip} position="top">
+          {statsCards.map((card) => (
+            <Tooltip key={card.label} content={card.tooltip} position="top">
               <div 
                 className={`w-full p-3.5 sm:p-4 rounded-2xl border-2 transition-all cursor-help shadow-xs ${card.cardStyle}`}
               >
@@ -168,10 +170,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) =
       <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 shadow-xs">
         <TrendingUp size={14} className="shrink-0 text-indigo-600 dark:text-indigo-400" />
         <p className="leading-relaxed font-medium">
-          <span className="font-black text-slate-950 dark:text-white uppercase tracking-wider text-[10px] mr-1">
-            Rating System:
-          </span>
-          Ranked PvP matches adjust your ELO rating based on outcome and opponent skill. AI matches do not affect ELO.
+          <strong className="font-black text-slate-950 dark:text-white uppercase tracking-wider text-[10px] mr-1">Rating System:</strong>{' '}Ranked PvP matches adjust your ELO rating based on outcome and opponent skill. AI matches do not affect ELO.
         </p>
       </div>
 
@@ -199,13 +198,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) =
             <div className="lg:col-span-7 flex flex-col justify-center space-y-3.5 pl-0 lg:pl-4">
               <div>
                 <div className="flex justify-between text-xs font-black mb-1.5">
-                  <span className="flex items-center gap-2 text-emerald-800 dark:text-emerald-400 font-extrabold">
+                  <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-400 font-extrabold">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 dark:bg-emerald-500 shrink-0" />
-                    Victories
-                  </span>
-                  <span className="text-slate-950 dark:text-white font-mono font-black">
-                    {stats?.totalWins} <span className="text-slate-700 dark:text-slate-400 text-[10px]">({Math.round(((stats?.totalWins || 0) / totalMatches) * 100)}%)</span>
-                  </span>
+                    <span>Victories</span>
+                  </div>
+                  <div className="text-slate-950 dark:text-white font-mono font-black">
+                    <span>{stats?.totalWins ?? 0}</span>{' '}
+                    <span className="text-slate-700 dark:text-slate-400 text-[10px]">
+                      {`(${Math.round(((stats?.totalWins || 0) / totalMatches) * 100)}%)`}
+                    </span>
+                  </div>
                 </div>
                 <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                   <div 
@@ -217,13 +219,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) =
 
               <div>
                 <div className="flex justify-between text-xs font-black mb-1.5">
-                  <span className="flex items-center gap-2 text-rose-800 dark:text-rose-400 font-extrabold">
+                  <div className="flex items-center gap-2 text-rose-800 dark:text-rose-400 font-extrabold">
                     <span className="w-2.5 h-2.5 rounded-full bg-rose-600 dark:bg-rose-500 shrink-0" />
-                    Defeats
-                  </span>
-                  <span className="text-slate-950 dark:text-white font-mono font-black">
-                    {stats?.totalLosses} <span className="text-slate-700 dark:text-slate-400 text-[10px]">({Math.round(((stats?.totalLosses || 0) / totalMatches) * 100)}%)</span>
-                  </span>
+                    <span>Defeats</span>
+                  </div>
+                  <div className="text-slate-950 dark:text-white font-mono font-black">
+                    <span>{stats?.totalLosses ?? 0}</span>{' '}
+                    <span className="text-slate-700 dark:text-slate-400 text-[10px]">
+                      {`(${Math.round(((stats?.totalLosses || 0) / totalMatches) * 100)}%)`}
+                    </span>
+                  </div>
                 </div>
                 <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                   <div 
@@ -235,13 +240,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ userId, activeLobbyId }) =
 
               <div>
                 <div className="flex justify-between text-xs font-black mb-1.5">
-                  <span className="flex items-center gap-2 text-slate-900 dark:text-slate-300 font-extrabold">
+                  <div className="flex items-center gap-2 text-slate-900 dark:text-slate-300 font-extrabold">
                     <span className="w-2.5 h-2.5 rounded-full bg-slate-600 dark:bg-slate-500 shrink-0" />
-                    Draws
-                  </span>
-                  <span className="text-slate-950 dark:text-white font-mono font-black">
-                    {stats?.totalDraws} <span className="text-slate-700 dark:text-slate-400 text-[10px]">({Math.round(((stats?.totalDraws || 0) / totalMatches) * 100)}%)</span>
-                  </span>
+                    <span>Draws</span>
+                  </div>
+                  <div className="text-slate-950 dark:text-white font-mono font-black">
+                    <span>{stats?.totalDraws ?? 0}</span>{' '}
+                    <span className="text-slate-700 dark:text-slate-400 text-[10px]">
+                      {`(${Math.round(((stats?.totalDraws || 0) / totalMatches) * 100)}%)`}
+                    </span>
+                  </div>
                 </div>
                 <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                   <div 

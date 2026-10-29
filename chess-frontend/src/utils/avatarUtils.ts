@@ -1,4 +1,5 @@
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+const rawApiUrl = (import.meta.env.VITE_API_URL || '').trim();
+const API_BASE_URL = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
 
 export const getFullAvatarUrl = (avatarPathOrUrl?: string | null): string | undefined => {
   if (!avatarPathOrUrl) return undefined;
@@ -18,6 +19,7 @@ export const getFullAvatarUrl = (avatarPathOrUrl?: string | null): string | unde
 
 export const getUsernameAvatarUrl = (username?: string | null, timestamp?: number): string | undefined => {
   if (!username) return undefined;
-  const path = `/api/users/${username}/avatar${timestamp ? `?t=${timestamp}` : ''}`;
+  const queryParam = timestamp !== undefined ? `?t=${timestamp}` : '';
+  const path = `/api/users/${username}/avatar${queryParam}`;
   return getFullAvatarUrl(path);
 };

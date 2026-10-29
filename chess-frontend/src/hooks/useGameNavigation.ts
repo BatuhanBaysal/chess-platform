@@ -23,13 +23,13 @@ export const useGameNavigation = (resetChessState: () => void, startNewGame: (ro
   const handleBackToMenu = useCallback(() => {
     resetChessState();
     setGameConfig((prev: GameConfig) => ({ ...prev, roomId: '' }));
-    if (location.pathname !== '/') navigate('/');
+    if (location.pathname !== '/') void navigate('/');
   }, [resetChessState, location.pathname, navigate]);
 
   const handleStartMatch = useCallback((theme: ChessTheme, time: TimeControl, roomId?: string) => {
     const targetRoomId = roomId && roomId.trim() !== "" ? roomId : undefined;
     setGameConfig((prev: GameConfig) => ({ ...prev, theme, timeControl: time, roomId: targetRoomId || '' }));
-    if (location.pathname !== '/') navigate('/');
+    if (location.pathname !== '/') void navigate('/');
     startNewGame(targetRoomId);
   }, [location.pathname, navigate, startNewGame]);
 

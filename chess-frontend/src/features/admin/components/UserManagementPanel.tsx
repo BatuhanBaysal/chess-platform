@@ -4,19 +4,29 @@ import { type AdminUserResponseDTO } from '../../../api/adminService';
 import Pagination from '../../../components/ui/Pagination';
 
 interface UserManagementPanelProps {
-    users: AdminUserResponseDTO[];
-    loading: boolean;
-    currentPage: number;
-    totalPages: number;
-    totalElements: number;
-    selectedCategory: 'all' | 'members' | 'guests';
-    searchQuery: string;
-    onSearchChange: (query: string) => void;
-    onFilterChange: (category: 'all' | 'members' | 'guests') => void;
-    onPageChange: (page: number) => void;
-    onDeleteUser: (id: number) => void;
-    deletingUserId?: number | null;
+    readonly users: readonly AdminUserResponseDTO[];
+    readonly loading: boolean;
+    readonly currentPage: number;
+    readonly totalPages: number;
+    readonly totalElements: number;
+    readonly selectedCategory: 'all' | 'members' | 'guests';
+    readonly searchQuery: string;
+    readonly onSearchChange: (query: string) => void;
+    readonly onFilterChange: (category: 'all' | 'members' | 'guests') => void;
+    readonly onPageChange: (page: number) => void;
+    readonly onDeleteUser: (id: number) => void;
+    readonly deletingUserId?: number | null;
 }
+
+const getRoleBadgeClasses = (role?: string, username?: string): string => {
+    if (role === 'ROLE_ADMIN') {
+        return 'bg-purple-100 dark:bg-purple-950/60 border-purple-300 dark:border-purple-800 text-purple-700 dark:text-purple-300';
+    }
+    if (role === 'ROLE_GUEST' || (username?.startsWith('guest_') ?? false)) {
+        return 'bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400';
+    }
+    return 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400';
+};
 
 export default function UserManagementPanel({
     users,
@@ -31,7 +41,7 @@ export default function UserManagementPanel({
     onPageChange,
     onDeleteUser,
     deletingUserId
-}: UserManagementPanelProps) {
+}: Readonly<UserManagementPanelProps>) {
     const [inputValue, setInputValue] = useState(searchQuery);
 
     useEffect(() => {
@@ -146,13 +156,7 @@ export default function UserManagementPanel({
                                                     {u.email || 'N/A'}
                                                 </td>
                                                 <td className="py-3 px-2 sm:px-4 text-center sm:text-left">
-                                                    <span className={`inline-block px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-black uppercase tracking-wider border ${
-                                                        u.role === 'ROLE_ADMIN' 
-                                                            ? 'bg-purple-100 dark:bg-purple-950/60 border-purple-300 dark:border-purple-800 text-purple-700 dark:text-purple-300'
-                                                            : u.role === 'ROLE_GUEST' || u.username.startsWith('guest_')
-                                                            ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400'
-                                                            : 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400'
-                                                    }`}>
+                                                    <span className={`inline-block px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-black uppercase tracking-wider border ${getRoleBadgeClasses(u.role, u.username)}`}>
                                                         {u.role ? u.role.replace('ROLE_', '') : 'USER'}
                                                     </span>
                                                 </td>

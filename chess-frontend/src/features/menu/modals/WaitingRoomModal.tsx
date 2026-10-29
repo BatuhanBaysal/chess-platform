@@ -1,57 +1,67 @@
-import React, { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Sword, TrendingUp } from 'lucide-react';
 
 interface WaitingRoomModalProps {
-  waitingRoomId: string | null;
-  selectedTime: number;
-  selectedTheme: string;
-  onCancel: () => void;
+  readonly waitingRoomId: string | null;
+  readonly selectedTime: number;
+  readonly selectedTheme: string;
+  readonly onCancel: () => void;
 }
 
-export const WaitingRoomModal: React.FC<WaitingRoomModalProps> = ({
+export const WaitingRoomModal = ({
   waitingRoomId,
   selectedTime,
   selectedTheme,
   onCancel
-}) => {
+}: Readonly<WaitingRoomModalProps>) => {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
   useEffect(() => {
     if (!waitingRoomId) return;
 
-    const originalBodyOverflow = document.body.style.overflow;
-    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const dialog = dialogRef.current;
+    if (dialog && typeof dialog.showModal === 'function' && !dialog.open) {
+      dialog.showModal();
+    }
 
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = 'hidden';
     document.documentElement.style.overflow = 'hidden';
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel();
+      if (e.key === 'Escape') {
+        onCancel();
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.body.style.overflow = originalBodyOverflow;
-      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
       window.removeEventListener('keydown', handleKeyDown);
+      if (dialog && typeof dialog.close === 'function' && dialog.open) {
+        dialog.close();
+      }
     };
   }, [waitingRoomId, onCancel]);
 
   if (!waitingRoomId) return null;
 
   return (
-    <div 
-      className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200 p-4 sm:p-6 overscroll-contain"
-      onWheel={(e) => e.stopPropagation()}
-      onTouchMove={(e) => e.stopPropagation()}
+    <dialog
+      ref={dialogRef}
+      onCancel={(e) => {
+        e.preventDefault();
+        onCancel();
+      }}
+      className="fixed inset-0 m-0 p-4 sm:p-6 w-screen h-screen max-w-none max-h-none z-100 flex items-center justify-center bg-slate-950/85 backdrop-blur-md border-0 animate-in fade-in duration-200"
     >
-      <div 
-        className="bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 p-6 sm:p-9 rounded-[2.5rem] shadow-2xl max-w-md w-full text-center relative max-h-[92vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Animated Radar Pulse */}
+      <div className="bg-white dark:bg-[#070b19] border border-slate-200 dark:border-slate-800/80 p-6 sm:p-9 rounded-[2.5rem] shadow-2xl max-w-md w-full text-center relative max-h-[92vh] overflow-y-auto">
         <div className="relative w-20 h-20 mx-auto mb-5 mt-1">
-          <div className="absolute inset-0 rounded-full border-4 border-indigo-500/20"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-t-indigo-600 animate-spin"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-indigo-500/20" />
+          <div className="absolute inset-0 rounded-full border-4 border-t-indigo-600 animate-spin" />
           <Sword className="absolute inset-0 m-auto text-indigo-600 dark:text-indigo-400" size={30} />
         </div>
 
@@ -62,7 +72,6 @@ export const WaitingRoomModal: React.FC<WaitingRoomModalProps> = ({
           Room ID: <span className="font-mono text-indigo-600 dark:text-indigo-400 font-black">{waitingRoomId}</span>
         </p>
 
-        {/* Rated Match Telemetry Banner */}
         <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/25 text-left mb-5">
           <TrendingUp size={18} className="shrink-0 text-indigo-600 dark:text-indigo-400 mt-0.5" />
           <div className="text-xs leading-relaxed">
@@ -75,7 +84,6 @@ export const WaitingRoomModal: React.FC<WaitingRoomModalProps> = ({
           </div>
         </div>
 
-        {/* Match Settings Box */}
         <div className="grid grid-cols-2 gap-3 p-3.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl mb-5">
           <div className="text-left px-2">
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Time Limit</p>
@@ -87,7 +95,6 @@ export const WaitingRoomModal: React.FC<WaitingRoomModalProps> = ({
           </div>
         </div>
 
-        {/* Cancel Button */}
         <button 
           type="button"
           onClick={onCancel}
@@ -96,7 +103,7 @@ export const WaitingRoomModal: React.FC<WaitingRoomModalProps> = ({
           Cancel Matchmaking
         </button>
       </div>
-    </div>
+    </dialog>
   );
 };
 

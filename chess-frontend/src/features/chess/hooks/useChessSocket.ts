@@ -19,7 +19,7 @@ export const useChessSocket = () => {
   
   const stompClientRef = useRef<Client | null>(null);
   const lobbyClientRef = useRef<Client | null>(null);
-  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const disconnectWebSocket = useCallback(() => {
     if (heartbeatIntervalRef.current) {
@@ -27,7 +27,7 @@ export const useChessSocket = () => {
       heartbeatIntervalRef.current = null;
     }
     if (stompClientRef.current) {
-      stompClientRef.current.deactivate();
+      void stompClientRef.current.deactivate();
       stompClientRef.current = null;
       setIsConnected(false);
     }
@@ -35,7 +35,7 @@ export const useChessSocket = () => {
 
   const disconnectLobby = useCallback(() => {
     if (lobbyClientRef.current) {
-      lobbyClientRef.current.deactivate();
+      void lobbyClientRef.current.deactivate();
       lobbyClientRef.current = null;
       setIsLobbyConnected(false);
     }
@@ -97,7 +97,8 @@ export const useChessSocket = () => {
               disconnectWebSocket();
               return;
             }
-          } catch (e) {
+          } catch (err: unknown) {
+            console.warn("Failed to parse websocket error message payload:", err);
             setError(message.body);
             setTimeout(() => setError(null), 3000);
           }
@@ -152,3 +153,5 @@ export const useChessSocket = () => {
     disconnectLobby
   };
 };
+
+export default useChessSocket;

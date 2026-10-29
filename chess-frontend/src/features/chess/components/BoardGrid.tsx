@@ -1,4 +1,3 @@
-import React from 'react';
 import { DndContext, DragOverlay, defaultDropAnimationSideEffects } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { DroppableSquare } from './DroppableSquare';
@@ -24,17 +23,28 @@ interface BoardGridProps {
     previewLight: string; 
   };
   activePiece: { char: string; index: number } | null;
-  pieceImages: { [key: string]: string };
+  pieceImages: Record<string, string>;
   getActualIndex: (visualIndex: number) => number;
   getCoordsFromIndex: (index: number) => { file: number; rank: number };
   handleSquareClick: (actualIndex: number) => void;
 }
 
-export const BoardGrid: React.FC<BoardGridProps> = ({
+const getSquareBackgroundColor = (
+  isKingInDanger: boolean,
+  isDark: boolean,
+  theme: BoardGridProps['currentTheme']
+): string | undefined => {
+  if (isKingInDanger) {
+    return undefined;
+  }
+  return isDark ? theme.previewDark : theme.previewLight;
+};
+
+export const BoardGrid = ({
   sensors, onDragStart, onDragEnd, squares, orientation, selectedSquare,
   legalMoves, isCheck, currentTurn, isStarted, isGameOver, isMyTurn,
   currentTheme, activePiece, pieceImages, getActualIndex, getCoordsFromIndex, handleSquareClick
-}) => {
+}: Readonly<BoardGridProps>) => {
   return (
     <div className="relative flex justify-center w-full xl:w-156 xl:h-156">
       <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
@@ -52,13 +62,14 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
             const isKingInDanger = isCheck && ((currentTurn?.toUpperCase() === 'WHITE' && char === 'K') || (currentTurn?.toUpperCase() === 'BLACK' && char === 'k'));
             
             const disabled = Boolean(!isStarted || !isMyTurn || isGameOver || ((orientation === 'WHITE' && char === char.toLowerCase()) || (orientation === 'BLACK' && char === char.toUpperCase())));
+            const backgroundColor = getSquareBackgroundColor(isKingInDanger, isDark, currentTheme);
 
             return (
               <DroppableSquare 
                 key={visualIndex} 
                 index={visualIndex} 
                 onClick={() => handleSquareClick(actualIndex)} 
-                style={{ backgroundColor: isKingInDanger ? undefined : (isDark ? currentTheme.previewDark : currentTheme.previewLight) }}
+                style={{ backgroundColor }}
                 className={`relative flex items-center justify-center w-full h-full ${isSelected ? 'ring-3 sm:ring-4 ring-indigo-500/70 z-30' : ''} ${isKingInDanger ? 'bg-red-600! animate-pulse z-20' : ''}`}
               >
                 {/* File & Rank Coordinates */}
@@ -69,7 +80,7 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
                 )}
                 {displayRank === (orientation === 'WHITE' ? 0 : 7) && (
                   <span className="absolute right-1 bottom-0.5 sm:right-1.5 sm:bottom-1 text-[10px] sm:text-sm font-black text-slate-900 z-10 drop-shadow-[0_1.2px_1.2px_rgba(255,255,255,0.6)] select-none pointer-events-none">
-                    {String.fromCharCode(97 + col)}
+                    {String.fromCodePoint(97 + col)}
                   </span>
                 )}
                 {isLegalTarget && (

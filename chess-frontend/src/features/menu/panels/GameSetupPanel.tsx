@@ -1,17 +1,16 @@
-import React from 'react';
 import { Plus, Sword, Clock, Loader2, Globe, Cpu, Info, Palette, Sparkles } from 'lucide-react';
 import type { TimeControl } from '../hooks/useLobby';
 import { CHESS_THEMES, type ChessThemeKey } from '../../../constants/chessThemes';
 import { Tooltip } from '../../../components/ui/Tooltip';
 
 interface GameSetupPanelProps {
-  selectedTime: TimeControl;
-  setSelectedTime: (time: TimeControl) => void;
-  selectedTheme: ChessThemeKey;
-  setSelectedTheme: (theme: ChessThemeKey) => void;
-  isCreating: boolean;
-  onCreateRoom: () => void;
-  onOpenAiModal: () => void;
+  readonly selectedTime: TimeControl;
+  readonly setSelectedTime: (time: TimeControl) => void;
+  readonly selectedTheme: ChessThemeKey;
+  readonly setSelectedTheme: (theme: ChessThemeKey) => void;
+  readonly isCreating: boolean;
+  readonly onCreateRoom: () => void;
+  readonly onOpenAiModal: () => void;
 }
 
 const TIME_TOOLTIPS: Record<number, string> = {
@@ -26,7 +25,7 @@ const THEME_TOOLTIPS: Record<string, string> = {
   emerald: 'Emerald: Club-standard green & buff felt competition board',
 };
 
-export const GameSetupPanel: React.FC<GameSetupPanelProps> = ({
+export const GameSetupPanel = ({
   selectedTime,
   setSelectedTime,
   selectedTheme,
@@ -34,7 +33,7 @@ export const GameSetupPanel: React.FC<GameSetupPanelProps> = ({
   isCreating,
   onCreateRoom,
   onOpenAiModal,
-}) => {
+}: Readonly<GameSetupPanelProps>) => {
   return (
     <div className="p-6 sm:p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#070b19] shadow-sm h-full flex flex-col justify-between">
       <div className="space-y-6 sm:space-y-8">
@@ -178,7 +177,7 @@ export const GameSetupPanel: React.FC<GameSetupPanelProps> = ({
             <p className="leading-snug font-medium">
               <span className="font-black text-indigo-950 dark:text-indigo-300 uppercase tracking-wider text-[10px] mr-1">
                 Engine Assist:
-              </span>
+              </span>{' '}
               Stockfish AI move suggestions and live evaluation are available during both Online and Practice matches.
             </p>
           </div>

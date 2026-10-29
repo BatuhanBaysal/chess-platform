@@ -23,8 +23,8 @@ export const useLobby = (userId?: string) => {
     try {
       const res = await api.get('/api/lobby/rooms');
       setRooms(res.data);
-    } catch (e) {
-      console.error("Lobby Sync Error");
+    } catch (e: unknown) {
+      console.error("Lobby Sync Error:", e);
     }
   }, []);
 
@@ -36,15 +36,17 @@ export const useLobby = (userId?: string) => {
     if (currentRoomId && userId && !Number.isNaN(numericUserId)) {
       try {
         await cancelLobby(currentRoomId, numericUserId);
-      } catch (e) {
+      } catch (e: unknown) {
         console.error("Cancel lobby error:", e);
       }
     }
   }, [waitingRoomId, userId]);
 
   useEffect(() => {
-    fetchRooms();
-    const lobbyInterval = setInterval(fetchRooms, 3000);
+    void fetchRooms();
+    const lobbyInterval = setInterval(() => {
+      void fetchRooms();
+    }, 3000);
     return () => clearInterval(lobbyInterval);
   }, [fetchRooms]);
 
